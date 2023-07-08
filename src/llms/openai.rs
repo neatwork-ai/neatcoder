@@ -1,5 +1,7 @@
 use anyhow::{anyhow, Result};
 
+use crate::utils::{Scale01, Scale22};
+
 struct OpenAI {
     model_name: OpenAIModels,
     /// Temperature is used to control the randomness or creativity
@@ -17,8 +19,8 @@ struct OpenAI {
     /// narrower range of high-probability words. This leads to
     /// more focused and deterministic output, with fewer alternatives
     /// and reduced randomness.
-    top_p: Probability,
-    /// The frequency penalty parameter aims to reduce the repetition of words
+    top_p: Scale01,
+    /// The frequency penalty parameter helps reduce the repetition of words
     /// or sentences within the generated text. It is a float value ranging
     /// from -2.0 to 2.0, which is subtracted to the logarithmic probability of a
     /// token whenever it appears in the output. By increasing the
@@ -27,19 +29,8 @@ struct OpenAI {
     ///
     /// In the official documentation:
     /// https://platform.openai.com/docs/api-reference/chat/create#chat/create-frequency_penalty
-    frequency_penalty: f64,
-}
-
-struct Probability(f32);
-
-impl Probability {
-    pub fn new(prob: f32) -> Result<Probability> {
-        if prob < 0.0 || prob > 1.0 {
-            return Err(anyhow!(format!("Probability can't be {}", prob)));
-        }
-
-        Ok(Probability(prob))
-    }
+    frequency_penalty: Scale22,
+    // presence
 }
 
 enum OpenAIModels {
