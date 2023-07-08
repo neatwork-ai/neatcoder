@@ -38,6 +38,7 @@ impl<T> Deref for BoundedFloat<T> {
 
 pub struct Range22;
 pub struct Range01;
+pub struct Range100s;
 
 impl MinMax for Range22 {
     const MIN: f64 = -2.0;
@@ -50,6 +51,4 @@ impl MinMax for Range01 {
 
 pub type Scale22 = BoundedFloat<Range22>;
 pub type Scale01 = BoundedFloat<Range01>;
-
-// pub type Pro = BoundedFloat<(0.0, 1.0)>;
-// pub type BoundedFloatNeg11 = BoundedFloat<MinMax<-1.0, 1.0>>;
+pub type Scale100s = BoundedFloat<Range100s>;
