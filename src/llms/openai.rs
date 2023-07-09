@@ -49,8 +49,6 @@ pub struct OpenAI {
     /// data-only server-sent events as they become available, with the stream
     /// terminated by a data: [DONE] message.
     pub stream: bool,
-    /// Up to 4 sequences where the API will stop generating further tokens.
-    pub stop: bool,
     /// Modify the likelihood of specified tokens appearing in the completion.
     ///
     /// Accepts a json object that maps tokens (specified by their token ID
@@ -65,6 +63,7 @@ pub struct OpenAI {
     /// to monitor and detect abuse. You can read more at:
     /// https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids
     pub user: Option<String>,
+    api_key: Option<String>,
 }
 
 pub enum OpenAIModels {
@@ -96,13 +95,18 @@ impl OpenAI {
             presence_penalty: None,
             n: None,
             stream: false,
-            stop: false,
             logit_bias: HashMap::new(),
             user: None,
+            api_key: None,
         }
     }
 
     // === Setter methods with chaining ===
+
+    pub fn api_key(mut self, key: String) -> Self {
+        self.api_key = Some(key);
+        self
+    }
 
     pub fn temperature(mut self, temperature: f64) -> Self {
         self.temperature = Some(temperature);
@@ -139,11 +143,6 @@ impl OpenAI {
         self
     }
 
-    pub fn stop(mut self, stop: bool) -> Self {
-        self.stop = stop;
-        self
-    }
-
     pub fn logit_bias(mut self, mut logit_bias: HashMap<String, f64>) -> Result<Self> {
         let logit_bias = logit_bias
             .drain()
@@ -162,43 +161,107 @@ impl OpenAI {
 
     // === OpenAI IO ===
 
-    pub async fn chat(&self, msgs: Vec<Message>, funcs: Vec<String>) -> Result<()> {
+    pub async fn chat(
+        &self,
+        msgs: &[Message],
+        funcs: &[String],
+        stop_seq: &[String],
+    ) -> Result<()> {
         let client = Client::new();
 
         // fill in your own data as needed
-        let req_body = self.request_body(msgs, funcs);
+        let req_body = self.request_body(msgs, funcs, stop_seq)?;
+
+        println!("Request body: {}", req_body);
 
         let res = client
             .post("https://api.openai.com/v1/chat/completions")
-            .header("Authorization", "Bearer YOUR_OPENAI_API_KEY")
+            .header(
+                "Authorization",
+                format!(
+                    "Bearer {}",
+                    self.api_key.as_ref().expect("No API Keys provided")
+                ),
+            )
             .header("Content-Type", "application/json")
             .json(&req_body)
             .send()
             .await?;
 
-        println!("{:?}", res);
+        let status = res.status();
+        let headers = res.headers();
+
+        println!("Status: {}", status);
+        println!("Headers: {:?}", headers);
+
+        let body = res.text().await?;
+        println!("Body: {}", body);
+
+        // println!("{:?}", res);
 
         Ok(())
     }
 
-    fn request_body(&self, msgs: Vec<Message>, funcs: Vec<String>) -> Value {
-        let data = json!({
+    fn request_body(
+        &self,
+        msgs: &[Message],
+        funcs: &[String],
+        stop_seq: &[String],
+    ) -> Result<Value> {
+        let mut data = json!({
             "model": self.model.as_str(),
-            "messages": msgs, // TODO
-            "functions": funcs, // TODO
-            "temperature": self.temperature,
-            "top_p": self.top_p,
-            "n": self.n,
-            "stream": self.stream,
-            "stop": self.stop,
-            "max_tokens": self.max_tokens,
-            "presence_penalty": self.presence_penalty,
-            "frequency_penalty": self.frequency_penalty,
-            "logit_bias": self.logit_bias,
-            "user": self.user,
+            "messages": msgs,
+            // "stop": self.stop,
         });
 
-        data
+        if let Some(temperature) = self.temperature {
+            data["temperature"] = serde_json::to_value(temperature)?;
+        }
+
+        if let Some(top_p) = self.top_p {
+            data["top_p"] = serde_json::to_value(top_p)?;
+        }
+
+        if !funcs.is_empty() {
+            data["functions"] = serde_json::to_value(funcs)?;
+        }
+
+        if !stop_seq.is_empty() {
+            if stop_seq.len() > 4 {
+                return Err(anyhow!(
+                    "Maximum limit of stop sequences reached. {} out of 4",
+                    stop_seq.len()
+                ));
+            };
+
+            data["stop"] = serde_json::to_value(stop_seq)?;
+        }
+
+        if let Some(user) = &self.user {
+            data["user"] = serde_json::to_value(user)?;
+        }
+
+        if !self.logit_bias.is_empty() {
+            data["logit_bias"] = serde_json::to_value(&self.logit_bias)?;
+        }
+
+        if let Some(frequency_penalty) = &self.frequency_penalty {
+            data["frequency_penalty"] = serde_json::to_value(frequency_penalty)?;
+        }
+
+        if let Some(presence_penalty) = &self.presence_penalty {
+            data["presence_penalty"] = serde_json::to_value(presence_penalty)?;
+        }
+
+        if let Some(max_tokens) = &self.max_tokens {
+            data["max_tokens"] = serde_json::to_value(max_tokens)?;
+        }
+
+        if let Some(n) = &self.n {
+            data["n"] = serde_json::to_value(n)?;
+        }
+
+        Ok(data)
     }
 }
 
@@ -271,9 +334,9 @@ impl Default for OpenAI {
             presence_penalty: None,
             n: None,
             stream: false,
-            stop: false,
             logit_bias: HashMap::new(),
             user: None,
+            api_key: None,
         }
     }
 }
