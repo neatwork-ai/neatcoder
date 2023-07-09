@@ -1,5 +1,8 @@
+use anyhow::{anyhow, Result};
+use serde::Serialize;
 use std::{marker::PhantomData, ops::Deref};
 
+#[derive(Serialize)]
 pub struct BoundedFloat<T> {
     inner: f64,
     _marker: PhantomData<T>,
@@ -10,18 +13,29 @@ pub trait MinMax {
     const MAX: f64;
 }
 
-impl<T> BoundedFloat<T>
+pub trait Bounded {
+    fn new(value: f64) -> Result<Self>
+    where
+        Self: Sized;
+}
+
+impl<T> Bounded for BoundedFloat<T>
 where
     T: MinMax,
 {
-    pub fn new(value: f64) -> Option<Self> {
+    fn new(value: f64) -> Result<Self> {
         if T::MIN <= value && value <= T::MAX {
-            Some(Self {
+            Ok(Self {
                 inner: value,
                 _marker: PhantomData,
             })
         } else {
-            None
+            Err(anyhow!(
+                "The value {} is not within the bounds of [{}; {}]",
+                value,
+                T::MIN,
+                T::MAX
+            ))
         }
     }
 }
@@ -47,6 +61,10 @@ impl MinMax for Range22 {
 impl MinMax for Range01 {
     const MIN: f64 = 0.0;
     const MAX: f64 = 1.0;
+}
+impl MinMax for Range100s {
+    const MIN: f64 = -100.0;
+    const MAX: f64 = 100.0;
 }
 
 pub type Scale22 = BoundedFloat<Range22>;
