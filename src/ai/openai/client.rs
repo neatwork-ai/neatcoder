@@ -1,4 +1,4 @@
-use crate::utils::{Bounded, Scale01, Scale100s, Scale22};
+use crate::utils::bounded_float::{Bounded, Scale01, Scale100s, Scale22};
 use anyhow::{anyhow, Result};
 use reqwest::Client;
 use serde_json::{json, Value};
