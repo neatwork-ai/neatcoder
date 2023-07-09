@@ -1,6 +1,9 @@
 use anyhow::Result;
 use dotenv::dotenv;
-use gluon::llms::openai::{GptRole, Message, OpenAI, OpenAIModels};
+use gluon::ai::openai::{
+    client::{OpenAI, OpenAIModels},
+    input::{GptRole, Message},
+};
 use std::env;
 
 #[tokio::main]
@@ -22,7 +25,9 @@ async fn main() -> Result<()> {
         content: String::from("Write an AGI."),
     };
 
-    model.chat(&[sys_msg, user_msg], &[], &[]).await?;
+    let resp = model.chat(&[sys_msg, user_msg], &[], &[]).await?;
+
+    println!("{:?}", resp);
 
     Ok(())
 }

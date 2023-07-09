@@ -1,2 +1,2 @@
-pub mod llms;
+pub mod ai;
 pub mod utils;

@@ -1,9 +1,10 @@
 use crate::utils::{Bounded, Scale01, Scale100s, Scale22};
 use anyhow::{anyhow, Result};
 use reqwest::Client;
-use serde::{Serialize, Serializer};
 use serde_json::{json, Value};
 use std::collections::HashMap;
+
+use super::{input::Message, output::Body};
 
 pub struct OpenAI {
     pub model: OpenAIModels,
@@ -71,17 +72,6 @@ pub enum OpenAIModels {
     Gpt4,
     Gpt35Turbo,
     Gpt35Turbo16k,
-}
-
-pub struct Message {
-    pub role: GptRole,
-    pub content: String,
-}
-
-pub enum GptRole {
-    System,
-    User,
-    Assistant,
 }
 
 impl OpenAI {
@@ -166,13 +156,11 @@ impl OpenAI {
         msgs: &[Message],
         funcs: &[String],
         stop_seq: &[String],
-    ) -> Result<()> {
+    ) -> Result<Body> {
         let client = Client::new();
 
         // fill in your own data as needed
         let req_body = self.request_body(msgs, funcs, stop_seq)?;
-
-        println!("Request body: {}", req_body);
 
         let res = client
             .post("https://api.openai.com/v1/chat/completions")
@@ -189,17 +177,15 @@ impl OpenAI {
             .await?;
 
         let status = res.status();
-        let headers = res.headers();
 
-        println!("Status: {}", status);
-        println!("Headers: {:?}", headers);
+        if !status.is_success() {
+            return Err(anyhow!("Failed with status: {}", status));
+        }
 
         let body = res.text().await?;
-        println!("Body: {}", body);
+        let api_response = serde_json::from_str(body.as_str())?;
 
-        // println!("{:?}", res);
-
-        Ok(())
+        Ok(api_response)
     }
 
     fn request_body(
@@ -285,41 +271,6 @@ impl OpenAIModels {
             OpenAIModels::Gpt35Turbo => "gpt-3.5-turbo",
             OpenAIModels::Gpt35Turbo16k => "gpt-3.5-turbo-16k",
         }
-    }
-}
-
-impl GptRole {
-    pub fn new(role: &str) -> Result<Self> {
-        let role = match role {
-            "system" => GptRole::System,
-            "user" => GptRole::User,
-            "assistant" => GptRole::Assistant,
-            _ => return Err(anyhow!(format!("Invalid role {}", role))),
-        };
-
-        Ok(role)
-    }
-
-    pub fn as_str(&self) -> &str {
-        match self {
-            GptRole::System => "system",
-            GptRole::User => "user",
-            GptRole::Assistant => "assistant",
-        }
-    }
-}
-
-impl Serialize for Message {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let msg = json!({
-            "role": self.role.as_str(),
-            "content": self.content,
-        });
-
-        msg.serialize(serializer)
     }
 }
 
