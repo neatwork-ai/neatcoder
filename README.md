@@ -1,2 +1,2 @@
 # gluon
-LangChain on steroids
+Distributed Computing Framework for AI Agents
