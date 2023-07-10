@@ -3,7 +3,7 @@ use crate::{
         client::OpenAI,
         input::{GptRole, Message},
     },
-    utils::tasks::{Task, Tasks},
+    utils::tasks::Tasks,
     Sample,
 };
 use anyhow::Result;
@@ -26,16 +26,12 @@ pub async fn generate_tree(client: &OpenAI) -> Result<()> {
 
     let output_schema = format!(
         "Use the following schema as a format for your response: {}",
-        Tasks::sample_json()?
+        serde_json::to_string(&Tasks::sample())?
     );
 
-    // let output_schema = r#"
-    //     Follow the instructions below when writing the list:
-    //         - Skip any introduction or conclusion, only provide the list of items;
-    //         - Provide a non-enumerated list of items
-    //         - Use the symbol '-' at the start of each item
-    //         - For each item, follow with a '-->' and assign who should work on the item.
-    // "#;
+    // let output_schema = r#"Format the output in csv format with two columns:
+    // - Item (i.e. Item to work on)
+    // - Role (i.e. Person/Role to work on it)"#;
 
     let msg = context.to_string() + task + output_schema.as_str();
 
@@ -47,11 +43,12 @@ pub async fn generate_tree(client: &OpenAI) -> Result<()> {
     let resp = client.chat(&[sys_msg, user_msg], &[], &[]).await?;
 
     let json = resp.choices.first().unwrap().message.content.as_str();
+    println!("{}", json);
 
     // Implement Fallback logic
     let task: Tasks = serde_json::from_str(json)?;
 
-    println!("Tasks: {:?}", task);
+    // println!("Tasks: {:?}", task);
 
     Ok(())
 }
