@@ -3,7 +3,7 @@ use crate::{
         client::OpenAI,
         input::{GptRole, Message},
     },
-    utils::tasks::Tasks,
+    output::tasks::Tasks,
     Sample,
 };
 use anyhow::Result;
