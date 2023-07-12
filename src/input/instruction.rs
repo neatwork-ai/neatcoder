@@ -5,10 +5,10 @@ pub struct Instruction {
 
 /// Serves as a type marker
 pub enum InstructionType {
+    Context,
     Purpose,
     Audience,
     Complexity,
-    Context,
     Restriction,
     Principle,
     /// A term that could generalize open-endedness and close-endedness
@@ -24,12 +24,19 @@ pub enum InstructionType {
 }
 
 impl Instruction {
+    pub fn new(instruction_type: InstructionType, instruction: &str) -> Self {
+        Self {
+            instruction_type,
+            inner: instruction.to_string(),
+        }
+    }
+
     pub fn to_string(&self) -> String {
         let prelude = match self.instruction_type {
+            InstructionType::Context => "\n- Context:",
             InstructionType::Purpose => "\n- Purpose:",
             InstructionType::Audience => "\n- Audience:",
             InstructionType::Complexity => "\n- Complexity:",
-            InstructionType::Context => "\n- Context:",
             InstructionType::Restriction => "\n- Restriction:",
             InstructionType::Principle => "\n- Principle:",
             InstructionType::ResponseScope => "\n- Response scope (open-ended vs. close-ended):",
