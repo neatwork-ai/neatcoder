@@ -41,7 +41,6 @@ pub async fn generate_tree(client: &OpenAI) -> Result<()> {
     };
 
     let resp = client.chat(&[sys_msg, user_msg], &[], &[]).await?;
-
     let json = resp.choices.first().unwrap().message.content.as_str();
     println!("{}", json);
 

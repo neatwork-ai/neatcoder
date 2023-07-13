@@ -9,7 +9,7 @@ pub enum InstructionType {
     Purpose,
     Audience,
     Complexity,
-    Restriction,
+    Avoid,
     Principle,
     /// A term that could generalize open-endedness and close-endedness
     /// into one could be "Response Scope." This term communicates the
@@ -37,7 +37,7 @@ impl Instruction {
             InstructionType::Purpose => "\n- Purpose:",
             InstructionType::Audience => "\n- Audience:",
             InstructionType::Complexity => "\n- Complexity:",
-            InstructionType::Restriction => "\n- Restriction:",
+            InstructionType::Avoid => "\n- Avoid:",
             InstructionType::Principle => "\n- Principle:",
             InstructionType::ResponseScope => "\n- Response scope (open-ended vs. close-ended):",
             InstructionType::OutputSchema => "\n- Output schema/format:",

@@ -36,6 +36,8 @@ pub async fn build_prompt_dyn(
     sys_msg: Option<&str>,
     user_msg: Option<&str>,
 ) -> Result<String> {
+    // TODO: Things to consider, this prompt works best with low `temperature` and `top_p`
+    // Also, how can we lambda-fy the whole Client api?
     let sys_msg = Message {
         role: GptRole::System,
         content: String::from(sys_msg.unwrap_or("ChatGPT, your role in this interaction is to serve as a writing prompt generator. Generate prompts based on the context provided.")),
@@ -62,4 +64,15 @@ pub async fn build_prompt_dyn(
     let prompt = resp.choices.first().unwrap().message.content.as_str();
 
     Ok(prompt.to_string())
+}
+
+pub async fn build_prompt(instructions: &[Instruction], user_msg: Option<&str>) -> Result<String> {
+    let mut user_msg =
+        String::from(user_msg.unwrap_or("Consider the following items in your response:\n"));
+
+    for instruction in instructions.iter() {
+        user_msg.push_str(&instruction.to_string());
+    }
+
+    Ok(user_msg)
 }
