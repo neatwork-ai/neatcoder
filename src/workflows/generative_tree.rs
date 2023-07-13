@@ -3,7 +3,7 @@ use crate::{
         client::OpenAI,
         input::{GptRole, Message},
     },
-    utils::tasks::Tasks,
+    output::tasks::Tasks,
     Sample,
 };
 use anyhow::Result;
@@ -41,14 +41,51 @@ pub async fn generate_tree(client: &OpenAI) -> Result<()> {
     };
 
     let resp = client.chat(&[sys_msg, user_msg], &[], &[]).await?;
-
     let json = resp.choices.first().unwrap().message.content.as_str();
     println!("{}", json);
 
     // Implement Fallback logic
-    let task: Tasks = serde_json::from_str(json)?;
+    let tasks: Tasks = serde_json::from_str(json)?;
 
-    // println!("Tasks: {:?}", task);
+    println!("Tasks: {:?}", tasks);
+
+    distribute_tasks(
+        client,
+        &tasks,
+        "
+    You are part of a group of people creating a new startup called Promptify,
+    whose objective is to create a marketplace for prompt templates.\n
+    ",
+    )
+    .await?;
+
+    Ok(())
+}
+
+pub async fn distribute_tasks(client: &OpenAI, tasks: &Tasks, context: &str) -> Result<()> {
+    for (_idx, task) in tasks.iter() {
+        let role = format!("You work in {}", task.role.as_ref().unwrap());
+
+        let sys_msg = Message {
+            role: GptRole::System,
+            content: role,
+        };
+
+        let msg = format!(
+            "{} \nDevelop the the following item: {}",
+            context, task.task
+        );
+
+        let user_msg = Message {
+            role: GptRole::User,
+            content: msg,
+        };
+
+        let resp = client.chat(&[sys_msg, user_msg], &[], &[]).await?;
+
+        let json = resp.choices.first().unwrap().message.content.as_str();
+        println!("{}", json);
+    }
 
     Ok(())
 }

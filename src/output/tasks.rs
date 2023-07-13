@@ -10,9 +10,9 @@ pub struct Tasks(BTreeMap<usize, Task>);
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Task {
     /// Task to be performed
-    task: String,
+    pub task: String,
     /// Specialist assigned to perform the task
-    role: Option<String>,
+    pub role: Option<String>,
 }
 
 impl Tasks {

@@ -13,6 +13,29 @@ pub enum GptRole {
     Assistant,
 }
 
+impl Message {
+    pub fn user(content: &str) -> Self {
+        Self {
+            role: GptRole::User,
+            content: String::from(content),
+        }
+    }
+    
+    pub fn system(content: &str) -> Self {
+        Self {
+            role: GptRole::System,
+            content: String::from(content),
+        }
+    }
+    
+    pub fn assistant(content: &str) -> Self {
+        Self {
+            role: GptRole::Assistant,
+            content: String::from(content),
+        }
+    }
+}
+
 impl Serialize for Message {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
