@@ -3,10 +3,12 @@ name = "cli"
 version = "0.1.0"
 edition = "2021"
 
-# [[bin]]
-# name = "default"
-# path = "src/bin/default.rs"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-openai = "0.6"
+clap = { version = "4.1", features = ["derive"]}
+tokio = {version = "1.20", features = ["macros", "rt-multi-thread"]}
+anyhow = "1.0"
+dialoguer = "0.10"
+dotenv = "0.15"
