@@ -17,4 +17,5 @@ pub enum Commands {
         #[clap(default_value = DEFAULT_FOLDER)]
         output_dir: String,
     },
+    WriteSequence {},
 }

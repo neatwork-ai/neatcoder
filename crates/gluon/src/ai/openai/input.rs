@@ -2,11 +2,13 @@ use anyhow::{anyhow, Result};
 use serde::{Serialize, Serializer};
 use serde_json::json;
 
+#[derive(Clone)]
 pub struct Message {
     pub role: GptRole,
     pub content: String,
 }
 
+#[derive(Clone, Copy)]
 pub enum GptRole {
     System,
     User,
@@ -20,14 +22,14 @@ impl Message {
             content: String::from(content),
         }
     }
-    
+
     pub fn system(content: &str) -> Self {
         Self {
             role: GptRole::System,
             content: String::from(content),
         }
     }
-    
+
     pub fn assistant(content: &str) -> Self {
         Self {
             role: GptRole::Assistant,
