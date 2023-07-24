@@ -9,6 +9,7 @@ use gluon::ai::openai::{
 use std::{
     env,
     io::{self, Write},
+    rc::Rc,
     str::FromStr,
 };
 
@@ -19,7 +20,7 @@ use anyhow::{anyhow, Result};
 use async_openai::{types::CreateCompletionRequestArgs, Client};
 use clap::Parser;
 use dialoguer::Input;
-use llm_store::msg_node::CausalChain;
+use llm_store::msg_node::{CausalChain, Messages, Msg};
 
 #[tokio::main]
 async fn main() {
@@ -75,7 +76,10 @@ async fn run() -> Result<()> {
                 .temperature(0.7)
                 .top_p(0.9)?;
 
-            let (mut seq, mut chain) = init_chain(&client).await?;
+            // TODO: Load this from DB
+            let mut mgs = Messages::default();
+
+            let mut chain = init_chain(&client, &mut mgs).await?;
 
             loop {
                 println!("\nOptions:");
@@ -91,49 +95,17 @@ async fn run() -> Result<()> {
                 Options::from_str(&choice).map_err(|_err| anyhow!("Error parsing options"))?;
                 println!("Choice: {:?}", choice);
 
-                match {
-                    Options::Talk => {
-                        let (seq, chain) = chat(client, chain, seq).await?;
-                    },
-                    Options::Retry => {},
-                    Options::Back => {},
-                    Options::Quit => {},
-                }
-                
+                // match {
+                //     Options::Talk => {
+                //         let (seq, chain) = chat(client, chain, seq).await?;
+                //     },
+                //     Options::Retry => {},
+                //     Options::Back => {},
+                //     Options::Quit => {},
+                // }
+
                 // Input prompt
-                let prompt: String = Input::new()
-                    .with_prompt("\n Write your prompt")
-                    .interact()
-                    .unwrap();
-
-                if &prompt == "quit" {
-                    break;
-                }
-
-                let user_msg = Message {
-                    role: GptRole::User,
-                    content: prompt,
-                };
-
-                seq.push(user_msg);
-
-                let client_resp = client.chat(&seq, &[], &[]).await?;
-                let llm_resp = client_resp
-                    .choices
-                    .first()
-                    .unwrap()
-                    .message
-                    .content
-                    .as_str();
-
-                println!("\n{}", llm_resp);
-
-                let llm_msg = Message {
-                    role: GptRole::Assistant,
-                    content: String::from(llm_resp),
-                };
-
-                seq.push(llm_msg);
+                todo!();
             }
         }
     }
@@ -141,36 +113,59 @@ async fn run() -> Result<()> {
     Ok(())
 }
 
-pub async fn init_chain(client: &OpenAI) -> Result<(Vec<Message>, CausalChain)> {
-    // let mut chain = chain.unwrap_or_else(|| CausalChain::genesis(GptRole::User, vec![], prompt));
-    chat(client, None, vec![]).await
+pub async fn init_chain(client: &OpenAI, msgs: &mut Messages) -> Result<CausalChain> {
+    let user_msg = prompt_user();
+    let llm_msg = prompt_llm(client, &[&user_msg]).await?;
+
+    let user_msg: Rc<Msg> = Rc::new(user_msg.into());
+    let llm_msg: Rc<Msg> = Rc::new(llm_msg.into());
+
+    let mut chain = CausalChain::genesis(user_msg.clone());
+    let llm_msg_id = chain.add_node(llm_msg.clone(), Some(chain.genesis_id))?;
+
+    msgs.insert(chain.genesis_id, user_msg);
+    msgs.insert(llm_msg_id, llm_msg);
+
+    Ok(chain)
 }
 
 pub async fn chat(
     client: &OpenAI,
+    msgs: &mut Messages,
     chain: &mut CausalChain,
-    seq: &mut Vec<Message>,
+    mut seq: Vec<&Message>,
 ) -> Result<()> {
+    let user_msg = prompt_user();
+
+    seq.push(&user_msg);
+    let slice: &[&Message] = &seq;
+
+    let llm_msg = prompt_llm(client, &seq).await?;
+
+    let user_msg: Rc<Msg> = Rc::new(user_msg.into());
+    let llm_msg: Rc<Msg> = Rc::new(llm_msg.into());
+
+    let llm_msg_id = chain.add_node(llm_msg.clone(), Some(chain.genesis_id))?;
+
+    msgs.insert(chain.genesis_id, user_msg);
+    msgs.insert(llm_msg_id, llm_msg);
+
+    Ok(())
+}
+
+pub fn prompt_user() -> Message {
     let prompt: String = Input::new()
         .with_prompt("\n Write your prompt")
         .interact()
         .unwrap();
 
-    let user_msg = Message {
+    Message {
         role: GptRole::User,
-        content: prompt.clone(),
-    };
+        content: prompt,
+    }
+}
 
-    chain.add_node(
-        user_msg.role.clone(),
-        // TODO: avoid cloning
-        seq.clone(),
-        None,
-        user_msg.content.clone(),
-    )?;
-
-    seq.push(user_msg);
-
+pub async fn prompt_llm(client: &OpenAI, seq: &[&Message]) -> Result<Message> {
     let client_resp = client.chat(&seq, &[], &[]).await?;
     let llm_resp = client_resp
         .choices
@@ -182,19 +177,8 @@ pub async fn chat(
 
     println!("\n{}", llm_resp);
 
-    let llm_msg = Message {
+    Ok(Message {
         role: GptRole::Assistant,
         content: String::from(llm_resp),
-    };
-
-    chain.add_node(
-        llm_msg.role.clone(),
-        vec![chain.genesis_id],
-        Some(chain.genesis_id),
-        llm_msg.content.clone(),
-    )?;
-
-    seq.push(llm_msg);
-
-    Ok((seq, chain))
+    })
 }

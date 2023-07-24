@@ -60,7 +60,7 @@ pub async fn build_prompt_dyn(
         content: user_msg,
     };
 
-    let resp = client.chat(&[sys_msg, user_msg], &[], &[]).await?;
+    let resp = client.chat(&[&sys_msg, &user_msg], &[], &[]).await?;
     let prompt = resp.choices.first().unwrap().message.content.as_str();
 
     Ok(prompt.to_string())

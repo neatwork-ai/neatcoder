@@ -157,8 +157,8 @@ impl OpenAI {
 
     pub async fn chat(
         &self,
-        msgs: &[Message],
-        funcs: &[String],
+        msgs: &[&Message],
+        funcs: &[&String],
         stop_seq: &[String],
     ) -> Result<Body> {
         let client = Client::new();
@@ -194,8 +194,8 @@ impl OpenAI {
 
     fn request_body(
         &self,
-        msgs: &[Message],
-        funcs: &[String],
+        msgs: &[&Message],
+        funcs: &[&String],
         stop_seq: &[String],
     ) -> Result<Value> {
         let mut data = json!({

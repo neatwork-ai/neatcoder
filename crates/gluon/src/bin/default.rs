@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
         content: String::from("Write an AGI."),
     };
 
-    let resp = model.chat(&[sys_msg, user_msg], &[], &[]).await?;
+    let resp = model.chat(&[&sys_msg, &user_msg], &[], &[]).await?;
 
     println!("{:?}", resp);
 

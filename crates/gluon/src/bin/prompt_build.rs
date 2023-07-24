@@ -47,8 +47,8 @@ async fn main() -> Result<()> {
 
     let dyn_resp = client
         .chat(&[
-            Message::system("You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
-            Message::user(dyn_prompt.as_str()),
+            &Message::system("You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
+            &Message::user(dyn_prompt.as_str()),
         ], &[], &[])
         .await?;
 
@@ -60,8 +60,8 @@ async fn main() -> Result<()> {
         .temperature(1.0)
         .top_p(1.0)?
         .chat(&[
-            Message::system("You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
-            Message::user(dyn_prompt.as_str()),
+            &Message::system("You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
+            &Message::user(dyn_prompt.as_str()),
         ], &[], &[])
         .await?;
 
