@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use super::msg::OpenAIMsg;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ApiResponse {
     pub headers: Headers,
@@ -45,14 +47,8 @@ pub struct Body {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Choice {
     pub index: i32,
-    pub message: Message,
+    pub message: OpenAIMsg,
     pub finish_reason: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Message {
-    pub role: String,
-    pub content: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

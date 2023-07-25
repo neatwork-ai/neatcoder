@@ -1,21 +1,21 @@
 use anyhow::{anyhow, Result};
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::json;
 
-#[derive(Clone)]
-pub struct Message {
+#[derive(Deserialize, Debug)]
+pub struct OpenAIMsg {
     pub role: GptRole,
     pub content: String,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum GptRole {
     System,
     User,
     Assistant,
 }
 
-impl Message {
+impl OpenAIMsg {
     pub fn user(content: &str) -> Self {
         Self {
             role: GptRole::User,
@@ -38,7 +38,7 @@ impl Message {
     }
 }
 
-impl Serialize for Message {
+impl Serialize for OpenAIMsg {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

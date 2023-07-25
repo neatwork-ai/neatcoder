@@ -4,7 +4,7 @@ pub mod utils;
 use dotenv::dotenv;
 use gluon::ai::openai::{
     client::{OpenAI, OpenAIModels},
-    input::{GptRole, Message},
+    msg::{GptRole, Message},
 };
 use std::{
     env,

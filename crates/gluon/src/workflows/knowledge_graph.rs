@@ -1,15 +1,16 @@
 use crate::{
     ai::openai::{
         client::OpenAI,
-        input::{GptRole, Message},
+        job::OpenAIJob,
+        msg::{GptRole, OpenAIMsg},
     },
     output::tasks::Tasks,
     workflows::generative_tree::distribute_tasks,
 };
 use anyhow::Result;
 
-pub async fn generate_knowledge_graph(client: &OpenAI) -> Result<()> {
-    let sys_msg = Message {
+pub async fn generate_knowledge_graph(client: &OpenAI, job: &OpenAIJob) -> Result<()> {
+    let sys_msg = OpenAIMsg {
         role: GptRole::System,
         content: String::from("Given a textual document, produce me a Knowledge Graph representation of its semantical relevant concepts."),
     };
@@ -56,12 +57,12 @@ pub async fn generate_knowledge_graph(client: &OpenAI) -> Result<()> {
 
     let msg = context.to_string() + task;
 
-    let user_msg = Message {
+    let user_msg = OpenAIMsg {
         role: GptRole::User,
         content: msg,
     };
 
-    let resp = client.chat(&[&sys_msg, &user_msg], &[], &[]).await?;
+    let resp = client.chat(job, &[&sys_msg, &user_msg], &[], &[]).await?;
     let json = resp.choices.first().unwrap().message.content.as_str();
     println!("{}", json);
 
@@ -72,6 +73,7 @@ pub async fn generate_knowledge_graph(client: &OpenAI) -> Result<()> {
 
     distribute_tasks(
         client,
+        job,
         &tasks,
         "
     Create a Knowledge Graph, in JSON format, from the text. The structure of the Knowledge Graph should follow the previous instructions. \n

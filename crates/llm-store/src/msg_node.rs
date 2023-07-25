@@ -1,138 +1,119 @@
-use anyhow::Result;
-use gluon::ai::openai::input::GptRole;
-use gluon::ai::openai::input::Message;
-use sha2::{Digest, Sha256};
-use std::ops::{Deref, DerefMut};
-use std::{collections::HashMap, rc::Rc};
+// use anyhow::Result;
+// use sha2::{Digest, Sha256};
+// use std::ops::{Deref, DerefMut};
+// use std::{collections::HashMap, rc::Rc};
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
-pub struct Id([u8; 32]);
+// use crate::job::{LLMJob, ProgramJob};
+// use crate::msg::Msg;
+// use crate::{Id, MsgId};
 
-type MsgId = Id;
+// // TODO: Consider using petgraph for out-of the box graph support
+// pub struct Node {
+//     pub hash: MsgId,
+//     pub inner: NodeType,
+// }
 
-impl AsRef<[u8]> for Id {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
+// // TODO: Add generic D for data
+// pub enum NodeType {
+//     Msg(Rc<Msg>),
+//     Generator,
+// }
 
-#[derive(Default)]
-pub struct Messages(pub HashMap<MsgId, Rc<Msg>>);
+// pub enum Generator {
+//     Human,
+//     LLM(LLMJob),
+//     Program(ProgramJob),
+// }
 
-// Deref coercion
-impl Deref for Messages {
-    type Target = HashMap<MsgId, Rc<Msg>>;
+// impl std::ops::Deref for Node {
+//     // type Target = Rc<T>;
+//     type Target = NodeType;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
+//     fn deref(&self) -> &Self::Target {
+//         &self.inner
+//     }
+// }
 
-// Implement DerefMut trait for your custom type
-impl DerefMut for Messages {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
+// pub struct Edge {
+//     pub from: MsgId,
+//     pub to: MsgId,
+// }
 
-// TODO: Consider using petgraph for out-of the box graph support
-pub struct Node<T> {
-    pub hash: MsgId,
-    pub inner: Rc<T>,
-}
+// pub struct CausalChain {
+//     pub genesis_id: MsgId,
+//     pub nodes: HashMap<MsgId, Rc<Msg>>,
+//     pub edges: Vec<Edge>,
+// }
 
-impl<T> std::ops::Deref for Node<T> {
-    type Target = Rc<T>;
+// impl Node {
+//     pub fn new_msg(msg: Rc<Msg>, parent: Option<MsgId>) -> Self {
+//         let mut hasher = Sha256::new();
 
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
+//         hasher.update(msg.msg.as_bytes());
 
-pub struct Msg {
-    // TODO: `role` should not be in the same struct
-    // The database needs to have some STAR structure in which model specific info
-    // gets stored in a separate table.
-    pub role: GptRole,
-    pub history: Vec<Rc<Msg>>,
-    pub msg: String,
-}
+//         if let Some(parent) = &parent {
+//             hasher.update(parent);
+//         }
 
-// Eventually only one generic type will be needed
-impl Into<Msg> for Message {
-    fn into(self) -> Msg {
-        Msg {
-            role: self.role,
-            history: vec![],
-            msg: self.content,
-        }
-    }
-}
+//         let bytes = hasher.finalize().into();
+//         let hash: MsgId = Id(bytes);
 
-pub struct Edge {
-    pub from: MsgId,
-    pub to: MsgId,
-}
+//         Self {
+//             hash,
+//             inner: NodeType::Msg(msg),
+//         }
+//     }
 
-pub struct CausalChain {
-    pub genesis_id: MsgId,
-    pub nodes: HashMap<MsgId, Rc<Msg>>,
-    pub edges: Vec<Edge>,
-}
+//     // TODO
+//     // pub fn new_generator(parent: Option<MsgId>) -> Self {
+//     //     let mut hasher = Sha256::new();
 
-impl Msg {
-    pub fn new(role: GptRole, history: Vec<Rc<Msg>>, msg: String) -> Self {
-        Self { role, history, msg }
-    }
-}
+//     //     hasher.update(msg.msg.as_bytes());
 
-impl Node<Msg> {
-    pub fn new(msg: Rc<Msg>, parent: Option<MsgId>) -> Self {
-        let mut hasher = Sha256::new();
+//     //     if let Some(parent) = &parent {
+//     //         hasher.update(parent);
+//     //     }
 
-        hasher.update(msg.msg.as_bytes());
+//     //     let bytes = hasher.finalize().into();
+//     //     let hash: MsgId = Id(bytes);
 
-        if let Some(parent) = &parent {
-            hasher.update(parent);
-        }
+//     //     Self {
+//     //         hash,
+//     //         inner: NodeType::Generator,
+//     //     }
+//     // }
+// }
 
-        let bytes = hasher.finalize().into();
-        let hash: MsgId = Id(bytes);
+// impl CausalChain {
+//     pub fn genesis(msg: Rc<Msg>) -> Self {
+//         let Node {
+//             hash,
+//             inner: genesis_msg,
+//         } = Node::new_msg(msg, None);
 
-        Self { hash, inner: msg }
-    }
-}
+//         let msgs = HashMap::from([(hash, genesis_msg)]);
 
-impl CausalChain {
-    pub fn genesis(msg: Rc<Msg>) -> Self {
-        let Node {
-            hash,
-            inner: genesis_msg,
-        } = Node::new(msg, None);
+//         Self {
+//             genesis_id: hash,
+//             nodes: msgs,
+//             edges: vec![],
+//         }
+//     }
 
-        let msgs = HashMap::from([(hash, genesis_msg)]);
+//     pub fn add_node(&mut self, msg: Rc<Msg>, parent: Option<MsgId>) -> Result<MsgId> {
+//         let Node { hash, inner: msg } = Node::new(msg, None);
 
-        Self {
-            genesis_id: hash,
-            nodes: msgs,
-            edges: vec![],
-        }
-    }
+//         if let Some(parent) = parent {
+//             let edge = Edge {
+//                 from: hash,
+//                 to: parent,
+//             };
 
-    pub fn add_node(&mut self, msg: Rc<Msg>, parent: Option<MsgId>) -> Result<MsgId> {
-        let Node { hash, inner: msg } = Node::new(msg, None);
+//             self.edges.push(edge);
+//         }
 
-        if let Some(parent) = parent {
-            let edge = Edge {
-                from: hash,
-                to: parent,
-            };
+//         self.nodes.insert(hash, msg);
 
-            self.edges.push(edge);
-        }
-
-        self.nodes.insert(hash, msg);
-
-        Ok(hash)
-    }
-}
+//         Ok(hash)
+//     }
+// }
