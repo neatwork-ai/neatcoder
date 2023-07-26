@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
-use crate::commit::Commit;
+use crate::commit::NodeID;
 
 pub trait MsgData: Debug {}
 
@@ -22,11 +22,11 @@ impl Msg {
 }
 
 #[derive(Default)]
-pub struct Messages(pub HashMap<Commit, Rc<Msg>>);
+pub struct Messages(pub HashMap<NodeID, Rc<Msg>>);
 
 // Deref coercion
 impl Deref for Messages {
-    type Target = HashMap<Commit, Rc<Msg>>;
+    type Target = HashMap<NodeID, Rc<Msg>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

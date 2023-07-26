@@ -2,10 +2,7 @@ pub mod cli;
 pub mod utils;
 
 use dotenv::dotenv;
-use gluon::ai::openai::{
-    client::{OpenAI, OpenAIModels},
-    msg::{GptRole, Message},
-};
+use gluon::ai::openai::{client::OpenAI, msg::GptRole};
 use std::{
     env,
     io::{self, Write},
@@ -20,7 +17,7 @@ use anyhow::{anyhow, Result};
 use async_openai::{types::CreateCompletionRequestArgs, Client};
 use clap::Parser;
 use dialoguer::Input;
-use llm_store::msg_node::{CausalChain, Messages, Msg};
+use llm_store::chain::CausalChain;
 
 #[tokio::main]
 async fn main() {
