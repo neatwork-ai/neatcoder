@@ -184,7 +184,7 @@ impl CausalChain {
 
             // Apply recursion...
             for node_id in parent_ids {
-                let parent_dag = self.walk_up(*node_id);
+                let parent_dag = self.walk_up_(*node_id);
 
                 // TODO: Check what is faster, merge DAGs iteratively accross the recursion
                 // or collect all nodes and edges and submit them only in the end to the main dag?
