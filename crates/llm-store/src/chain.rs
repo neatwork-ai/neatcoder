@@ -66,15 +66,6 @@ impl Node {
 
         HashID(bytes)
     }
-
-    // Convenience function
-    // TODO: Reimplement
-    pub fn get_parent_commit(&self, node_id: NodeID) -> &Commit {
-        self.parent_commit.as_ref().expect(&format!(
-            "The following Node `{:?}` has no Parent Commit",
-            node_id
-        ))
-    }
 }
 
 pub struct CausalChain {
@@ -84,9 +75,19 @@ pub struct CausalChain {
     pub commits: HashMap<Commit, Vec<NodeID>>,
 }
 
+#[derive(Default)]
 pub struct Dag {
-    pub nodes: HashMap<NodeID, Node>,
+    pub nodes: HashMap<NodeID, Rc<Node>>,
     pub edges: HashMap<NodeID, NodeID>,
+}
+
+impl Dag {
+    pub fn merge(&mut self, other: Dag) {
+        let Dag { nodes, edges } = other;
+
+        self.nodes.extend(nodes);
+        self.edges.extend(edges);
+    }
 }
 
 impl CausalChain {
@@ -95,7 +96,7 @@ impl CausalChain {
         let msg_node = Node::new_msg(msg, None);
 
         let node_id = msg_node.hash_node();
-        let nodes = HashMap::from([(node_id, msg_node)]);
+        let nodes = HashMap::from([(node_id, Rc::new(msg_node))]);
         let genesis_commit = node_id.truncate();
 
         Self {
@@ -118,7 +119,7 @@ impl CausalChain {
             }
 
             // Add child Node to the graph
-            self.dag.nodes.insert(child_id, child);
+            self.dag.nodes.insert(child_id, Rc::new(child));
         }
 
         let commit: Commit = HashID::order_invariant_hash_vec(&parent_nodes).truncate();
@@ -133,7 +134,13 @@ impl CausalChain {
             .expect(&format!("Could not fing NodeID: {:?}", node_id))
     }
 
-    pub fn get_parent_nodes(&self, parent_commit: &Commit) -> Vec<(NodeID, &Node)> {
+    pub fn get_parent_ids(&self, parent_commit: &Commit) -> &Vec<HashID> {
+        self.commits
+            .get(parent_commit)
+            .expect(&format!("Could not fing Commit: {:?}", parent_commit))
+    }
+
+    pub fn get_parent_nodes(&self, parent_commit: &Commit) -> Vec<(NodeID, Rc<Node>)> {
         let parent_ids = self
             .commits
             .get(parent_commit)
@@ -149,31 +156,43 @@ impl CausalChain {
                     self.dag
                         .nodes
                         .get(&parent_id)
-                        .expect(&format!("Could not fing NodeID: {:?}", parent_id)),
+                        .expect(&format!("Could not fing NodeID: {:?}", parent_id))
+                        .clone(), // Rc cloning,
                 )
             })
             .collect()
     }
 
     pub fn walk_up(&self, start_node_id: NodeID) -> Dag {
-        let start_node = self.fetch_node(start_node_id);
-
-        // Parent Commit should be an option
-        let parent_commit = start_node.get_parent_commit(start_node_id);
-
-        // If let Some(parent_commit) = Commit => Then apply this function recursively for each parent
-        let parents = self.get_parent_nodes(&parent_commit);
-        // Apply recursion...
-        for (node_id, node) in parents {
-            let parent_commit_ = node.get_parent_commit(node_id);
-            let parents_ = self.get_parent_nodes(&parent_commit_);
-
-            // Deconstruct the DAG returned by the recursion and add it to the bigger DAG...
+        if start_node_id == self.genesis_id {
+            // TODO: What happens if there are multiple genesis nodes?
+            // Is that even possible?
+            panic!("Already in the genesis node");
         }
 
-        // Once we get here we return the DAG
+        self.walk_up_(start_node_id)
+    }
 
-        todo!();
+    fn walk_up_(&self, start_node_id: NodeID) -> Dag {
+        let start_node = self.fetch_node(start_node_id);
+
+        let mut sub_dag = Dag::default();
+
+        // If there are any parents, then apply function recursively
+        if let Some(parent_commit) = start_node.parent_commit {
+            let parent_ids = self.get_parent_ids(&parent_commit);
+
+            // Apply recursion...
+            for node_id in parent_ids {
+                let parent_dag = self.walk_up(*node_id);
+
+                // TODO: Check what is faster, merge DAGs iteratively accross the recursion
+                // or collect all nodes and edges and submit them only in the end to the main dag?
+                sub_dag.merge(parent_dag);
+            }
+        }
+
+        sub_dag
     }
 
     pub fn walk_down(target_node: Node) {}
