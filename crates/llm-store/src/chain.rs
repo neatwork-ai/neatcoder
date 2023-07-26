@@ -66,16 +66,25 @@ impl Node {
 
         HashID(bytes)
     }
+
+    // Convenience function
+    // TODO: Reimplement
+    pub fn get_parent_commit(&self, node_id: NodeID) -> &Commit {
+        self.parent_commit.as_ref().expect(&format!(
+            "The following Node `{:?}` has no Parent Commit",
+            node_id
+        ))
+    }
 }
 
 pub struct CausalChain {
     pub genesis_id: NodeID,
-    pub dag: DAG,
+    pub dag: Dag,
     // Mapping between Commits and respective Nodes
     pub commits: HashMap<Commit, Vec<NodeID>>,
 }
 
-pub struct DAG {
+pub struct Dag {
     pub nodes: HashMap<NodeID, Node>,
     pub edges: HashMap<NodeID, NodeID>,
 }
@@ -91,7 +100,7 @@ impl CausalChain {
 
         Self {
             genesis_id: node_id,
-            dag: DAG {
+            dag: Dag {
                 nodes,
                 edges: HashMap::new(),
             },
@@ -116,4 +125,56 @@ impl CausalChain {
 
         self.commits.insert(commit, parent_nodes);
     }
+
+    pub fn fetch_node(&self, node_id: NodeID) -> &Node {
+        self.dag
+            .nodes
+            .get(&node_id)
+            .expect(&format!("Could not fing NodeID: {:?}", node_id))
+    }
+
+    pub fn get_parent_nodes(&self, parent_commit: &Commit) -> Vec<(NodeID, &Node)> {
+        let parent_ids = self
+            .commits
+            .get(parent_commit)
+            .expect(&format!("Could not fing Commit: {:?}", parent_commit));
+
+        // Ideally something more efficient like the experimental
+        // `get_many_mut` but without the `mut`
+        parent_ids
+            .iter()
+            .map(|parent_id| {
+                (
+                    *parent_id,
+                    self.dag
+                        .nodes
+                        .get(&parent_id)
+                        .expect(&format!("Could not fing NodeID: {:?}", parent_id)),
+                )
+            })
+            .collect()
+    }
+
+    pub fn walk_up(&self, start_node_id: NodeID) -> Dag {
+        let start_node = self.fetch_node(start_node_id);
+
+        // Parent Commit should be an option
+        let parent_commit = start_node.get_parent_commit(start_node_id);
+
+        // If let Some(parent_commit) = Commit => Then apply this function recursively for each parent
+        let parents = self.get_parent_nodes(&parent_commit);
+        // Apply recursion...
+        for (node_id, node) in parents {
+            let parent_commit_ = node.get_parent_commit(node_id);
+            let parents_ = self.get_parent_nodes(&parent_commit_);
+
+            // Deconstruct the DAG returned by the recursion and add it to the bigger DAG...
+        }
+
+        // Once we get here we return the DAG
+
+        todo!();
+    }
+
+    pub fn walk_down(target_node: Node) {}
 }

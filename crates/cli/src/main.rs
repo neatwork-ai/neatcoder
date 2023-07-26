@@ -2,7 +2,12 @@ pub mod cli;
 pub mod utils;
 
 use dotenv::dotenv;
-use gluon::ai::openai::{client::OpenAI, msg::GptRole};
+use gluon::ai::openai::{
+    client::OpenAI,
+    job::OpenAIJob,
+    model::OpenAIModels,
+    msg::{GptRole, OpenAIMsg},
+};
 use std::{
     env,
     io::{self, Write},
@@ -17,7 +22,7 @@ use anyhow::{anyhow, Result};
 use async_openai::{types::CreateCompletionRequestArgs, Client};
 use clap::Parser;
 use dialoguer::Input;
-use llm_store::chain::CausalChain;
+use llm_store::{chain::CausalChain, msg::Msg};
 
 #[tokio::main]
 async fn main() {
@@ -68,13 +73,13 @@ async fn run() -> Result<()> {
         Commands::WriteSequence {} => {
             dotenv().ok();
 
-            let client = OpenAI::new(OpenAIModels::Gpt35Turbo)
-                .api_key(env::var("OPENAI_API_KEY")?)
+            let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
+            let job = OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
                 .temperature(0.7)
                 .top_p(0.9)?;
 
             // TODO: Load this from DB
-            let mut mgs = Messages::default();
+            let mut mgs = OpenAIMsg::user();
 
             let mut chain = init_chain(&client, &mut mgs).await?;
 
@@ -150,7 +155,7 @@ pub async fn chat(
     Ok(())
 }
 
-pub fn prompt_user() -> Message {
+pub fn prompt_user() -> Msg<OpenAIMsg> {
     let prompt: String = Input::new()
         .with_prompt("\n Write your prompt")
         .interact()

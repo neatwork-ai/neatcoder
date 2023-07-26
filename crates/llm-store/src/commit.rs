@@ -3,7 +3,7 @@ use sha2::{Digest, Sha256};
 pub type NodeID = HashID;
 pub type Commit = SmallHash;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct HashID(pub [u8; 32]);
 
 // References interior
@@ -23,7 +23,7 @@ impl std::ops::Deref for HashID {
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct SmallHash(u64);
 
 // References interior

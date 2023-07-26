@@ -16,6 +16,7 @@ pub enum Job {
 }
 
 pub struct LLMJob {
+    // pub context_builder: ContextBuilder,
     pub data: Box<dyn JobData>,
 }
 
