@@ -132,6 +132,17 @@ impl Node {
     }
 }
 
+// TODO:
+// - Move all NodeIDs to SmallIDs except in the source of truth such as `nodes` and `edges`
+// - Only merge the DAG diffs to avoid having collision false positives
+// - With this last point implemented, we can then apply fall-back logic to compare the full hash
+// in case a real collision occurs. This will allow us to shorten the SmallID even more from 64 to 32 bits
+// giving a probability of collision of 1 in `77,163`.
+// - A node is only made immutable once committed, so we can implement a 4-bit flag
+// to control for collisions. When a collision is detected we bump one bit in the flag
+// and proceed to rehash the node. A 4-bit flag gives us `4!` possible combinations which
+// raises the probability of a asymptotic collission to `77,162^24` which is equal to
+// `2.65*10^68` which is close to SHA-256 resistance.
 pub struct CausalChain {
     // TODO: Consider if it's possible to have multiple roots
     /// The Root node of the chain
