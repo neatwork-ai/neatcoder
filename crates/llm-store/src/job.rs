@@ -36,7 +36,6 @@ impl Deref for Jobs {
     }
 }
 
-// Implement DerefMut trait for your custom type
 impl DerefMut for Jobs {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0

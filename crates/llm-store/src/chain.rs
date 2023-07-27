@@ -1,4 +1,6 @@
 use sha2::{Digest, Sha256};
+use std::collections::HashSet;
+use std::ops::DerefMut;
 use std::{collections::HashMap, rc::Rc};
 
 use crate::commit::{Commit, HashID, NodeID};
@@ -13,6 +15,10 @@ pub struct Node {
     // Parent Commit is a SetHash over the parents' `NodeID`s
     pub parent_commit: Option<Commit>,
     pub inner: NodeType,
+    // Max of 65_535 steps should be more than enough
+    // pub step: u16, // A step could be the series number, however i can not just be a number iterated because of parallel operations
+    // // Max of 65_535 versions should be more than enough
+    // pub version: u16,
 }
 
 // TODO: Add generic D for data
@@ -69,24 +75,89 @@ impl Node {
 }
 
 pub struct CausalChain {
+    // TODO: Consider if it's possible to have multiple roots
+    /// The Root node of the chain
     pub genesis_id: NodeID,
+    /// Contains the actual graph
     pub dag: Dag,
-    // Mapping between Commits and respective Nodes
+    /// Mapping between Commits and respective Nodes. A commit is a
+    /// hash that represents a combination of nodes that all feed to a
+    /// downstram child node. Given that all nodes store their parent commit
+    /// this field allows us to keep track of all the parent nodes of a given node.
     pub commits: HashMap<Commit, Vec<NodeID>>,
+}
+
+// pub struct NodeVersions(HashSet<Rc<Node>>);
+
+// impl std::ops::Deref for NodeVersions {
+//     type Target = HashSet<Rc<Node>>;
+
+//     fn deref(&self) -> &Self::Target {
+//         &self.0
+//     }
+// }
+
+// impl DerefMut for NodeVersions {
+//     fn deref_mut(&mut self) -> &mut Self::Target {
+//         &mut self.0
+//     }
+// }
+
+// impl AsRef<HashSet<Rc<Node>>> for NodeVersions {
+//     fn as_ref(&self) -> &HashSet<Rc<Node>> {
+//         &self.0
+//     }
+// }
+
+// pub struct ChildNodes(HashSet<NodeID>);
+
+// impl std::ops::Deref for ChildNodes {
+//     type Target = HashSet<NodeID>;
+
+//     fn deref(&self) -> &Self::Target {
+//         &self.0
+//     }
+// }
+
+// impl DerefMut for ChildNodes {
+//     fn deref_mut(&mut self) -> &mut Self::Target {
+//         &mut self.0
+//     }
+// }
+
+// impl AsRef<HashSet<NodeID>> for ChildNodes {
+//     fn as_ref(&self) -> &HashSet<NodeID> {
+//         &self.0
+//     }
+// }
+
+pub struct Version {
+    version: u16,
+    leaf_node: NodeID,
 }
 
 #[derive(Default)]
 pub struct Dag {
+    /// Stores all the nodes in a map queryable by their node ID
     pub nodes: HashMap<NodeID, Rc<Node>>,
-    pub edges: HashMap<NodeID, NodeID>,
+    /// Maps parent nodes to child nodes.
+    pub edges: HashMap<NodeID, HashSet<NodeID>>,
+    // Map of versions and corresponding leaf nodes for that version
+    pub versions: HashMap<u16, HashSet<NodeID>>,
 }
 
 impl Dag {
     pub fn merge(&mut self, other: Dag) {
-        let Dag { nodes, edges } = other;
+        let Dag {
+            nodes,
+            edges,
+            versions,
+        } = other;
 
         self.nodes.extend(nodes);
         self.edges.extend(edges);
+        // Overwrites ought to happens as sub-dags extend the main dag
+        self.versions.extend(versions);
     }
 }
 
@@ -99,13 +170,25 @@ impl CausalChain {
         let nodes = HashMap::from([(node_id, Rc::new(msg_node))]);
         let genesis_commit = node_id.truncate();
 
+        let leaf_nodes = HashSet::from([node_id]);
+
         Self {
             genesis_id: node_id,
             dag: Dag {
                 nodes,
                 edges: HashMap::new(),
+                versions: HashMap::from([(1, leaf_nodes)]),
             },
             commits: HashMap::from([(genesis_commit, vec![node_id])]),
+        }
+    }
+
+    pub fn add_edge(&mut self, parent_node: NodeID, child_node: NodeID) {
+        if let Some(children) = self.dag.edges.get_mut(&parent_node) {
+            children.insert(child_node);
+        } else {
+            let children = HashSet::from([child_node]);
+            self.dag.edges.insert(parent_node, children);
         }
     }
 
@@ -115,7 +198,7 @@ impl CausalChain {
 
             // For each parent add edges from parent to child
             for parent_id in parent_nodes.iter() {
-                self.dag.edges.insert(*parent_id, child_id);
+                self.add_edge(*parent_id, child_id);
             }
 
             // Add child Node to the graph
@@ -182,7 +265,7 @@ impl CausalChain {
         if let Some(parent_commit) = start_node.parent_commit {
             let parent_ids = self.get_parent_ids(&parent_commit);
 
-            // Apply recursion...
+            // Apply recursion
             for node_id in parent_ids {
                 let parent_dag = self.walk_up_(*node_id);
 
@@ -195,5 +278,20 @@ impl CausalChain {
         sub_dag
     }
 
-    pub fn walk_down(target_node: Node) {}
+    pub fn get_dag_version(&self, version: u16) -> Option<Dag> {
+        let leaf_nodes = self.dag.versions.get(&version);
+
+        if let Some(leaf_nodes) = leaf_nodes {
+            let mut version_dag = Dag::default();
+
+            for leaf_node in leaf_nodes.iter() {
+                let sub_dag = self.walk_up(*leaf_node);
+                version_dag.merge(sub_dag);
+            }
+
+            return Some(version_dag);
+        }
+
+        None
+    }
 }
