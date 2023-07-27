@@ -1,3 +1,4 @@
+use crate::commit::SmallHash;
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::ops::DerefMut;
@@ -12,22 +13,21 @@ use crate::msg::Msg;
 
 // TODO: Consider using petgraph for out-of the box graph support
 pub struct Node {
+    // Max of 65_535 versions should be more than enough
+    pub version: u16,
+    // If the version is not `1`, then we add the `original` node's NodeID
+    // here in a truncated form
+    pub original: Option<SmallHash>,
+    pub node: UnversionedNode,
+}
+
+pub struct UnversionedNode {
     // Parent Commit is a SetHash over the parents' `NodeID`s
     pub parent_commit: Option<Commit>,
     pub inner: NodeType,
-    // Max of 65_535 steps should be more than enough
-    // pub step: u16, // A step could be the series number, however i can not just be a number iterated because of parallel operations
-    // // Max of 65_535 versions should be more than enough
-    // pub version: u16,
 }
 
-// TODO: Add generic D for data
-pub enum NodeType {
-    Msg(Rc<Msg>),
-    Job(Job),
-}
-
-impl std::ops::Deref for Node {
+impl std::ops::Deref for UnversionedNode {
     // type Target = Rc<T>;
     type Target = NodeType;
 
@@ -36,7 +36,7 @@ impl std::ops::Deref for Node {
     }
 }
 
-impl Node {
+impl UnversionedNode {
     pub fn new_msg(msg: Rc<Msg>, parent_commit: Option<Commit>) -> Self {
         Self {
             parent_commit,
@@ -50,16 +50,74 @@ impl Node {
             inner: NodeType::Job(job),
         }
     }
+}
+
+// TODO: Add generic D for data
+pub enum NodeType {
+    Msg(Rc<Msg>),
+    Job(Job),
+}
+
+impl Node {
+    pub fn init_msg(msg: Rc<Msg>, parent_commit: Option<Commit>) -> Self {
+        Self {
+            version: 1,
+            original: None,
+            node: UnversionedNode::new_msg(msg, parent_commit),
+        }
+    }
+
+    pub fn init_job(job: Job, parent_commit: Option<Commit>) -> Self {
+        Self {
+            version: 1,
+            original: None,
+            node: UnversionedNode::new_job(job, parent_commit),
+        }
+    }
+
+    pub fn new_msg(
+        version: u16,
+        original_id: Option<SmallHash>,
+        parent_commit: Option<Commit>,
+        msg: Rc<Msg>,
+    ) -> Self {
+        if version > 1 && original_id.is_none() {
+            panic!("If node is nor original version, then it must point to the original node ID");
+        }
+
+        Self {
+            version,
+            original: original_id,
+            node: UnversionedNode::new_msg(msg, parent_commit),
+        }
+    }
+
+    pub fn new_job(
+        version: u16,
+        original_id: Option<SmallHash>,
+        parent_commit: Option<Commit>,
+        job: Job,
+    ) -> Self {
+        if version > 1 && original_id.is_none() {
+            panic!("If node is nor original version, then it must point to the original node ID");
+        }
+
+        Self {
+            version,
+            original: original_id,
+            node: UnversionedNode::new_job(job, parent_commit),
+        }
+    }
 
     pub fn hash_node(&self) -> NodeID {
         let mut hasher = Sha256::new();
 
-        if let Some(parent) = &self.parent_commit {
+        if let Some(parent) = &self.node.parent_commit {
             // Using Big Endian given that UTF-8 reads left to right
             hasher.update(parent.to_be_bytes());
         }
 
-        match &self.inner {
+        match &self.node.inner {
             NodeType::Msg(msg) => {
                 hasher.update(msg.msg.as_bytes());
             }
@@ -87,53 +145,9 @@ pub struct CausalChain {
     pub commits: HashMap<Commit, Vec<NodeID>>,
 }
 
-// pub struct NodeVersions(HashSet<Rc<Node>>);
-
-// impl std::ops::Deref for NodeVersions {
-//     type Target = HashSet<Rc<Node>>;
-
-//     fn deref(&self) -> &Self::Target {
-//         &self.0
-//     }
-// }
-
-// impl DerefMut for NodeVersions {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         &mut self.0
-//     }
-// }
-
-// impl AsRef<HashSet<Rc<Node>>> for NodeVersions {
-//     fn as_ref(&self) -> &HashSet<Rc<Node>> {
-//         &self.0
-//     }
-// }
-
-// pub struct ChildNodes(HashSet<NodeID>);
-
-// impl std::ops::Deref for ChildNodes {
-//     type Target = HashSet<NodeID>;
-
-//     fn deref(&self) -> &Self::Target {
-//         &self.0
-//     }
-// }
-
-// impl DerefMut for ChildNodes {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         &mut self.0
-//     }
-// }
-
-// impl AsRef<HashSet<NodeID>> for ChildNodes {
-//     fn as_ref(&self) -> &HashSet<NodeID> {
-//         &self.0
-//     }
-// }
-
 pub struct Version {
-    version: u16,
-    leaf_node: NodeID,
+    pub version: u16,
+    pub leaf_node: NodeID,
 }
 
 #[derive(Default)]
@@ -162,9 +176,11 @@ impl Dag {
 }
 
 impl CausalChain {
+    // === Write Methods ===
+
     pub fn genesis(msg: Rc<Msg>) -> Self {
         // Technically the root is the Job that generates the genesis message
-        let msg_node = Node::new_msg(msg, None);
+        let msg_node = Node::init_msg(msg, None);
 
         let node_id = msg_node.hash_node();
         let nodes = HashMap::from([(node_id, Rc::new(msg_node))]);
@@ -183,16 +199,7 @@ impl CausalChain {
         }
     }
 
-    pub fn add_edge(&mut self, parent_node: NodeID, child_node: NodeID) {
-        if let Some(children) = self.dag.edges.get_mut(&parent_node) {
-            children.insert(child_node);
-        } else {
-            let children = HashSet::from([child_node]);
-            self.dag.edges.insert(parent_node, children);
-        }
-    }
-
-    pub fn commit_layer(&mut self, parent_nodes: Vec<NodeID>, mut child_nodes: Vec<Node>) {
+    pub fn add_child_nodes(&mut self, parent_nodes: Vec<NodeID>, mut child_nodes: Vec<Node>) {
         for child in child_nodes.drain(..) {
             let child_id = child.hash_node();
 
@@ -209,6 +216,10 @@ impl CausalChain {
 
         self.commits.insert(commit, parent_nodes);
     }
+
+    pub fn add_new_node_version(&mut self, new_node: UnversionedNode) {}
+
+    // === Read Methods ===
 
     pub fn fetch_node(&self, node_id: NodeID) -> &Node {
         self.dag
@@ -246,6 +257,8 @@ impl CausalChain {
             .collect()
     }
 
+    // === Sub-Dag Read Methods ===
+
     pub fn walk_up(&self, start_node_id: NodeID) -> Dag {
         if start_node_id == self.genesis_id {
             // TODO: What happens if there are multiple genesis nodes?
@@ -254,6 +267,34 @@ impl CausalChain {
         }
 
         self.walk_up_(start_node_id)
+    }
+
+    pub fn get_dag_version(&self, version: u16) -> Option<Dag> {
+        let leaf_nodes = self.dag.versions.get(&version);
+
+        if let Some(leaf_nodes) = leaf_nodes {
+            let mut version_dag = Dag::default();
+
+            for leaf_node in leaf_nodes.iter() {
+                let sub_dag = self.walk_up(*leaf_node);
+                version_dag.merge(sub_dag);
+            }
+
+            return Some(version_dag);
+        }
+
+        None
+    }
+
+    // === Private Methods ===
+
+    fn add_edge(&mut self, parent_node: NodeID, child_node: NodeID) {
+        if let Some(children) = self.dag.edges.get_mut(&parent_node) {
+            children.insert(child_node);
+        } else {
+            let children = HashSet::from([child_node]);
+            self.dag.edges.insert(parent_node, children);
+        }
     }
 
     fn walk_up_(&self, start_node_id: NodeID) -> Dag {
@@ -276,22 +317,5 @@ impl CausalChain {
         }
 
         sub_dag
-    }
-
-    pub fn get_dag_version(&self, version: u16) -> Option<Dag> {
-        let leaf_nodes = self.dag.versions.get(&version);
-
-        if let Some(leaf_nodes) = leaf_nodes {
-            let mut version_dag = Dag::default();
-
-            for leaf_node in leaf_nodes.iter() {
-                let sub_dag = self.walk_up(*leaf_node);
-                version_dag.merge(sub_dag);
-            }
-
-            return Some(version_dag);
-        }
-
-        None
     }
 }
