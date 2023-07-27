@@ -1,7 +1,5 @@
-use crate::commit::SmallHash;
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
-use std::ops::DerefMut;
 use std::{collections::HashMap, rc::Rc};
 
 use crate::commit::{Commit, HashID, NodeID};
@@ -13,11 +11,12 @@ use crate::msg::Msg;
 
 // TODO: Consider using petgraph for out-of the box graph support
 pub struct Node {
-    // Max of 65_535 versions should be more than enough
+    /// Max of 65_535 versions should be more than enough
     pub version: u16,
-    // If the version is not `1`, then we add the `original` node's NodeID
-    // here in a truncated form
-    pub original: Option<SmallHash>,
+    /// If the version is not `1`, then we add the `original` node's NodeID
+    /// here in a truncated form
+    // TODO: Make this Small Hash
+    pub original: Option<NodeID>,
     pub node: UnversionedNode,
 }
 
@@ -77,7 +76,7 @@ impl Node {
 
     pub fn new_msg(
         version: u16,
-        original_id: Option<SmallHash>,
+        original_id: Option<NodeID>,
         parent_commit: Option<Commit>,
         msg: Rc<Msg>,
     ) -> Self {
@@ -94,7 +93,7 @@ impl Node {
 
     pub fn new_job(
         version: u16,
-        original_id: Option<SmallHash>,
+        original_id: Option<NodeID>,
         parent_commit: Option<Commit>,
         job: Job,
     ) -> Self {
@@ -169,6 +168,10 @@ pub struct Dag {
     pub edges: HashMap<NodeID, HashSet<NodeID>>,
     // Map of versions and corresponding leaf nodes for that version
     pub versions: HashMap<u16, HashSet<NodeID>>,
+    // Maps the versions of each original node in the graph, if the version is > 1
+    // This is because, not storing it if the version is 1 it will save space and it
+    // still allows the user to infer the version to be 1.
+    pub node_versions: HashMap<NodeID, u16>,
 }
 
 impl Dag {
@@ -177,12 +180,14 @@ impl Dag {
             nodes,
             edges,
             versions,
+            node_versions,
         } = other;
 
         self.nodes.extend(nodes);
         self.edges.extend(edges);
         // Overwrites ought to happens as sub-dags extend the main dag
         self.versions.extend(versions);
+        self.node_versions.extend(node_versions);
     }
 }
 
@@ -205,6 +210,7 @@ impl CausalChain {
                 nodes,
                 edges: HashMap::new(),
                 versions: HashMap::from([(1, leaf_nodes)]),
+                node_versions: HashMap::new(),
             },
             commits: HashMap::from([(genesis_commit, vec![node_id])]),
         }
@@ -228,11 +234,49 @@ impl CausalChain {
         self.commits.insert(commit, parent_nodes);
     }
 
-    pub fn add_new_node_version(&mut self, new_node: UnversionedNode) {}
+    // An assumption that this function is making is that new versions of the original node
+    // have the same parents as the original node. We need to reevaluate this assumption in case
+    // new versions need to rely on extra input from the application --> This needs to be researched further
+    pub fn add_new_node_version(&mut self, new_node: UnversionedNode, original_node_id: &NodeID) {
+        let original_node = self.get_node(original_node_id);
+
+        // Check that original_node is in fact original
+        if original_node.original.is_some() {
+            panic!(
+                "The parameter given `original_node_id` does not correspond to an original node"
+            );
+        }
+
+        // Get latest version of the node
+        let bumped_version = if let Some(latest) = self.dag.node_versions.get_mut(&original_node_id)
+        {
+            // Bumps the latest version
+            *latest = *latest + 1;
+            // Returns bumped version
+            *latest
+        } else {
+            // This block runs when the version is the initial version 1
+            // We therefore bump the version and add it to the the hashmap
+            let latest = 2;
+
+            // Adding version
+            self.dag.node_versions.insert(*original_node_id, latest);
+
+            // Returns bumped version
+            latest
+        };
+
+        // Add version to the new node
+        let new_node = Node {
+            version: bumped_version,
+            original: Some(*original_node_id),
+            node: new_node,
+        };
+    }
 
     // === Read Methods ===
 
-    pub fn fetch_node(&self, node_id: NodeID) -> &Node {
+    pub fn get_node(&self, node_id: &NodeID) -> &Node {
         self.dag
             .nodes
             .get(&node_id)
@@ -309,12 +353,12 @@ impl CausalChain {
     }
 
     fn walk_up_(&self, start_node_id: NodeID) -> Dag {
-        let start_node = self.fetch_node(start_node_id);
+        let start_node = self.get_node(&start_node_id);
 
         let mut sub_dag = Dag::default();
 
         // If there are any parents, then apply function recursively
-        if let Some(parent_commit) = start_node.parent_commit {
+        if let Some(parent_commit) = start_node.node.parent_commit {
             let parent_ids = self.get_parent_ids(&parent_commit);
 
             // Apply recursion
