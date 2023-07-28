@@ -1,10 +1,12 @@
+use csv::{Reader, StringRecord};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use std::fmt::Debug;
+use std::io::Cursor;
+use std::{fmt::Debug, ops::DerefMut};
 
 use crate::{
     err::GluonError,
-    trait_interface::{AsFormat, AsJson, AsYaml},
+    trait_interface::{AsCsv, AsFormat, AsJson, AsYaml, CsvTable},
 };
 
 impl<'a> AsFormat for &'a str {
@@ -177,4 +179,63 @@ impl<'a> AsYaml for &'a str {
 
         self.strip_formats(deserializer, "yaml")
     }
+}
+
+impl<'a> AsCsv for &'a str {
+    fn as_csv(&self) -> Result<Vec<StringRecord>, GluonError> {
+        // The function `serde_yaml::from_str` has a signature of
+        // `fn(&'a str) -> Result<T, serde_yaml::Error>`. In this case, 'a
+        // is tied to the specific input str's lifetime, it is not for any
+        // possible lifetime 'a, hence it can't satisfy the for<'a> in
+        // the higher-rank trait bound.
+        //
+        // To solve this problem, we wrap `serde_yaml::from_str` in a
+        // closure that has a HRTB
+        let deserializer = |s: &str| deserialize_csv(s);
+
+        self.as_format(deserializer)
+    }
+
+    // Assumes that the yaml is encapsulated in ```yaml{actual_yaml}``` which is how OpenAI does it
+    fn strip_csv(&self) -> Result<Vec<StringRecord>, GluonError> {
+        // The function `serde_yaml::from_str` has a signature of
+        // `fn(&'a str) -> Result<T, serde_yaml::Error>`. In this case, 'a
+        // is tied to the specific input str's lifetime, it is not for any
+        // possible lifetime 'a, hence it can't satisfy the for<'a> in
+        // the higher-rank trait bound.
+        //
+        // To solve this problem, we wrap `serde_yaml::from_str` in a
+        // closure that has a HRTB
+        let deserializer = |s: &str| serde_yaml::from_str(s);
+
+        self.strip_format(deserializer, "yaml")
+    }
+
+    fn strip_csvs(&self) -> Result<Vec<Vec<StringRecord>>, GluonError> {
+        // The function `serde_yaml::from_str` has a signature of
+        // `fn(&'a str) -> Result<T, serde_yaml::Error>`. In this case, 'a
+        // is tied to the specific input str's lifetime, it is not for any
+        // possible lifetime 'a, hence it can't satisfy the for<'a> in
+        // the higher-rank trait bound.
+        //
+        // To solve this problem, we wrap `serde_yaml::from_str` in a
+        // closure that has a HRTB
+        let deserializer = |s: &str| serde_yaml::from_str(s);
+
+        self.strip_formats(deserializer, "yaml")
+    }
+}
+
+// TODO: Implement this as a DeserializeOwned Trait
+
+fn deserialize_csv(input: &str) -> Result<Vec<StringRecord>, GluonError> {
+    let mut reader = Reader::from_reader(Cursor::new(input));
+    let mut records = Vec::new();
+
+    for record in reader.records() {
+        records.push(record?);
+    }
+
+    // Ok(CsvTable::new(records))
+    Ok(records)
 }
