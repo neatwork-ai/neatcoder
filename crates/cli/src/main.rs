@@ -79,7 +79,7 @@ async fn run() -> Result<()> {
                 .top_p(0.9)?;
 
             // TODO: Load this from DB
-            let mut mgs = OpenAIMsg::user();
+            // let mut mgs = OpenAIMsg::user();
 
             let mut chain = init_chain(&client, &mut mgs).await?;
 
@@ -115,7 +115,7 @@ async fn run() -> Result<()> {
     Ok(())
 }
 
-pub async fn init_chain(client: &OpenAI, msgs: &mut Messages) -> Result<CausalChain> {
+pub async fn init_chain(client: &OpenAI) -> Result<CausalChain> {
     let user_msg = prompt_user();
     let llm_msg = prompt_llm(client, &[&user_msg]).await?;
 
@@ -161,10 +161,12 @@ pub fn prompt_user() -> Msg<OpenAIMsg> {
         .interact()
         .unwrap();
 
-    Message {
+    let openai_msg = Message {
         role: GptRole::User,
-        content: prompt,
-    }
+        content: prompt.clone(),
+    };
+
+    let msg = Ms::new(vec![], openai_msg);
 }
 
 pub async fn prompt_llm(client: &OpenAI, seq: &[&Message]) -> Result<Message> {

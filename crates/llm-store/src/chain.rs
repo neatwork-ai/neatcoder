@@ -272,6 +272,8 @@ impl CausalChain {
             original: Some(*original_node_id),
             node: new_node,
         };
+
+        // TODO: Here
     }
 
     // === Read Methods ===
