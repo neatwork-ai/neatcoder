@@ -1,6 +1,8 @@
 pub mod ai;
+pub mod err;
 pub mod input;
 pub mod output;
+pub mod traits;
 pub mod utils;
 pub mod workflows;
 
