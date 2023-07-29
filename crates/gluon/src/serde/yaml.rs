@@ -1,7 +1,15 @@
+use serde::de::DeserializeOwned;
 use serde_yaml::Value;
 
 use super::AsFormat;
 use crate::err::GluonError;
+
+pub fn from_prompt<T: DeserializeOwned>(prompt: &str) -> Result<T, GluonError> {
+    let yaml = prompt.strip_yaml()?;
+    let obj = serde_yaml::from_value(yaml)?;
+
+    Ok(obj)
+}
 
 pub trait AsYaml {
     fn as_yaml(&self) -> Result<Value, GluonError>;

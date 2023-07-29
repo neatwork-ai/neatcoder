@@ -1,7 +1,15 @@
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use super::AsFormat;
 use crate::err::GluonError;
+
+pub fn from_prompt<T: DeserializeOwned>(prompt: &str) -> Result<T, GluonError> {
+    let json = prompt.strip_json()?;
+    let obj = serde_json::from_value(json)?;
+
+    Ok(obj)
+}
 
 pub trait AsJson: AsFormat {
     fn as_json(&self) -> Result<Value, GluonError>;
@@ -51,5 +59,44 @@ impl<'a> AsJson for &'a str {
         let deserializer = |s: &str| serde_json::from_str(s);
 
         self.strip_formats(deserializer, "json")
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use anyhow::Result;
+    use serde::{Deserialize, Serialize};
+    use serde_json::json;
+
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    struct TestStruct {
+        field_a: String,
+        field_b: u64,
+        field_c: Option<String>,
+    }
+
+    #[test]
+    fn test_parse() -> Result<()> {
+        let json = json!({
+            "field_a": String::from("This is a string"),
+            "field_b": 10,
+            "field_c": None::<String>,
+        })
+        .to_string();
+
+        let obj_str = json.as_str();
+
+        let prompt = format!(
+            "Sure! Here is an example of an instance:\n```json\n{}\n```",
+            obj_str
+        );
+
+        let abc = prompt.as_str().strip_json()?;
+
+        println!("{}", abc);
+
+        Ok(())
     }
 }
