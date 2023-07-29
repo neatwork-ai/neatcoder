@@ -140,7 +140,7 @@ impl<'a> AsCsv for &'a str {
         // closure that has a HRTB
         let deserializer = |s: &str| serde_yaml::from_str(s);
 
-        self.strip_format(deserializer, "yaml")
+        self.strip_format(deserializer, "csv")
     }
 
     fn strip_csvs(&self) -> Result<Vec<CsvTable>, GluonError> {
@@ -154,7 +154,7 @@ impl<'a> AsCsv for &'a str {
         // closure that has a HRTB
         let deserializer = |s: &str| serde_yaml::from_str(s);
 
-        self.strip_formats(deserializer, "yaml")
+        self.strip_formats(deserializer, "csv")
     }
 }
 
