@@ -11,5 +11,7 @@ pub enum GluonError {
     #[error(transparent)]
     Csv(#[from] csv::Error),
     #[error(transparent)]
+    RustSyn(#[from] syn::Error),
+    #[error(transparent)]
     AnyhowError(#[from] anyhow::Error),
 }

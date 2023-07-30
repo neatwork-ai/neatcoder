@@ -1,4 +1,3 @@
-use serde::de::DeserializeOwned;
 use std::fmt::Debug;
 
 use crate::err::GluonError;
@@ -6,7 +5,7 @@ use crate::err::GluonError;
 pub mod csv;
 pub mod html;
 pub mod json;
-// pub mod rust;
+pub mod rust;
 pub mod yaml;
 
 pub trait AsFormat {
