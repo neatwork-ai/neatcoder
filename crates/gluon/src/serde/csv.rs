@@ -8,9 +8,14 @@ use std::{
 use super::AsFormat;
 use crate::err::GluonError;
 
-// TODO: Implement AsRef
 #[derive(Debug)]
 pub struct CsvTable(Vec<CsvRow>);
+
+impl AsRef<Vec<CsvRow>> for CsvTable {
+    fn as_ref(&self) -> &Vec<CsvRow> {
+        &self.0
+    }
+}
 
 impl Deref for CsvTable {
     type Target = Vec<CsvRow>;

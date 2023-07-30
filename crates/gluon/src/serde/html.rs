@@ -33,7 +33,12 @@ impl<'a> AsHtml for &'a str {
 #[derive(Debug)]
 pub struct Dom(Html);
 
-// TODO: impl AsRef
+impl AsRef<Html> for Dom {
+    fn as_ref(&self) -> &Html {
+        &self.0
+    }
+}
+
 impl Deref for Dom {
     type Target = Html;
 
