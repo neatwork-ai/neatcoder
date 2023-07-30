@@ -1,13 +1,5 @@
-use std::{
-    fmt,
-    ops::{Deref, DerefMut},
-};
-
 use scraper::Html;
-use serde::{
-    de::{self, Visitor},
-    Deserialize, Deserializer,
-};
+use std::ops::{Deref, DerefMut};
 
 use super::AsFormat;
 use crate::err::GluonError;
@@ -53,32 +45,6 @@ impl Deref for Dom {
 impl DerefMut for Dom {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
-    }
-}
-
-struct DomVisitor;
-
-impl<'de> Visitor<'de> for DomVisitor {
-    type Value = Dom;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("sequence of strings")
-    }
-
-    fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(Dom(Html::parse_document(s)))
-    }
-}
-
-impl<'de> Deserialize<'de> for Dom {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_str(DomVisitor)
     }
 }
 

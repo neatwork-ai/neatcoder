@@ -4,28 +4,29 @@ use std::fmt::Debug;
 use crate::err::GluonError;
 
 pub mod csv;
-pub mod json;
-pub mod yaml;
 pub mod html;
+pub mod json;
+// pub mod rust;
+pub mod yaml;
 
 pub trait AsFormat {
     fn as_format<F, T, E>(&self, deserializer: F) -> Result<T, GluonError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<GluonError>,
-        T: DeserializeOwned + Debug;
+        T: Debug;
 
     fn strip_format<F, T, E>(&self, deserializer: F, format: &str) -> Result<T, GluonError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<GluonError>,
-        T: DeserializeOwned + Debug;
+        T: Debug;
 
     fn strip_formats<F, T, E>(&self, deserializer: F, format: &str) -> Result<Vec<T>, GluonError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<GluonError>,
-        T: DeserializeOwned + Debug;
+        T: Debug;
 }
 
 impl<'a> AsFormat for &'a str {
@@ -33,7 +34,7 @@ impl<'a> AsFormat for &'a str {
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<GluonError>,
-        T: DeserializeOwned + Debug,
+        T: Debug,
     {
         deserializer(self).map_err(|e| e.into())
     }
@@ -42,7 +43,7 @@ impl<'a> AsFormat for &'a str {
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<GluonError>,
-        T: DeserializeOwned + Debug,
+        T: Debug,
     {
         // // TODO: Generalise whenever needed
         let start_delimiter_string = format!("```{}", format);
@@ -73,7 +74,7 @@ impl<'a> AsFormat for &'a str {
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<GluonError>,
-        T: DeserializeOwned + Debug,
+        T: Debug,
     {
         // TODO: Generalise whenever needed
         let start_delimiter_string = format!("```{}", format);

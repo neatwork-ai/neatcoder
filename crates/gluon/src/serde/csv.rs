@@ -1,10 +1,6 @@
 use csv::{Reader, StringRecord};
-use serde::{
-    de::{SeqAccess, Visitor},
-    Deserialize, Deserializer,
-};
 use std::{
-    fmt::{self, Debug},
+    fmt::Debug,
     io::Cursor,
     ops::{Deref, DerefMut},
 };
@@ -47,66 +43,6 @@ impl DerefMut for CsvRow {
     }
 }
 
-struct RowVisitor;
-
-impl<'de> Visitor<'de> for RowVisitor {
-    type Value = CsvRow;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("sequence of strings")
-    }
-
-    fn visit_seq<A>(self, mut seq: A) -> Result<CsvRow, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let mut string_record = StringRecord::new();
-        while let Some(value) = seq.next_element::<String>()? {
-            string_record.push_field(&value);
-        }
-        Ok(CsvRow(string_record))
-    }
-}
-
-impl<'de> Deserialize<'de> for CsvRow {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_seq(RowVisitor)
-    }
-}
-
-struct TableVisitor;
-
-impl<'de> Visitor<'de> for TableVisitor {
-    type Value = CsvTable;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("sequence of strings")
-    }
-
-    fn visit_seq<A>(self, mut seq: A) -> Result<CsvTable, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let mut string_record = Vec::new();
-        while let Some(value) = seq.next_element::<CsvRow>()? {
-            string_record.push(value);
-        }
-        Ok(CsvTable(string_record))
-    }
-}
-
-impl<'de> Deserialize<'de> for CsvTable {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_seq(TableVisitor)
-    }
-}
-
 pub trait AsCsv: AsFormat {
     fn as_csv(&self) -> Result<CsvTable, GluonError>;
     fn strip_csv(&self) -> Result<CsvTable, GluonError>;
@@ -115,44 +51,20 @@ pub trait AsCsv: AsFormat {
 
 impl<'a> AsCsv for &'a str {
     fn as_csv(&self) -> Result<CsvTable, GluonError> {
-        // The function `serde_yaml::from_str` has a signature of
-        // `fn(&'a str) -> Result<T, serde_yaml::Error>`. In this case, 'a
-        // is tied to the specific input str's lifetime, it is not for any
-        // possible lifetime 'a, hence it can't satisfy the for<'a> in
-        // the higher-rank trait bound.
-        //
-        // To solve this problem, we wrap `serde_yaml::from_str` in a
-        // closure that has a HRTB
         let deserializer = |s: &str| deserialize_csv(s);
 
         self.as_format(deserializer)
     }
 
-    // Assumes that the yaml is encapsulated in ```yaml{actual_yaml}``` which is how OpenAI does it
+    // Assumes that the yaml is encapsulated in ```html{actual_html}``` which is how OpenAI does it
     fn strip_csv(&self) -> Result<CsvTable, GluonError> {
-        // The function `serde_yaml::from_str` has a signature of
-        // `fn(&'a str) -> Result<T, serde_yaml::Error>`. In this case, 'a
-        // is tied to the specific input str's lifetime, it is not for any
-        // possible lifetime 'a, hence it can't satisfy the for<'a> in
-        // the higher-rank trait bound.
-        //
-        // To solve this problem, we wrap `serde_yaml::from_str` in a
-        // closure that has a HRTB
-        let deserializer = |s: &str| serde_yaml::from_str(s);
+        let deserializer = |s: &str| deserialize_csv(s);
 
         self.strip_format(deserializer, "csv")
     }
 
     fn strip_csvs(&self) -> Result<Vec<CsvTable>, GluonError> {
-        // The function `serde_yaml::from_str` has a signature of
-        // `fn(&'a str) -> Result<T, serde_yaml::Error>`. In this case, 'a
-        // is tied to the specific input str's lifetime, it is not for any
-        // possible lifetime 'a, hence it can't satisfy the for<'a> in
-        // the higher-rank trait bound.
-        //
-        // To solve this problem, we wrap `serde_yaml::from_str` in a
-        // closure that has a HRTB
-        let deserializer = |s: &str| serde_yaml::from_str(s);
+        let deserializer = |s: &str| deserialize_csv(s);
 
         self.strip_formats(deserializer, "csv")
     }
