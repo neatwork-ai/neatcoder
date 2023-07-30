@@ -6,6 +6,7 @@ use crate::err::GluonError;
 pub mod csv;
 pub mod json;
 pub mod yaml;
+pub mod html;
 
 pub trait AsFormat {
     fn as_format<F, T, E>(&self, deserializer: F) -> Result<T, GluonError>
