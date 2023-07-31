@@ -58,3 +58,52 @@ fn deserialize_rust(rust_str: &str) -> Result<Rust, GluonError> {
 
     Ok(Rust(syntax_tree))
 }
+
+#[test]
+fn test_parse() -> Result<(), GluonError> {
+    let code_str = "
+use structopt::StructOpt;
+
+// Define the CLI structure
+#[derive(Debug, StructOpt)]
+#[structopt(name = \"example\", about = \"An example CLI application in Rust\")]
+struct Opt {
+    /// Activate debug mode
+    #[structopt(short, long)]
+    debug: bool,
+
+    /// Set speed
+    #[structopt(short = \"s\", long = \"speed\", default_value = \"42\")]
+    speed: f64,
+
+    /// Input file
+    #[structopt(parse(from_os_str))]
+    input: std::path::PathBuf,
+
+    /// Verbose mode (-v, -vv, -vvv, etc.)
+    #[structopt(short = \"v\", long = \"verbose\", parse(from_occurrences))]
+    verbose: u8,
+}
+
+fn main() {
+    let opt = Opt::from_args();
+    println!(\"{{:#?}}\", opt);
+}";
+
+    let rust_string = code_str.to_string();
+
+    let obj_str = rust_string.as_str();
+
+    let prompt = format!(
+        "Sure! Here is an example of a cli app:\n```rust\n{}\n```",
+        obj_str
+    );
+
+    let actual = prompt.as_str().strip_rust()?;
+
+    println!("{:?}", actual.items);
+
+    // assert_eq!(actual, expected);
+
+    Ok(())
+}

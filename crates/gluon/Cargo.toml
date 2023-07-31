@@ -10,8 +10,6 @@ path = "src/bin/default.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-llm-store = { path = "../llm-store" }
-
 anyhow = "1.0"
 thiserror = "1.0"
 dotenv = "0.15"

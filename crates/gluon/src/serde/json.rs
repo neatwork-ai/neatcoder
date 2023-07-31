@@ -79,23 +79,24 @@ mod test {
 
     #[test]
     fn test_parse() -> Result<()> {
-        let json = json!({
+        let expected = json!({
             "field_a": String::from("This is a string"),
             "field_b": 10,
             "field_c": None::<String>,
-        })
-        .to_string();
+        });
 
-        let obj_str = json.as_str();
+        let json_string = expected.to_string();
+
+        let obj_str = json_string.as_str();
 
         let prompt = format!(
             "Sure! Here is an example of an instance:\n```json\n{}\n```",
             obj_str
         );
 
-        let abc = prompt.as_str().strip_json()?;
+        let actual = prompt.as_str().strip_json()?;
 
-        println!("{}", abc);
+        assert_eq!(actual, expected);
 
         Ok(())
     }
