@@ -22,7 +22,6 @@ use anyhow::{anyhow, Result};
 use async_openai::{types::CreateCompletionRequestArgs, Client};
 use clap::Parser;
 use dialoguer::Input;
-use llm_store::{chain::CausalChain, msg::Msg};
 
 #[tokio::main]
 async fn main() {
@@ -38,6 +37,7 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
+    dotenv().ok();
     let cli = Cli::parse();
 
     match cli.command {
@@ -70,119 +70,143 @@ async fn run() -> Result<()> {
 
             println!("{}", response.choices.first().unwrap().text);
         }
-        Commands::WriteSequence {} => {
-            dotenv().ok();
-
+        Commands::CodeBuild {} => {
             let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
+
             let job = OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
                 .temperature(0.7)
                 .top_p(0.9)?;
 
-            // TODO: Load this from DB
-            // let mut mgs = OpenAIMsg::user();
+            let sys_msg = OpenAIMsg {
+                role: GptRole::System,
+                content: String::from("You are a Senior Software Engineer. You will be handed over a project to work and and your initial task is to decompose the initial specification given to you in a set of questions geared to acquiring an in-depth understand on the project.")
+            };
 
-            let mut chain = init_chain(&client, &mut mgs).await?;
+            let prompt: String = Input::new()
+                .with_prompt("\n Write your prompt")
+                .interact()
+                .unwrap();
 
-            loop {
-                println!("\nOptions:");
-                println!("[ENTER] - Talk");
-                println!("R - Retry");
-                println!("B - Go Back");
-                println!("Q - Quit");
+            let user_msg = OpenAIMsg {
+                role: GptRole::User,
+                content: prompt,
+            };
 
-                io::stdout().flush().unwrap();
-                let mut choice = String::new();
-                io::stdin().read_line(&mut choice).unwrap();
-                let choice = choice.trim().to_ascii_lowercase();
-                Options::from_str(&choice).map_err(|_err| anyhow!("Error parsing options"))?;
-                println!("Choice: {:?}", choice);
+            let resp = client.chat(&job, &[&sys_msg, &user_msg], &[], &[]).await?;
 
-                // match {
-                //     Options::Talk => {
-                //         let (seq, chain) = chat(client, chain, seq).await?;
-                //     },
-                //     Options::Retry => {},
-                //     Options::Back => {},
-                //     Options::Quit => {},
-                // }
+            println!("{:?}", resp);
+        }
+        Commands::WriteSequence {} => {
+            // let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
+            // let job = OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
+            //     .temperature(0.7)
+            //     .top_p(0.9)?;
 
-                // Input prompt
-                todo!();
-            }
+            // // TODO: Load this from DB
+            // // let mut mgs = OpenAIMsg::user();
+
+            // let mut chain = init_chain(&client, &mut mgs).await?;
+
+            // loop {
+            //     println!("\nOptions:");
+            //     println!("[ENTER] - Talk");
+            //     println!("R - Retry");
+            //     println!("B - Go Back");
+            //     println!("Q - Quit");
+
+            //     io::stdout().flush().unwrap();
+            //     let mut choice = String::new();
+            //     io::stdin().read_line(&mut choice).unwrap();
+            //     let choice = choice.trim().to_ascii_lowercase();
+            //     Options::from_str(&choice).map_err(|_err| anyhow!("Error parsing options"))?;
+            //     println!("Choice: {:?}", choice);
+
+            //     // match {
+            //     //     Options::Talk => {
+            //     //         let (seq, chain) = chat(client, chain, seq).await?;
+            //     //     },
+            //     //     Options::Retry => {},
+            //     //     Options::Back => {},
+            //     //     Options::Quit => {},
+            //     // }
+
+            //     // Input prompt
+            //     todo!();
+            // }
         }
     }
 
     Ok(())
 }
 
-pub async fn init_chain(client: &OpenAI) -> Result<CausalChain> {
-    let user_msg = prompt_user();
-    let llm_msg = prompt_llm(client, &[&user_msg]).await?;
+// pub async fn init_chain(client: &OpenAI) -> Result<CausalChain> {
+//     let user_msg = prompt_user();
+//     let llm_msg = prompt_llm(client, &[&user_msg]).await?;
 
-    let user_msg: Rc<Msg> = Rc::new(user_msg.into());
-    let llm_msg: Rc<Msg> = Rc::new(llm_msg.into());
+//     let user_msg: Rc<Msg> = Rc::new(user_msg.into());
+//     let llm_msg: Rc<Msg> = Rc::new(llm_msg.into());
 
-    let mut chain = CausalChain::genesis(user_msg.clone());
-    let llm_msg_id = chain.add_node(llm_msg.clone(), Some(chain.genesis_id))?;
+//     let mut chain = CausalChain::genesis(user_msg.clone());
+//     let llm_msg_id = chain.add_node(llm_msg.clone(), Some(chain.genesis_id))?;
 
-    msgs.insert(chain.genesis_id, user_msg);
-    msgs.insert(llm_msg_id, llm_msg);
+//     msgs.insert(chain.genesis_id, user_msg);
+//     msgs.insert(llm_msg_id, llm_msg);
 
-    Ok(chain)
-}
+//     Ok(chain)
+// }
 
-pub async fn chat(
-    client: &OpenAI,
-    msgs: &mut Messages,
-    chain: &mut CausalChain,
-    mut seq: Vec<&Message>,
-) -> Result<()> {
-    let user_msg = prompt_user();
+// pub async fn chat(
+//     client: &OpenAI,
+//     msgs: &mut Messages,
+//     chain: &mut CausalChain,
+//     mut seq: Vec<&Message>,
+// ) -> Result<()> {
+//     let user_msg = prompt_user();
 
-    seq.push(&user_msg);
-    let slice: &[&Message] = &seq;
+//     seq.push(&user_msg);
+//     let slice: &[&Message] = &seq;
 
-    let llm_msg = prompt_llm(client, &seq).await?;
+//     let llm_msg = prompt_llm(client, &seq).await?;
 
-    let user_msg: Rc<Msg> = Rc::new(user_msg.into());
-    let llm_msg: Rc<Msg> = Rc::new(llm_msg.into());
+//     let user_msg: Rc<Msg> = Rc::new(user_msg.into());
+//     let llm_msg: Rc<Msg> = Rc::new(llm_msg.into());
 
-    let llm_msg_id = chain.add_node(llm_msg.clone(), Some(chain.genesis_id))?;
+//     let llm_msg_id = chain.add_node(llm_msg.clone(), Some(chain.genesis_id))?;
 
-    msgs.insert(chain.genesis_id, user_msg);
-    msgs.insert(llm_msg_id, llm_msg);
+//     msgs.insert(chain.genesis_id, user_msg);
+//     msgs.insert(llm_msg_id, llm_msg);
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-pub fn prompt_user() -> Msg<OpenAIMsg> {
-    let prompt: String = Input::new()
-        .with_prompt("\n Write your prompt")
-        .interact()
-        .unwrap();
+// pub fn prompt_user() -> Msg<OpenAIMsg> {
+//     let prompt: String = Input::new()
+//         .with_prompt("\n Write your prompt")
+//         .interact()
+//         .unwrap();
 
-    let openai_msg = Message {
-        role: GptRole::User,
-        content: prompt.clone(),
-    };
+//     let openai_msg = Message {
+//         role: GptRole::User,
+//         content: prompt.clone(),
+//     };
 
-    let msg = Ms::new(vec![], openai_msg);
-}
+//     let msg = Ms::new(vec![], openai_msg);
+// }
 
-pub async fn prompt_llm(client: &OpenAI, seq: &[&Message]) -> Result<Message> {
-    let client_resp = client.chat(&seq, &[], &[]).await?;
-    let llm_resp = client_resp
-        .choices
-        .first()
-        .unwrap()
-        .message
-        .content
-        .as_str();
+// pub async fn prompt_llm(client: &OpenAI, seq: &[&Message]) -> Result<Message> {
+//     let client_resp = client.chat(&seq, &[], &[]).await?;
+//     let llm_resp = client_resp
+//         .choices
+//         .first()
+//         .unwrap()
+//         .message
+//         .content
+//         .as_str();
 
-    println!("\n{}", llm_resp);
+//     println!("\n{}", llm_resp);
 
-    Ok(Message {
-        role: GptRole::Assistant,
-        content: String::from(llm_resp),
-    })
-}
+//     Ok(Message {
+//         role: GptRole::Assistant,
+//         content: String::from(llm_resp),
+//     })
+// }

@@ -18,4 +18,5 @@ pub enum Commands {
         output_dir: String,
     },
     WriteSequence {},
+    CodeBuild {},
 }

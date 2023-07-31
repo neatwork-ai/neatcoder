@@ -1,5 +1,7 @@
+use std::error::Error;
+
 use anyhow::{anyhow, Result};
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::json;
 
 #[derive(Deserialize, Debug)]
@@ -8,7 +10,7 @@ pub struct OpenAIMsg {
     pub content: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum GptRole {
     System,
     User,
@@ -49,6 +51,35 @@ impl Serialize for OpenAIMsg {
         });
 
         msg.serialize(serializer)
+    }
+}
+
+impl Serialize for GptRole {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            GptRole::System => serializer.serialize_str("system"),
+            GptRole::User => serializer.serialize_str("user"),
+            GptRole::Assistant => serializer.serialize_str("assistant"),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for GptRole {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+
+        match s.as_str() {
+            "system" => Ok(GptRole::System),
+            "user" => Ok(GptRole::User),
+            "assistant" => Ok(GptRole::Assistant),
+            _ => panic!("Invalid variant `{:?}`", s.as_str()),
+        }
     }
 }
 
