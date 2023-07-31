@@ -1,7 +1,8 @@
 use super::instruction::Instruction;
 use crate::ai::openai::{
     client::OpenAI,
-    input::{GptRole, Message},
+    job::OpenAIJob,
+    msg::{GptRole, OpenAIMsg},
 };
 use anyhow::Result;
 
@@ -32,13 +33,15 @@ use anyhow::Result;
 /// in your startup is a lucrative opportunity.
 pub async fn build_prompt_dyn(
     client: &OpenAI,
+    job: &OpenAIJob,
     instructions: &[Instruction],
     sys_msg: Option<&str>,
     user_msg: Option<&str>,
 ) -> Result<String> {
     // TODO: Things to consider, this prompt works best with low `temperature` and `top_p`
     // Also, how can we lambda-fy the whole Client api?
-    let sys_msg = Message {
+    // TODO:  Prompt buildiong should be generic and work any client, message type and job type
+    let sys_msg = OpenAIMsg {
         role: GptRole::System,
         content: String::from(sys_msg.unwrap_or("ChatGPT, your role in this interaction is to serve as a writing prompt generator. Generate prompts based on the context provided.")),
     };
@@ -55,12 +58,12 @@ pub async fn build_prompt_dyn(
 
     println!("User Message: {:?}", user_msg);
 
-    let user_msg = Message {
+    let user_msg = OpenAIMsg {
         role: GptRole::User,
         content: user_msg,
     };
 
-    let resp = client.chat(&[sys_msg, user_msg], &[], &[]).await?;
+    let resp = client.chat(job, &[&sys_msg, &user_msg], &[], &[]).await?;
     let prompt = resp.choices.first().unwrap().message.content.as_str();
 
     Ok(prompt.to_string())

@@ -1,10 +1,7 @@
 use anyhow::Result;
 use dotenv::dotenv;
 use gluon::{
-    ai::openai::{
-        client::{OpenAI, OpenAIModels},
-        input::Message,
-    },
+    ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels, msg::OpenAIMsg},
     input::{
         instruction::{Instruction, InstructionType},
         prompt_builder::{build_prompt, build_prompt_dyn},
@@ -16,13 +13,15 @@ use std::env;
 async fn main() -> Result<()> {
     dotenv().ok();
 
-    let client = OpenAI::new(OpenAIModels::Gpt35Turbo)
-        .api_key(env::var("OPENAI_API_KEY")?)
-        .temperature(0.0)
-        .top_p(0.0)?;
+    let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
+
+    let job = OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
+        .temperature(0.7)
+        .top_p(0.9)?;
 
     let dyn_prompt = build_prompt_dyn(
         &client,
+        &job,
         &[
             Instruction::new(InstructionType::Context, "You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
             Instruction::new(InstructionType::Purpose, "Persuade a Venture Capital firm in investing in your startup"),
@@ -42,13 +41,14 @@ async fn main() -> Result<()> {
 
     println!("Prompt: {}", dyn_prompt);
 
-    // TODO: this is not ideal, this parameters should freely float and not be attached the to the base client
-    let client = client.temperature(1.0).top_p(1.0)?;
+    let job = job.temperature(1.0).top_p(1.0)?;
 
     let dyn_resp = client
-        .chat(&[
-            Message::system("You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
-            Message::user(dyn_prompt.as_str()),
+        .chat(
+            &job,
+            &[
+            &OpenAIMsg::system("You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
+            &OpenAIMsg::user(dyn_prompt.as_str()),
         ], &[], &[])
         .await?;
 
@@ -57,11 +57,11 @@ async fn main() -> Result<()> {
     println!("DYNAMIC: {}", dyn_json);
 
     let static_resp = client
-        .temperature(1.0)
-        .top_p(1.0)?
-        .chat(&[
-            Message::system("You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
-            Message::user(dyn_prompt.as_str()),
+        .chat(
+            &job,
+            &[
+            &OpenAIMsg::system("You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
+            &OpenAIMsg::user(dyn_prompt.as_str()),
         ], &[], &[])
         .await?;
 

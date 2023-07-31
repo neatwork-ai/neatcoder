@@ -1,8 +1,10 @@
 use anyhow::Result;
 use dotenv::dotenv;
 use gluon::ai::openai::{
-    client::{OpenAI, OpenAIModels},
-    input::{GptRole, Message},
+    client::OpenAI,
+    job::OpenAIJob,
+    model::OpenAIModels,
+    msg::{GptRole, OpenAIMsg},
 };
 use std::env;
 
@@ -10,22 +12,23 @@ use std::env;
 async fn main() -> Result<()> {
     dotenv().ok();
 
-    let model = OpenAI::new(OpenAIModels::Gpt35Turbo)
-        .api_key(env::var("OPENAI_API_KEY")?)
+    let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
+
+    let job = OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
         .temperature(0.7)
         .top_p(0.9)?;
 
-    let sys_msg = Message {
+    let sys_msg = OpenAIMsg {
         role: GptRole::System,
         content: String::from("You are a Rust Engineer with 1000 years of experience. You completely outpace any human programmer.")
     };
 
-    let user_msg = Message {
+    let user_msg = OpenAIMsg {
         role: GptRole::User,
         content: String::from("Write an AGI."),
     };
 
-    let resp = model.chat(&[sys_msg, user_msg], &[], &[]).await?;
+    let resp = client.chat(&job, &[&sys_msg, &user_msg], &[], &[]).await?;
 
     println!("{:?}", resp);
 
