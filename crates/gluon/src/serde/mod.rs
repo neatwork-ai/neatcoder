@@ -7,6 +7,7 @@ pub mod html;
 pub mod json;
 pub mod rust;
 pub mod yaml;
+pub mod python;
 
 pub trait AsFormat {
     fn as_format<F, T, E>(&self, deserializer: F) -> Result<T, GluonError>

@@ -13,5 +13,7 @@ pub enum GluonError {
     #[error(transparent)]
     RustSyn(#[from] syn::Error),
     #[error(transparent)]
+    RustPython(#[from] rustpython_parser::error::ParseError),
+    #[error(transparent)]
     AnyhowError(#[from] anyhow::Error),
 }
