@@ -21,7 +21,7 @@ pub async fn generate_tree(client: &OpenAI, job: &OpenAIJob) -> Result<()> {
     "#;
 
     let task = r#"
-        List the items that your team will have to work on in 
+        List the items that your team will have to work on in
         order to build the product\n
     "#;
 
