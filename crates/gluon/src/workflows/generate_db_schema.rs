@@ -16,7 +16,7 @@ pub async fn generate_db_schema(client: &OpenAI, job: &OpenAIJob) -> Result<(Str
         content: String::from("Generate a random idea for a company. The first word in your responde should be the company name."),
     };
 
-    let resp = client.chat(&job, &[&sys_msg, &user_msg], &[], &[]).await?;
+    let resp = client.chat(job, &[&sys_msg, &user_msg], &[], &[]).await?;
     let answer = resp.choices.first().unwrap().message.content.as_str();
 
     let company_name = get_first_word(answer);
@@ -35,7 +35,7 @@ pub async fn generate_db_schema(client: &OpenAI, job: &OpenAIJob) -> Result<(Str
 
     let resp = client
         .chat(
-            &job,
+            job,
             &[&sys_msg, &user_msg, &sys_msg_2, &user_msg_2],
             &[],
             &[],

@@ -19,21 +19,15 @@ pub trait AsSql: AsFormat {
 
 impl<'a> AsSql for &'a str {
     fn as_sql(&self) -> Result<Sql, GluonError> {
-        let deserializer = |s: &str| deserialize_sql(s);
-
-        self.as_format(deserializer)
+        self.as_format(deserialize_sql)
     }
 
     fn strip_sql(&self) -> Result<Sql, GluonError> {
-        let deserializer = |s: &str| deserialize_sql(s);
-
-        self.strip_format(deserializer, "sql")
+        self.strip_format(deserialize_sql, "sql")
     }
 
     fn strip_sqls(&self) -> Result<Vec<Sql>, GluonError> {
-        let deserializer = |s: &str| deserialize_sql(s);
-
-        self.strip_formats(deserializer, "sql")
+        self.strip_formats(deserialize_sql, "sql")
     }
 }
 

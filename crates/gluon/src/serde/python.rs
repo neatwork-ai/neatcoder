@@ -12,21 +12,15 @@ pub trait AsPython: AsFormat {
 
 impl<'a> AsPython for &'a str {
     fn as_python(&self) -> Result<Python, GluonError> {
-        let deserializer = |s: &str| deserialize_python(s);
-
-        self.as_format(deserializer)
+        self.as_format(deserialize_python)
     }
 
     fn strip_python(&self) -> Result<Python, GluonError> {
-        let deserializer = |s: &str| deserialize_python(s);
-
-        self.strip_format(deserializer, "python")
+        self.strip_format(deserialize_python, "python")
     }
 
     fn strip_pythons(&self) -> Result<Vec<Python>, GluonError> {
-        let deserializer = |s: &str| deserialize_python(s);
-
-        self.strip_formats(deserializer, "python")
+        self.strip_formats(deserialize_python, "python")
     }
 }
 
