@@ -18,5 +18,7 @@ pub enum Commands {
         output_dir: String,
     },
     WriteSequence {},
-    CodeBuild {},
+    CodeBuild {
+        prompt_path: String,
+    },
 }

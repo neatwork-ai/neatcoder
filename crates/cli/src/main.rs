@@ -1,6 +1,11 @@
 pub mod cli;
 pub mod utils;
 
+pub use crate::cli::{Cli, Commands};
+use anyhow::Result;
+use async_openai::{types::CreateCompletionRequestArgs, Client};
+use clap::Parser;
+use dialoguer::Input;
 use dotenv::dotenv;
 use gluon::ai::openai::{
     client::OpenAI,
@@ -8,20 +13,7 @@ use gluon::ai::openai::{
     model::OpenAIModels,
     msg::{GptRole, OpenAIMsg},
 };
-use std::{
-    env,
-    io::{self, Write},
-    rc::Rc,
-    str::FromStr,
-};
-
-pub use crate::cli::{Cli, Commands};
-use crate::utils::Options;
-
-use anyhow::{anyhow, Result};
-use async_openai::{types::CreateCompletionRequestArgs, Client};
-use clap::Parser;
-use dialoguer::Input;
+use std::{env, fs, path::PathBuf};
 
 #[tokio::main]
 async fn main() {
@@ -70,7 +62,7 @@ async fn run() -> Result<()> {
 
             println!("{}", response.choices.first().unwrap().text);
         }
-        Commands::CodeBuild {} => {
+        Commands::CodeBuild { prompt_path } => {
             let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
 
             let job = OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
@@ -79,13 +71,39 @@ async fn run() -> Result<()> {
 
             let sys_msg = OpenAIMsg {
                 role: GptRole::System,
-                content: String::from("You are a Senior Software Engineer. You will be handed over a project to work and and your initial task is to decompose the initial specification given to you in a set of questions geared to acquiring an in-depth understand on the project.")
-            };
+                content: String::from("You are a Senior Software Engineer. You will be handed over a project to work and and your initial task is to fill in the follow form based on the information provided by the product manager. The form is the following:
+1. Project interface(s)
+2. Upstream services
+3. Downstream services"
+            )};
 
-            let prompt: String = Input::new()
-                .with_prompt("\n Write your prompt")
-                .interact()
-                .unwrap();
+            // Convert the string to a PathBuf
+            let prompt_path = PathBuf::from(prompt_path);
+
+            // Read the file to a string
+            let sub_prompt = fs::read_to_string(prompt_path)?;
+
+            // 1. What interface should we use for the project?
+            //     2. List the upstream services we ought to communicate with:
+            //     3. List the downstream services we ought to communicate with:
+
+            //     - Restful API
+            //     - RPC API
+            //     - Programming Library
+            //     - WebHooks
+            //     - WebSockets
+            //     - Command-Line Interface
+            //     - Other (if none of the above fit)
+
+            let prompt = format!("The product manager reaches out to you with the following project:\n'''{}'''\n Based on the project description above, the interface of the project should be:\n
+            - Restful API
+            - RPC API
+            - Programming Library
+            - WebHooks
+            - WebSockets
+            - Command-Line Interface
+            - Other (if none of the above fit)
+            ", sub_prompt);
 
             let user_msg = OpenAIMsg {
                 role: GptRole::User,

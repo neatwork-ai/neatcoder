@@ -1,7 +1,8 @@
-programming_language: "Rust"
-programming_interface: "RestAPI, RPC, WebSockets, WebHooks, CLI, etc..."
-upstream_componenets: "Some upstream APIs, SQL Databases"
-interaction_models: "Real-time, event-based, sync, async, etc..., pub/sub, req/res, data pipelines, etc..."
-forbidden_features: "Macros, unsafe code"
-forbidden_libraries: ""
-favourite_libraries: ""
+language: Rust
+interfaces:
+  - RestfulAPI
+upstream_services:
+  - Database: Sql
+blocked_features:
+  - Concurrency
+  - DynamicTypes

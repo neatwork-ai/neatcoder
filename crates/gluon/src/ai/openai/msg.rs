@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::json;

@@ -32,7 +32,7 @@ async fn main() -> Result<()> {
         None,
     ).await?;
 
-    let static_prompt = build_prompt(&[
+    let _static_prompt = build_prompt(&[
         Instruction::new(InstructionType::Context, "You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
         Instruction::new(InstructionType::Purpose, "Persuade a Venture Capital firm in investing in your startup"),
         Instruction::new(InstructionType::Audience, "3 VC analysts who report to the partner. This is your intro call"),
