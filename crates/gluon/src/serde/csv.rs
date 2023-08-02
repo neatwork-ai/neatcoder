@@ -56,22 +56,16 @@ pub trait AsCsv: AsFormat {
 
 impl<'a> AsCsv for &'a str {
     fn as_csv(&self) -> Result<CsvTable, GluonError> {
-        let deserializer = |s: &str| deserialize_csv(s);
-
-        self.as_format(deserializer)
+        self.as_format(deserialize_csv)
     }
 
     // Assumes that the yaml is encapsulated in ```html{actual_html}``` which is how OpenAI does it
     fn strip_csv(&self) -> Result<CsvTable, GluonError> {
-        let deserializer = |s: &str| deserialize_csv(s);
-
-        self.strip_format(deserializer, "csv")
+        self.strip_format(deserialize_csv, "csv")
     }
 
     fn strip_csvs(&self) -> Result<Vec<CsvTable>, GluonError> {
-        let deserializer = |s: &str| deserialize_csv(s);
-
-        self.strip_formats(deserializer, "csv")
+        self.strip_formats(deserialize_csv, "csv")
     }
 }
 

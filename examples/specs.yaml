@@ -1,0 +1,8 @@
+language: Rust
+interfaces:
+  - RestfulAPI
+upstream_services:
+  - Database: Sql
+blocked_features:
+  - Concurrency
+  - DynamicTypes

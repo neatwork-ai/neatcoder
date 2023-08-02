@@ -5,9 +5,10 @@ use crate::err::GluonError;
 pub mod csv;
 pub mod html;
 pub mod json;
-pub mod rust;
-pub mod yaml;
 pub mod python;
+pub mod rust;
+pub mod sql;
+pub mod yaml;
 
 pub trait AsFormat {
     fn as_format<F, T, E>(&self, deserializer: F) -> Result<T, GluonError>
@@ -77,6 +78,7 @@ impl<'a> AsFormat for &'a str {
         T: Debug,
     {
         // TODO: Generalise whenever needed
+        // TODO: Add some tolerance if GPT forgot to put the format delimiter..
         let start_delimiter_string = format!("```{}", format);
         let start_delimiter = start_delimiter_string.as_str();
         let end_delimiter = "```";

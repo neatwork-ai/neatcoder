@@ -1,0 +1,20 @@
+[package]
+name = "code-builder"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "gen_data_model"
+path = "src/bin/gen_data_model.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gluon = { path = "../gluon" }
+serde = { version = "1.0", features = ["derive"] }
+sqlparser = "0.36"
+anyhow = "1.0"
+dotenv = "0.15"
+tokio = {version = "1.29", features = ["full"]}
+sqlformat = "0.2"
+heck = "0.4"

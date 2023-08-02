@@ -12,21 +12,15 @@ pub trait AsRust: AsFormat {
 
 impl<'a> AsRust for &'a str {
     fn as_rust(&self) -> Result<Rust, GluonError> {
-        let deserializer = |s: &str| deserialize_rust(s);
-
-        self.as_format(deserializer)
+        self.as_format(deserialize_rust)
     }
 
     fn strip_rust(&self) -> Result<Rust, GluonError> {
-        let deserializer = |s: &str| deserialize_rust(s);
-
-        self.strip_format(deserializer, "rust")
+        self.strip_format(deserialize_rust, "rust")
     }
 
     fn strip_rusts(&self) -> Result<Vec<Rust>, GluonError> {
-        let deserializer = |s: &str| deserialize_rust(s);
-
-        self.strip_formats(deserializer, "rust")
+        self.strip_formats(deserialize_rust, "rust")
     }
 }
 

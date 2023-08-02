@@ -12,21 +12,15 @@ pub trait AsHtml: AsFormat {
 
 impl<'a> AsHtml for &'a str {
     fn as_html(&self) -> Result<Dom, GluonError> {
-        let deserializer = |s: &str| deserialize_html(s);
-
-        self.as_format(deserializer)
+        self.as_format(deserialize_html)
     }
 
     fn strip_html(&self) -> Result<Dom, GluonError> {
-        let deserializer = |s: &str| deserialize_html(s);
-
-        self.strip_format(deserializer, "html")
+        self.strip_format(deserialize_html, "html")
     }
 
     fn strip_htmls(&self) -> Result<Vec<Dom>, GluonError> {
-        let deserializer = |s: &str| deserialize_html(s);
-
-        self.strip_formats(deserializer, "html")
+        self.strip_formats(deserialize_html, "html")
     }
 }
 
