@@ -42,6 +42,18 @@ pub struct SqlStatement {
     pub stmt: Statement,
 }
 
+impl Sql {
+    pub fn as_stmt(mut self) -> Result<SqlStatement, GluonError> {
+        if self.len() != 1 {
+            Err(GluonError::from(anyhow!(
+                "Failed to convert `Sql` to `SqlStatement` as it's not singleton"
+            )))
+        } else {
+            Ok(self.pop().unwrap())
+        }
+    }
+}
+
 impl AsRef<Vec<SqlStatement>> for Sql {
     fn as_ref(&self) -> &Vec<SqlStatement> {
         &self.0
