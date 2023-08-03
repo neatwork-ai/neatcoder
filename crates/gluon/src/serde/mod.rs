@@ -51,11 +51,19 @@ impl<'a> AsFormat for &'a str {
         let start_delimiter = start_delimiter_string.as_str();
         let end_delimiter = "```";
 
-        let start_loc = self.find(start_delimiter).expect(&format!(
-            "Unable to convert LLM output to {fmt}. The {fmt} object seems to be missing in: \n{}",
-            self,
-            fmt = format,
-        ));
+        let start_loc = self.find(start_delimiter).unwrap_or_else(|| {
+            println!(
+                "Unable to find the primary delimiter. Attempting to use the fallback delimiter in: \n{}",
+                self
+            );
+        
+            // Fallback logic: try finding the fallback delimiter
+            self.find("```").expect(&format!(
+                "Unable to convert LLM output to {fmt}. Delimiters seem to be missing in: \n{input}",
+                input = self,
+                fmt = format
+            ))
+        });
 
         let start_index = start_loc + start_delimiter.len();
 
