@@ -2,9 +2,7 @@ use anyhow::{Context, Result};
 use dotenv::dotenv;
 use gluon::{
     ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels},
-    serde::{
-        yaml::AsYaml,
-    },
+    serde::json::AsJson,
     workflows::generate_api::gen_project_scaffold,
 };
 use std::io::Read;
@@ -17,10 +15,10 @@ async fn main() -> Result<()> {
 
     let mut args: Vec<String> = env::args().collect();
 
-    let project = args.pop().unwrap();
     let description_filename = args.pop().unwrap();
+    let project = args.pop().unwrap();
 
-    let project_path = format!("examples/models/{}", project);
+    let project_path = format!("examples/projects/{}", project);
     let project_path = Path::new(project_path.as_str());
 
     let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
@@ -29,13 +27,14 @@ async fn main() -> Result<()> {
         .temperature(0.7)
         .top_p(0.9)?;
 
-    let api_description = get_api_description(project_path, description_filename)?;
+    let api_description =
+        get_api_description(project_path.join("specs").as_path(), description_filename)?;
 
     let scaffold = gen_project_scaffold(&client, &job, api_description).await?;
 
-    let scaffold_yaml = scaffold.as_str().strip_yaml()?;
+    let scaffold_json = scaffold.as_str().strip_json()?;
 
-    println!("Project Scaffold: {:?}", scaffold_yaml);
+    println!("Project Scaffold: {:?}", scaffold_json);
 
     // IO
     let project_path = Path::new("examples/projects/").join(project);
@@ -47,11 +46,11 @@ async fn main() -> Result<()> {
         .count()
         + 1;
 
-    let file_path = project_path.join(format!("{}.yaml", serial_number));
+    let file_path = project_path.join(format!("fs/{}.json", serial_number));
     let mut scaffold_file = File::create(file_path.clone())
         .with_context(|| format!(r#"Could not create "{path}""#, path = file_path.display()))?;
 
-    scaffold_file.write_all(serde_yaml::to_string(&scaffold_yaml)?.as_bytes())?;
+    scaffold_file.write_all(serde_json::to_string_pretty(&scaffold_json)?.as_bytes())?;
 
     Ok(())
 }

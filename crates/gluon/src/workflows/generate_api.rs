@@ -23,9 +23,9 @@ pub async fn gen_project_scaffold(
 You are a Rust engineer tasked with creating an API in Rust based on the following project description:\n{}\n
 The API should retrieve the relevant data from a MySQL database.
 
-Based on the information provided write the project's folder structure.
+Based on the information provided write the project's folder structure, starting from `src`.
 
-Answer in YAML.", api_description);
+Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json", api_description);
 
     prompts.push(OpenAIMsg {
         role: GptRole::User,

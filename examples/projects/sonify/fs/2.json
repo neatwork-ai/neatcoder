@@ -1,0 +1,34 @@
+{
+  "src": {
+    "config.rs": "Configuration settings for the application",
+    "database.rs": "Module for connecting and interacting with the MySQL database",
+    "errors": {
+      "error.rs": "Custom error types and error handling functions"
+    },
+    "handlers": {
+      "artist_handler.rs": "Request handlers for artist-related endpoints",
+      "follow_handler.rs": "Request handlers for artist follow/unfollow endpoints",
+      "playlist_handler.rs": "Request handlers for playlist-related endpoints",
+      "preference_handler.rs": "Request handlers for user song preferences",
+      "song_handler.rs": "Request handlers for song-related endpoints",
+      "user_handler.rs": "Request handlers for user registration and authentication"
+    },
+    "main.rs": "Entry point of the application",
+    "middleware.rs": "Middleware functions for authentication and error handling",
+    "models": {
+      "artist.rs": "Data model for artist",
+      "playlist.rs": "Data model for playlist",
+      "song.rs": "Data model for song",
+      "user.rs": "Data model for user"
+    },
+    "routes": {
+      "artist_routes.rs": "API routes for artist-related endpoints",
+      "follow_routes.rs": "API routes for artist follow/unfollow endpoints",
+      "playlist_routes.rs": "API routes for playlist-related endpoints",
+      "preference_routes.rs": "API routes for user song preferences",
+      "song_routes.rs": "API routes for song-related endpoints",
+      "user_routes.rs": "API routes for user registration and authentication"
+    },
+    "utils.rs": "Utility functions used across the application"
+  }
+}
