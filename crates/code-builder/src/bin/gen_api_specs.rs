@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
     println!("API IDEA: {}", api_idea);
 
     // IO
-    let project_path = Path::new("examples/projects/").join(project);
+    let project_path = Path::new("examples/projects/").join(project).join("specs/");
     fs::create_dir_all(project_path.clone())?;
 
     let serial_number = fs::read_dir(project_path.clone())?
