@@ -1,26 +1,24 @@
 {
   "src": {
-    "config.rs": "Contains configuration settings for the API.",
-    "db.rs": "Handles the connection and interaction with the MySQL database.",
-    "docs": {
-      "index.md": "Documentation for the API endpoints and usage examples."
-    },
-    "error.rs": "Defines custom error types for the API.",
+    "config.rs": "Configuration file for the API",
+    "controllers.rs": "Controller functions that handle the business logic of the API",
+    "db.rs": "Database connection and query functions",
     "handlers": {
-      "companies.rs": "Handles the HTTP requests related to companies.",
-      "customers.rs": "Handles the HTTP requests related to customers.",
-      "items.rs": "Handles the HTTP requests related to items in an order.",
-      "orders.rs": "Handles the HTTP requests related to orders.",
-      "products.rs": "Handles the HTTP requests related to products."
+      "companies.rs": "Request handlers for company endpoints",
+      "customers.rs": "Request handlers for customer endpoints",
+      "orders.rs": "Request handlers for order endpoints",
+      "products.rs": "Request handlers for product endpoints"
     },
-    "main.rs": "The entry point of the application.",
+    "main.rs": "Entry point of the application",
     "middlewares": {
-      "auth.rs": "Provides authentication and authorization middleware for protected endpoints.",
-      "error_handler.rs": "Handles errors and generates appropriate HTTP responses.",
-      "validation.rs": "Performs data validation on incoming requests."
+      "authentication.rs": "Middleware for authentication and authorization",
+      "error_handling.rs": "Middleware for handling errors and generating error responses",
+      "validation.rs": "Middleware for request data validation"
     },
-    "models.rs": "Defines the data models for customers, companies, orders, and products.",
-    "routes.rs": "Defines the API routes and maps them to their respective handlers.",
-    "utils.rs": "Contains utility functions used throughout the application."
+    "models.rs": "Data models for customers, companies, orders, and products",
+    "repositories.rs": "Database query functions specific to each model",
+    "routes.rs": "Defines the API routes and maps them to corresponding request handlers",
+    "services.rs": "Business logic functions that interact with repositories and models",
+    "utils.rs": "Utility functions and helper modules"
   }
 }

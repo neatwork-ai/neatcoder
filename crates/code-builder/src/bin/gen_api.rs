@@ -1,10 +1,12 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
+use code_builder::{fs::Files, get_sql_statements};
 use dotenv::dotenv;
 use gluon::{
     ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels},
     serde::json::AsJson,
-    workflows::generate_api::gen_project_scaffold,
+    workflows::generate_api::{gen_code, gen_project_scaffold, gen_work_schedule},
 };
+use serde_json::from_value;
 use std::io::Read;
 use std::{env, fs::File, path::Path};
 use std::{fs, io::Write};
@@ -27,14 +29,60 @@ async fn main() -> Result<()> {
         .temperature(0.7)
         .top_p(0.9)?;
 
+    let sql_stmts = get_sql_statements(project_path)?;
+
+    let data_model = sql_stmts
+        .iter()
+        .map(|s| s.raw.clone())
+        .collect::<Vec<String>>();
+
     let api_description =
         get_api_description(project_path.join("specs").as_path(), description_filename)?;
 
-    let scaffold = gen_project_scaffold(&client, &job, api_description).await?;
+    let scaffold = gen_project_scaffold(&client, &job, &api_description).await?;
+    let dep_graph =
+        gen_work_schedule(&client, &job, &api_description, &data_model, &scaffold).await?;
 
     let scaffold_json = scaffold.as_str().strip_json()?;
+    let dep_graph_json = dep_graph.as_str().strip_json()?;
 
-    println!("Project Scaffold: {:?}", scaffold_json);
+    // let files: Files = match from_value::<Files>(dep_graph_json) {
+    //     Ok(files) => {
+    //         files
+    //         // println!("{:?}", files);
+    //     }
+    //     Err(e) => {
+    //         // Handle the error
+    //         return Err(anyhow!(
+    //             "Error converting dependecy graph to `Files` struct"
+    //         ));
+    //     }
+    // };
+
+    // let mut prior_code = vec![];
+
+    // for file in files.0.iter().rev() {
+    //     let code = gen_code(
+    //         &client,
+    //         &job,
+    //         api_description.clone(),
+    //         &data_model,
+    //         scaffold_json.to_string(),
+    //         &prior_code, // prior_code
+    //         file,
+    //     )
+    //     .await?;
+
+    //     // write to file
+    //     let file_path = project_path.join(format!("codebase/{}.json", file));
+    //     fs::create_dir_all(file_path.clone())?;
+    //     // TODO
+
+    //     // push
+    //     prior_code.push(code);
+    // }
+
+    // println!("Project Dependency graph: {:?}", dep_graph_json);
 
     // IO
     let project_path = Path::new("examples/projects/").join(project);
@@ -47,10 +95,17 @@ async fn main() -> Result<()> {
         + 1;
 
     let file_path = project_path.join(format!("fs/{}.json", serial_number));
+    fs::create_dir_all(file_path.clone())?;
     let mut scaffold_file = File::create(file_path.clone())
         .with_context(|| format!(r#"Could not create "{path}""#, path = file_path.display()))?;
 
+    let file_path = project_path.join(format!("dg/{}.json", serial_number));
+    fs::create_dir_all(file_path.clone())?;
+    let mut graph_file = File::create(file_path.clone())
+        .with_context(|| format!(r#"Could not create "{path}""#, path = file_path.display()))?;
+
     scaffold_file.write_all(serde_json::to_string_pretty(&scaffold_json)?.as_bytes())?;
+    graph_file.write_all(serde_json::to_string_pretty(&dep_graph_json)?.as_bytes())?;
 
     Ok(())
 }
