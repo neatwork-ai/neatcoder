@@ -17,7 +17,7 @@ async fn main() -> Result<()> {
     let mut args: Vec<String> = env::args().collect();
 
     let project = args.pop().unwrap();
-    let project_path = format!("examples/models/{}", project);
+    let project_path = format!("examples/projects/{}/models", project);
     let project_path = Path::new(project_path.as_str());
 
     let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
