@@ -1,0 +1,19 @@
+{
+  "src": {
+    "config.rs": "Configuration module for the API",
+    "db.rs": "Module for connecting to the MySQL database",
+    "handlers": {
+      "company.rs": "Module containing request handlers for company endpoints",
+      "customer.rs": "Module containing request handlers for customer endpoints",
+      "product.rs": "Module containing request handlers for product endpoints",
+      "purchase.rs": "Module containing request handlers for purchase endpoints"
+    },
+    "main.rs": "Entry point of the API server",
+    "middlewares": {
+      "authentication.rs": "Middleware for authentication",
+      "authorization.rs": "Middleware for authorization"
+    },
+    "models.rs": "Module containing the data models for customers, companies, products, and purchases",
+    "utils.rs": "Utility functions for input validation, error handling, pagination, and filtering"
+  }
+}

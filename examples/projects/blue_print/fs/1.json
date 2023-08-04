@@ -1,0 +1,26 @@
+{
+  "src": {
+    "config.rs": "Contains configuration settings for the API.",
+    "db.rs": "Handles the connection and interaction with the MySQL database.",
+    "docs": {
+      "index.md": "Documentation for the API endpoints and usage examples."
+    },
+    "error.rs": "Defines custom error types for the API.",
+    "handlers": {
+      "companies.rs": "Handles the HTTP requests related to companies.",
+      "customers.rs": "Handles the HTTP requests related to customers.",
+      "items.rs": "Handles the HTTP requests related to items in an order.",
+      "orders.rs": "Handles the HTTP requests related to orders.",
+      "products.rs": "Handles the HTTP requests related to products."
+    },
+    "main.rs": "The entry point of the application.",
+    "middlewares": {
+      "auth.rs": "Provides authentication and authorization middleware for protected endpoints.",
+      "error_handler.rs": "Handles errors and generates appropriate HTTP responses.",
+      "validation.rs": "Performs data validation on incoming requests."
+    },
+    "models.rs": "Defines the data models for customers, companies, orders, and products.",
+    "routes.rs": "Defines the API routes and maps them to their respective handlers.",
+    "utils.rs": "Contains utility functions used throughout the application."
+  }
+}
