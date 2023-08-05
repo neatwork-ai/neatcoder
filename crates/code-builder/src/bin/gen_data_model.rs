@@ -27,7 +27,9 @@ async fn main() -> Result<()> {
     let data_model = DataModel::from_sql(&sql_str)?;
 
     // IO
-    let project_path = Path::new("examples/models/").join(company_name);
+    let project_path = Path::new("examples/projects/")
+        .join(company_name)
+        .join("models/");
     fs::create_dir_all(project_path.clone())?;
 
     for dll in data_model.iter() {

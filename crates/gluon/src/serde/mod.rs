@@ -49,17 +49,28 @@ impl<'a> AsFormat for &'a str {
         // // TODO: Generalise whenever needed
         let start_delimiter_string = format!("```{}", format);
         let start_delimiter = start_delimiter_string.as_str();
-        let end_delimiter = "```";
+        let default_delimiter = "```";
+        let mut default = false;
 
-        let start_loc = self.find(start_delimiter).expect(&format!(
-            "Unable to convert LLM output to {fmt}. The {fmt} object seems to be missing in: \n{}",
-            self,
-            fmt = format,
-        ));
+        let start_loc = self.find(start_delimiter).unwrap_or_else(|| {
+            println!(
+                "Unable to find the primary delimiter. Attempting to use the fallback delimiter in: \n{}",
+                self
+            );
 
-        let start_index = start_loc + start_delimiter.len();
+            default = true;
+        
+            // Fallback logic: try finding the fallback delimiter
+            self.find("```").expect(&format!(
+                "Unable to convert LLM output to {fmt}. Delimiters seem to be missing in: \n{input}",
+                input = self,
+                fmt = format
+            ))
+        });
 
-        let end_loc = self[start_index..].find(end_delimiter).expect(&format!(
+        let start_index = start_loc + if (default != true) {start_delimiter.len()} else {default_delimiter.len()};
+
+        let end_loc = self[start_index..].find(default_delimiter).expect(&format!(
             "Unable to convert LLM output to {fmt}. Could not find ending backticks '```': \n{}",
             self,
             fmt = format,
@@ -78,7 +89,7 @@ impl<'a> AsFormat for &'a str {
         T: Debug,
     {
         // TODO: Generalise whenever needed
-        // TODO: Add some tolerance if GPT forgot to put the format delimiter..
+        // TODO: Need to implement fallback logig just like in the function `strip_format`
         let start_delimiter_string = format!("```{}", format);
         let start_delimiter = start_delimiter_string.as_str();
         let end_delimiter = "```";

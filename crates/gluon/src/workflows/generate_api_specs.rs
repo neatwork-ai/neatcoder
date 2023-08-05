@@ -8,7 +8,7 @@ use anyhow::Result;
 pub async fn generate_api_specs(
     client: &OpenAI,
     job: &OpenAIJob,
-    mut data_model: Vec<String>,
+    data_model: &Vec<String>,
 ) -> Result<String> {
     let mut prompts = Vec::new();
 
@@ -19,10 +19,10 @@ pub async fn generate_api_specs(
         ),
     });
 
-    for model in data_model.drain(..) {
+    for model in data_model.iter() {
         prompts.push(OpenAIMsg {
             role: GptRole::User,
-            content: model,
+            content: model.clone(),
         });
     }
 

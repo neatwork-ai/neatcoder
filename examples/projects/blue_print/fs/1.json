@@ -1,0 +1,24 @@
+{
+  "src": {
+    "config.rs": "Configuration file for the API",
+    "controllers.rs": "Controller functions that handle the business logic of the API",
+    "db.rs": "Database connection and query functions",
+    "handlers": {
+      "companies.rs": "Request handlers for company endpoints",
+      "customers.rs": "Request handlers for customer endpoints",
+      "orders.rs": "Request handlers for order endpoints",
+      "products.rs": "Request handlers for product endpoints"
+    },
+    "main.rs": "Entry point of the application",
+    "middlewares": {
+      "authentication.rs": "Middleware for authentication and authorization",
+      "error_handling.rs": "Middleware for handling errors and generating error responses",
+      "validation.rs": "Middleware for request data validation"
+    },
+    "models.rs": "Data models for customers, companies, orders, and products",
+    "repositories.rs": "Database query functions specific to each model",
+    "routes.rs": "Defines the API routes and maps them to corresponding request handlers",
+    "services.rs": "Business logic functions that interact with repositories and models",
+    "utils.rs": "Utility functions and helper modules"
+  }
+}

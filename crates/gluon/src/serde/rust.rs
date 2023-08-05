@@ -1,4 +1,3 @@
-use std::ops::{Deref, DerefMut};
 use syn::File;
 
 use super::AsFormat;
@@ -25,32 +24,18 @@ impl<'a> AsRust for &'a str {
 }
 
 #[derive(Debug)]
-pub struct Rust(File);
-
-impl AsRef<File> for Rust {
-    fn as_ref(&self) -> &File {
-        &self.0
-    }
-}
-
-impl Deref for Rust {
-    type Target = File;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Rust {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
+pub struct Rust {
+    pub raw: String,
+    pub ast: File,
 }
 
 fn deserialize_rust(rust_str: &str) -> Result<Rust, GluonError> {
     let syntax_tree = syn::parse_file(rust_str)?;
 
-    Ok(Rust(syntax_tree))
+    Ok(Rust {
+        raw: rust_str.to_string(),
+        ast: syntax_tree,
+    })
 }
 
 #[test]
@@ -95,7 +80,7 @@ fn main() {
 
     let actual = prompt.as_str().strip_rust()?;
 
-    println!("{:?}", actual.items);
+    println!("{:?}", actual.ast.items);
 
     // assert_eq!(actual, expected);
 
