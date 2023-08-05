@@ -1,5 +1,4 @@
 use scraper::Html;
-use std::ops::{Deref, DerefMut};
 
 use super::AsFormat;
 use crate::err::GluonError;
@@ -25,28 +24,14 @@ impl<'a> AsHtml for &'a str {
 }
 
 #[derive(Debug)]
-pub struct Dom(Html);
-
-impl AsRef<Html> for Dom {
-    fn as_ref(&self) -> &Html {
-        &self.0
-    }
-}
-
-impl Deref for Dom {
-    type Target = Html;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Dom {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
+pub struct Dom {
+    pub raw: String,
+    pub html: Html,
 }
 
 fn deserialize_html(html_str: &str) -> Result<Dom, GluonError> {
-    Ok(Dom(Html::parse_document(html_str)))
+    Ok(Dom {
+        raw: html_str.to_string(),
+        html: Html::parse_document(html_str),
+    })
 }

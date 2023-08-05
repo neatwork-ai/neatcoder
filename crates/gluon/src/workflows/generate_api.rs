@@ -73,10 +73,12 @@ You are a Rust engineer tasked with creating an API in Rust.
 You are assigned to build the API based on the project folder structure. Your current task is to order the files in accordance to the order of work that best fits the file dependencies.
 The project scaffold is the following:\n{}\n
 
-Answer in JSON format (Do not forget to start with ```json). Define the order by adding the file names to an ordered list.
+Answer in JSON format. Define the order by adding the file names to an ordered list (START WITH THE DELIMITER '```json').
 Use the following schema:
 
+```json
 {{'order': [...]}}
+```
 ", project_scaffold);
 
     prompts.push(OpenAIMsg {

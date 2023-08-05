@@ -1,5 +1,4 @@
 use rustpython_parser::{ast::Suite, parser};
-use std::ops::{Deref, DerefMut};
 
 use super::AsFormat;
 use crate::err::GluonError;
@@ -25,26 +24,9 @@ impl<'a> AsPython for &'a str {
 }
 
 #[derive(Debug)]
-pub struct Python(Suite);
-
-impl AsRef<Suite> for Python {
-    fn as_ref(&self) -> &Suite {
-        &self.0
-    }
-}
-
-impl Deref for Python {
-    type Target = Suite;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Python {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
+pub struct Python {
+    pub raw: String,
+    pub ast: Suite,
 }
 
 fn deserialize_python(python_str: &str) -> Result<Python, GluonError> {
@@ -54,5 +36,8 @@ fn deserialize_python(python_str: &str) -> Result<Python, GluonError> {
     // Parse the tokens into an AST
     let ast = parser::parse_program(python_str, "<stdin>")?; //.map_error(|e| );
 
-    Ok(Python(ast))
+    Ok(Python {
+        raw: python_str.to_string(),
+        ast,
+    })
 }

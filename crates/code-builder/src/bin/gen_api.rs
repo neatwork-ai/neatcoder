@@ -46,47 +46,56 @@ async fn main() -> Result<()> {
     let scaffold_json = scaffold.as_str().strip_json()?;
     let dep_graph_json = dep_graph.as_str().strip_json()?;
 
-    // let files: Files = match from_value::<Files>(dep_graph_json) {
-    //     Ok(files) => {
-    //         files
-    //         // println!("{:?}", files);
-    //     }
-    //     Err(e) => {
-    //         // Handle the error
-    //         return Err(anyhow!(
-    //             "Error converting dependecy graph to `Files` struct"
-    //         ));
-    //     }
-    // };
+    let files: Files = match from_value::<Files>(dep_graph_json["order"].clone()) {
+        Ok(files) => files,
+        Err(e) => {
+            // Handle the error
+            return Err(anyhow!(
+                "Error converting dependecy graph to `Files` struct: {e}"
+            ));
+        }
+    };
 
-    // let mut prior_code = vec![];
+    let mut prior_code = vec![];
+    println!("b");
 
-    // for file in files.0.iter().rev() {
-    //     let code = gen_code(
-    //         &client,
-    //         &job,
-    //         api_description.clone(),
-    //         &data_model,
-    //         scaffold_json.to_string(),
-    //         &prior_code, // prior_code
-    //         file,
-    //     )
-    //     .await?;
+    for file in files.0.iter().rev() {
+        let code = gen_code(
+            &client,
+            &job,
+            api_description.clone(),
+            &data_model,
+            scaffold_json.to_string(),
+            &prior_code, // prior_code
+            file,
+        )
+        .await?;
 
-    //     // write to file
-    //     let file_path = project_path.join(format!("codebase/{}.json", file));
-    //     fs::create_dir_all(file_path.clone())?;
-    //     // TODO
+        // write to file
+        let file_path = Path::new(file);
 
-    //     // push
-    //     prior_code.push(code);
-    // }
+        if let Some(parent_path) = file_path.parent() {
+            let parent_path = project_path.join("codebase/").join(parent_path);
+            fs::create_dir_all(parent_path)?;
+        }
+
+        let file_path = project_path.join(format!("codebase/{}", file));
+
+        let mut code_file = File::create(file_path.clone())
+            .with_context(|| format!(r#"Could not create "{path}""#, path = file_path.display()))?;
+        code_file.write_all(code.as_bytes())?;
+
+        // push
+        prior_code.push(code);
+    }
+    println!("c");
 
     // println!("Project Dependency graph: {:?}", dep_graph_json);
 
     // IO
     let project_path = Path::new("examples/projects/").join(project);
     fs::create_dir_all(project_path.clone())?;
+    println!("d");
 
     let serial_number = fs::read_dir(project_path.clone())?
         .filter_map(Result::ok)
@@ -94,6 +103,7 @@ async fn main() -> Result<()> {
         .count()
         + 1;
 
+    println!("e");
     let file_path = project_path.join(format!("fs/{}.json", serial_number));
     fs::create_dir_all(file_path.clone())?;
     let mut scaffold_file = File::create(file_path.clone())
