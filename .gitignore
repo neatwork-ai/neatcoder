@@ -21,4 +21,4 @@ Cargo.lock
 .env
 .vscode/
 .DS_Store
-examples/projects/*/codebase/
+examples/projects/*/jobs/
