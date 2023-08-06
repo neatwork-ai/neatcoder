@@ -3,9 +3,9 @@ use code_builder::{fs::Files, get_sql_statements};
 use dotenv::dotenv;
 use gluon::{
     ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels},
-    serde::{json::AsJson, rust::AsRust},
     workflows::generate_api::{gen_code, gen_project_scaffold, gen_work_schedule},
 };
+use parser::parser::{json::AsJson, rust::AsRust};
 use serde_json::{from_value, Value};
 use std::{env, fs::File, path::Path};
 use std::{fs, io::Write};

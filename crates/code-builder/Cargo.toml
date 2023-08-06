@@ -11,6 +11,8 @@ path = "src/bin/gen_data_model.rs"
 
 [dependencies]
 gluon = { path = "../gluon" }
+parser = { path = "../parser" }
+
 serde = { version = "1.0", features = ["derive"] }
 sqlparser = "0.36"
 anyhow = "1.0"

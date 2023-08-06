@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::err::GluonError;
+use crate::err::ParseError;
 
 pub mod csv;
 pub mod html;
@@ -11,39 +11,39 @@ pub mod sql;
 pub mod yaml;
 
 pub trait AsFormat {
-    fn as_format<F, T, E>(&self, deserializer: F) -> Result<T, GluonError>
+    fn as_format<F, T, E>(&self, deserializer: F) -> Result<T, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
-        E: Into<GluonError>,
+        E: Into<ParseError>,
         T: Debug;
 
-    fn strip_format<F, T, E>(&self, deserializer: F, format: &str) -> Result<T, GluonError>
+    fn strip_format<F, T, E>(&self, deserializer: F, format: &str) -> Result<T, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
-        E: Into<GluonError>,
+        E: Into<ParseError>,
         T: Debug;
 
-    fn strip_formats<F, T, E>(&self, deserializer: F, format: &str) -> Result<Vec<T>, GluonError>
+    fn strip_formats<F, T, E>(&self, deserializer: F, format: &str) -> Result<Vec<T>, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
-        E: Into<GluonError>,
+        E: Into<ParseError>,
         T: Debug;
 }
 
 impl<'a> AsFormat for &'a str {
-    fn as_format<F, T, E>(&self, deserializer: F) -> Result<T, GluonError>
+    fn as_format<F, T, E>(&self, deserializer: F) -> Result<T, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
-        E: Into<GluonError>,
+        E: Into<ParseError>,
         T: Debug,
     {
         deserializer(self).map_err(|e| e.into())
     }
 
-    fn strip_format<F, T, E>(&self, deserializer: F, format: &str) -> Result<T, GluonError>
+    fn strip_format<F, T, E>(&self, deserializer: F, format: &str) -> Result<T, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
-        E: Into<GluonError>,
+        E: Into<ParseError>,
         T: Debug,
     {
         // // TODO: Generalise whenever needed
@@ -68,7 +68,7 @@ impl<'a> AsFormat for &'a str {
             ))
         });
 
-        let start_index = start_loc + if (default != true) {start_delimiter.len()} else {default_delimiter.len()};
+        let start_index = start_loc + if default != true {start_delimiter.len()} else {default_delimiter.len()};
 
         let end_loc = self[start_index..].find(default_delimiter).expect(&format!(
             "Unable to convert LLM output to {fmt}. Could not find ending backticks '```': \n{}",
@@ -82,10 +82,10 @@ impl<'a> AsFormat for &'a str {
         format_str.as_format(deserializer)
     }
 
-    fn strip_formats<F, T, E>(&self, deserializer: F, format: &str) -> Result<Vec<T>, GluonError>
+    fn strip_formats<F, T, E>(&self, deserializer: F, format: &str) -> Result<Vec<T>, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
-        E: Into<GluonError>,
+        E: Into<ParseError>,
         T: Debug,
     {
         // TODO: Generalise whenever needed

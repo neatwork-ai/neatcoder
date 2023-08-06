@@ -9,24 +9,24 @@ use std::{
 };
 
 use super::AsFormat;
-use crate::err::GluonError;
+use crate::err::ParseError;
 
 pub trait AsSql: AsFormat {
-    fn as_sql(&self) -> Result<Sql, GluonError>;
-    fn strip_sql(&self) -> Result<Sql, GluonError>;
-    fn strip_sqls(&self) -> Result<Vec<Sql>, GluonError>;
+    fn as_sql(&self) -> Result<Sql, ParseError>;
+    fn strip_sql(&self) -> Result<Sql, ParseError>;
+    fn strip_sqls(&self) -> Result<Vec<Sql>, ParseError>;
 }
 
 impl<'a> AsSql for &'a str {
-    fn as_sql(&self) -> Result<Sql, GluonError> {
+    fn as_sql(&self) -> Result<Sql, ParseError> {
         self.as_format(deserialize_sql)
     }
 
-    fn strip_sql(&self) -> Result<Sql, GluonError> {
+    fn strip_sql(&self) -> Result<Sql, ParseError> {
         self.strip_format(deserialize_sql, "sql")
     }
 
-    fn strip_sqls(&self) -> Result<Vec<Sql>, GluonError> {
+    fn strip_sqls(&self) -> Result<Vec<Sql>, ParseError> {
         self.strip_formats(deserialize_sql, "sql")
     }
 }
@@ -43,9 +43,9 @@ pub struct SqlStatement {
 }
 
 impl Sql {
-    pub fn as_stmt(mut self) -> Result<SqlStatement, GluonError> {
+    pub fn as_stmt(mut self) -> Result<SqlStatement, ParseError> {
         if self.len() != 1 {
-            Err(GluonError::from(anyhow!(
+            Err(ParseError::from(anyhow!(
                 "Failed to convert `Sql` to `SqlStatement` as it's not singleton"
             )))
         } else {
@@ -91,7 +91,7 @@ impl fmt::Display for SqlStatement {
     }
 }
 
-fn deserialize_sql(sql_str: &str) -> Result<Sql, GluonError> {
+fn deserialize_sql(sql_str: &str) -> Result<Sql, ParseError> {
     // TODO: Support multiple dialects
     let dialect = GenericDialect {};
 
@@ -112,7 +112,7 @@ fn deserialize_sql(sql_str: &str) -> Result<Sql, GluonError> {
         let mut syntax_tree = Parser::parse_sql(&dialect, raw_stmt).unwrap();
 
         if syntax_tree.len() > 1 {
-            return Err(GluonError::from(anyhow!(
+            return Err(ParseError::from(anyhow!(
                 "SQL Syntax Tree should contain only one statement as script was already divided by statements"
             )));
         }

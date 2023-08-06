@@ -2,9 +2,9 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use super::AsFormat;
-use crate::err::GluonError;
+use crate::err::ParseError;
 
-pub fn from_prompt<T: DeserializeOwned>(prompt: &str) -> Result<T, GluonError> {
+pub fn from_prompt<T: DeserializeOwned>(prompt: &str) -> Result<T, ParseError> {
     let json = prompt.strip_json()?;
     let obj = serde_json::from_value(json)?;
 
@@ -12,13 +12,13 @@ pub fn from_prompt<T: DeserializeOwned>(prompt: &str) -> Result<T, GluonError> {
 }
 
 pub trait AsJson: AsFormat {
-    fn as_json(&self) -> Result<Value, GluonError>;
-    fn strip_json(&self) -> Result<Value, GluonError>;
-    fn strip_jsons(&self) -> Result<Vec<Value>, GluonError>;
+    fn as_json(&self) -> Result<Value, ParseError>;
+    fn strip_json(&self) -> Result<Value, ParseError>;
+    fn strip_jsons(&self) -> Result<Vec<Value>, ParseError>;
 }
 
 impl<'a> AsJson for &'a str {
-    fn as_json(&self) -> Result<Value, GluonError> {
+    fn as_json(&self) -> Result<Value, ParseError> {
         // The function `serde_json::from_str` has a signature of
         // `fn(&'a str) -> Result<T, serde_json::Error>`. In this case, 'a
         // is tied to the specific input str's lifetime, it is not for any
@@ -33,7 +33,7 @@ impl<'a> AsJson for &'a str {
     }
 
     // Assumes that the json is encapsulated in ```json{actual_json}``` which is how OpenAI does it
-    fn strip_json(&self) -> Result<Value, GluonError> {
+    fn strip_json(&self) -> Result<Value, ParseError> {
         // The function `serde_json::from_str` has a signature of
         // `fn(&'a str) -> Result<T, serde_json::Error>`. In this case, 'a
         // is tied to the specific input str's lifetime, it is not for any
@@ -47,7 +47,7 @@ impl<'a> AsJson for &'a str {
         self.strip_format(deserializer, "json")
     }
 
-    fn strip_jsons(&self) -> Result<Vec<Value>, GluonError> {
+    fn strip_jsons(&self) -> Result<Vec<Value>, ParseError> {
         // The function `serde_json::from_str` has a signature of
         // `fn(&'a str) -> Result<T, serde_json::Error>`. In this case, 'a
         // is tied to the specific input str's lifetime, it is not for any

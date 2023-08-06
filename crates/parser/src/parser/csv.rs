@@ -5,8 +5,9 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use crate::err::ParseError;
+
 use super::AsFormat;
-use crate::err::GluonError;
 
 #[derive(Debug)]
 pub struct CsvTable(Vec<CsvRow>);
@@ -49,27 +50,27 @@ impl DerefMut for CsvRow {
 }
 
 pub trait AsCsv: AsFormat {
-    fn as_csv(&self) -> Result<CsvTable, GluonError>;
-    fn strip_csv(&self) -> Result<CsvTable, GluonError>;
-    fn strip_csvs(&self) -> Result<Vec<CsvTable>, GluonError>;
+    fn as_csv(&self) -> Result<CsvTable, ParseError>;
+    fn strip_csv(&self) -> Result<CsvTable, ParseError>;
+    fn strip_csvs(&self) -> Result<Vec<CsvTable>, ParseError>;
 }
 
 impl<'a> AsCsv for &'a str {
-    fn as_csv(&self) -> Result<CsvTable, GluonError> {
+    fn as_csv(&self) -> Result<CsvTable, ParseError> {
         self.as_format(deserialize_csv)
     }
 
     // Assumes that the yaml is encapsulated in ```html{actual_html}``` which is how OpenAI does it
-    fn strip_csv(&self) -> Result<CsvTable, GluonError> {
+    fn strip_csv(&self) -> Result<CsvTable, ParseError> {
         self.strip_format(deserialize_csv, "csv")
     }
 
-    fn strip_csvs(&self) -> Result<Vec<CsvTable>, GluonError> {
+    fn strip_csvs(&self) -> Result<Vec<CsvTable>, ParseError> {
         self.strip_formats(deserialize_csv, "csv")
     }
 }
 
-fn deserialize_csv(input: &str) -> Result<CsvTable, GluonError> {
+fn deserialize_csv(input: &str) -> Result<CsvTable, ParseError> {
     let mut reader = Reader::from_reader(Cursor::new(input));
     let mut records = Vec::new();
 

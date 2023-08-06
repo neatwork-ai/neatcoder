@@ -99,21 +99,6 @@ impl Deref for Tasks {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use csv::Writer;
-    use std::io::Cursor;
-
-    #[test]
-    fn parse_csv() -> Result<()> {
-        let tasks = Tasks::sample();
-
-        let mut writer = Writer::from_writer(Cursor::new(Vec::new()));
-        writer.serialize(tasks).expect("Failed to serialize to CSV");
-        let csv_string = writer.into_inner().expect("Failed to retrieve CSV data");
-
-        println!("{:?}", csv_string);
-
-        Ok(())
-    }
 
     #[test]
     fn parse_correct_string() -> Result<()> {

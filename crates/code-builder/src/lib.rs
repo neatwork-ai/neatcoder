@@ -5,7 +5,7 @@ use std::{
     path::Path,
 };
 
-use gluon::serde::sql::{AsSql, SqlStatement};
+use parser::parser::sql::{AsSql, SqlStatement};
 
 pub mod crates;
 pub mod fs;

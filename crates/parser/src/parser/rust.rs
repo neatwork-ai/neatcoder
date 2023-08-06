@@ -1,24 +1,24 @@
 use syn::File;
 
 use super::AsFormat;
-use crate::err::GluonError;
+use crate::err::ParseError;
 
 pub trait AsRust: AsFormat {
-    fn as_rust(&self) -> Result<Rust, GluonError>;
-    fn strip_rust(&self) -> Result<Rust, GluonError>;
-    fn strip_rusts(&self) -> Result<Vec<Rust>, GluonError>;
+    fn as_rust(&self) -> Result<Rust, ParseError>;
+    fn strip_rust(&self) -> Result<Rust, ParseError>;
+    fn strip_rusts(&self) -> Result<Vec<Rust>, ParseError>;
 }
 
 impl<'a> AsRust for &'a str {
-    fn as_rust(&self) -> Result<Rust, GluonError> {
+    fn as_rust(&self) -> Result<Rust, ParseError> {
         self.as_format(deserialize_rust)
     }
 
-    fn strip_rust(&self) -> Result<Rust, GluonError> {
+    fn strip_rust(&self) -> Result<Rust, ParseError> {
         self.strip_format(deserialize_rust, "rust")
     }
 
-    fn strip_rusts(&self) -> Result<Vec<Rust>, GluonError> {
+    fn strip_rusts(&self) -> Result<Vec<Rust>, ParseError> {
         self.strip_formats(deserialize_rust, "rust")
     }
 }
@@ -29,7 +29,7 @@ pub struct Rust {
     pub ast: File,
 }
 
-fn deserialize_rust(rust_str: &str) -> Result<Rust, GluonError> {
+fn deserialize_rust(rust_str: &str) -> Result<Rust, ParseError> {
     println!("THE STR IS: {}", rust_str);
 
     let syntax_tree = syn::parse_file(rust_str)?;
@@ -41,7 +41,7 @@ fn deserialize_rust(rust_str: &str) -> Result<Rust, GluonError> {
 }
 
 #[test]
-fn test_parse_2() -> Result<(), GluonError> {
+fn test_parse_2() -> Result<(), ParseError> {
     let code_str = "use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
 use std::env;
@@ -108,7 +108,7 @@ async fn main() -> std::io::Result<()> {
 }
 
 #[test]
-fn test_parse() -> Result<(), GluonError> {
+fn test_parse() -> Result<(), ParseError> {
     let code_str = "
 use structopt::StructOpt;
 
