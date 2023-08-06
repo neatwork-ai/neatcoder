@@ -5,8 +5,13 @@ use gluon::{
     ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels},
     workflows::generate_api_specs::generate_api_specs,
 };
-use std::{env, fs::File, path::Path};
-use std::{fs, io::Write};
+use std::{
+    env,
+    fs::{self, File},
+    io::Write,
+    path::Path,
+};
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -39,13 +44,9 @@ async fn main() -> Result<()> {
     let project_path = Path::new("examples/projects/").join(project).join("specs/");
     fs::create_dir_all(project_path.clone())?;
 
-    let serial_number = fs::read_dir(project_path.clone())?
-        .filter_map(Result::ok)
-        .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))
-        .count()
-        + 1;
+    let uuid = Uuid::new_v4();
 
-    let file_path = project_path.join(format!("{}.txt", serial_number));
+    let file_path = project_path.join(format!("{}.txt", uuid));
     let mut api_file = File::create(file_path.clone())
         .with_context(|| format!(r#"Could not create "{path}""#, path = file_path.display()))?;
 
