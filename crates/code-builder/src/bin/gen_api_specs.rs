@@ -1,10 +1,7 @@
 use anyhow::{Context, Result};
-use code_builder::get_sql_statements;
+use code_builder::{get_sql_statements, workflows::generate_api_specs::generate_api_specs};
 use dotenv::dotenv;
-use gluon::{
-    ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels},
-    workflows::generate_api_specs::generate_api_specs,
-};
+use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 use std::{
     env,
     fs::{self, File},

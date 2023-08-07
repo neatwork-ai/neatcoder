@@ -1,12 +1,15 @@
 use anyhow::{anyhow, Context, Result};
+use code_builder::genesis;
+use code_builder::jobs::job::Job;
+use code_builder::state::AppState;
+use code_builder::workflows::generate_api::gen_code;
 use code_builder::{fs::Files, get_sql_statements};
 use dotenv::dotenv;
-use gluon::{
-    ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels},
-    workflows::generate_api::{gen_code, gen_project_scaffold, gen_work_schedule},
-};
+use futures::executor;
+use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 use parser::parser::{json::AsJson, rust::AsRust};
 use serde_json::{from_value, Value};
+use std::sync::{Arc, Mutex};
 use std::{env, fs::File, path::Path};
 use std::{fs, io::Write};
 use std::{io::Read, path::PathBuf};
@@ -23,11 +26,13 @@ async fn main() -> Result<()> {
     let project_path = format!("examples/projects/{}", project);
     let project_path = Path::new(project_path.as_str());
 
-    let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
+    let client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
 
-    let job = OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
-        .temperature(0.7)
-        .top_p(0.9)?;
+    let ai_job = Arc::new(
+        OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
+            .temperature(0.7)
+            .top_p(0.9)?,
+    );
 
     let sql_stmts = get_sql_statements(project_path)?;
 
@@ -38,12 +43,18 @@ async fn main() -> Result<()> {
 
     let api_description = get_api_description(project_path.join("specs").as_path(), job_uuid)?;
 
-    let scaffold = gen_project_scaffold(&client, &job, &api_description).await?;
-    let dep_graph =
-        gen_work_schedule(&client, &job, &api_description, &data_model, &scaffold).await?;
+    let app_state = Arc::new(Mutex::new(AppState::new(api_description)));
 
-    let scaffold_json = scaffold.as_str().strip_json()?;
-    let dep_graph_json = dep_graph.as_str().strip_json()?;
+    let mut job_queue = genesis()?;
+
+    // Execute the jobs and handle the results
+    let scaffold: Arc<String> =
+        executor::block_on(job_queue.execute(client.clone(), ai_job.clone(), app_state.clone()))?;
+    let dep_graph: Arc<String> =
+        executor::block_on(job_queue.execute(client.clone(), ai_job.clone(), app_state.clone()))?;
+
+    let scaffold_json = scaffold.as_str().as_json()?;
+    let dep_graph_json = dep_graph.as_str().as_json()?;
 
     let files: Files = match from_value::<Files>(dep_graph_json["order"].clone()) {
         Ok(files) => files,
@@ -71,25 +82,26 @@ async fn main() -> Result<()> {
     write_scaffold(scaffold_json.clone(), job_path.clone())?;
     write_graph(dep_graph_json, job_path.clone())?;
 
-    // Write code
-    let mut prior_code = vec![];
+    // Add jobs to the job queue
+    for file in files.iter() {
+        let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<Mutex<AppState>>| {
+            gen_code(c, j, state, file.clone())
+        };
 
-    for file in files.0.iter() {
-        let code_string = gen_code(
-            &client,
-            &job,
-            api_description.clone(),
-            &data_model,
-            scaffold_json.to_string(),
-            &prior_code, // prior_code
-            file,
-        )
-        .await?;
+        let job = Job::new(Box::new(closure));
+        job_queue.push_back(job);
+    }
+
+    for job in job_queue.drain(..) {
+        let code_string: Arc<String> =
+            executor::block_on(job.execute(client.clone(), ai_job.clone(), app_state.clone()))?;
 
         println!("The CODEE! {:?}", code_string);
 
+        let file = files.pop_front().unwrap();
+
         // write to file
-        let file_path = Path::new(file);
+        let file_path = Path::new(&file);
 
         if let Some(parent_path) = file_path.parent() {
             let log_path = job_path.join("logs/").join(parent_path);
@@ -110,9 +122,6 @@ async fn main() -> Result<()> {
 
         let code = code_string.as_str().strip_rust()?;
         code_file.write_all(code.raw.as_bytes())?;
-
-        // push
-        prior_code.push(code.raw);
     }
 
     Ok(())

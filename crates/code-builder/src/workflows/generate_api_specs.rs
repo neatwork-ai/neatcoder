@@ -1,9 +1,5 @@
-use crate::ai::openai::{
-    client::OpenAI,
-    job::OpenAIJob,
-    msg::{GptRole, OpenAIMsg},
-};
 use anyhow::Result;
+use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, msg::{OpenAIMsg, GptRole}};
 
 pub async fn generate_api_specs(
     client: &OpenAI,

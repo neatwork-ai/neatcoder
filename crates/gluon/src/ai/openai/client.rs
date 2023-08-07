@@ -1,4 +1,9 @@
+use std::ops::Deref;
+
 use anyhow::{anyhow, Result};
+use futures::stream::StreamExt;
+use tokio::io::AsyncBufReadExt;
+// use futures_util::stream::stream::StreamExt;
 use reqwest::Client;
 use serde_json::{json, Value};
 
@@ -29,7 +34,7 @@ impl OpenAI {
 
     pub async fn chat(
         &self,
-        job: &OpenAIJob,
+        job: impl Deref<Target = OpenAIJob>,
         msgs: &[&OpenAIMsg],
         funcs: &[&String],
         stop_seq: &[String],
@@ -37,7 +42,7 @@ impl OpenAI {
         let client = Client::new();
 
         // fill in your own data as needed
-        let req_body = self.request_body(job, msgs, funcs, stop_seq)?;
+        let req_body = self.request_body(job, msgs, funcs, stop_seq, false)?;
 
         let res = client
             .post("https://api.openai.com/v1/chat/completions")
@@ -65,14 +70,67 @@ impl OpenAI {
         Ok(api_response)
     }
 
-    fn request_body(
+    pub async fn chat_stream(
         &self,
         job: &OpenAIJob,
+        msgs: &[&OpenAIMsg],
+        funcs: &[&String],
+        stop_seq: &[String],
+    ) -> Result<()> {
+        let client = Client::new();
+
+        // fill in your own data as needed
+        let req_body = self.request_body(job, msgs, funcs, stop_seq, true)?;
+
+        let response = client
+            .post("https://api.openai.com/v1/chat/completions")
+            .header(
+                "Authorization",
+                format!(
+                    "Bearer {}",
+                    self.api_key.as_ref().expect("No API Keys provided")
+                ),
+            )
+            .header("Content-Type", "application/json")
+            .json(&req_body)
+            .send()
+            .await?;
+
+        let mut stream = response.bytes_stream();
+
+        while let Some(item) = stream.next().await {
+            match item {
+                Ok(bytes) => {
+                    let s = std::str::from_utf8(&bytes).unwrap();
+                    println!("{}", s);
+                }
+                Err(err) => eprintln!("Error: {}", err),
+            }
+        }
+
+        // // Convert the response into a Stream of Lines
+        // let mut lines_stream = response.lines_stream();
+
+        // // Process each line as it arrives
+        // while let Some(line) = lines_stream.next().await {
+        //     match line {
+        //         Ok(content) => println!("{}", content),
+        //         Err(err) => eprintln!("Error: {}", err),
+        //     }
+        // }
+
+        Ok(())
+    }
+
+    fn request_body(
+        &self,
+        job: impl Deref<Target = OpenAIJob>,
         msgs: &[&OpenAIMsg],
         // TODO: Add to OpenAIJob
         funcs: &[&String],
         // TODO: Add to OpenAIJob
         stop_seq: &[String],
+        stream: bool,
     ) -> Result<Value> {
         let mut data = json!({
             "model": job.model.as_str(),
@@ -125,6 +183,10 @@ impl OpenAI {
 
         if let Some(n) = &job.n {
             data["n"] = serde_json::to_value(n)?;
+        }
+
+        if stream {
+            data["stream"] = serde_json::Value::Bool(true);
         }
 
         Ok(data)

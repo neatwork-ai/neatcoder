@@ -1,10 +1,7 @@
 use anyhow::{Context, Result};
-use code_builder::schema::DataModel;
+use code_builder::{schema::DataModel, workflows::generate_db_schema::generate_db_schema};
 use dotenv::dotenv;
-use gluon::{
-    ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels},
-    workflows::generate_db_schema::generate_db_schema,
-};
+use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 use heck::ToSnakeCase;
 use std::{env, fs::File, path::Path};
 use std::{fs, io::Write};

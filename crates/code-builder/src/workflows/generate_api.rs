@@ -1,15 +1,22 @@
-use crate::ai::openai::{
+use std::sync::{Arc, Mutex};
+
+use anyhow::{anyhow, Result};
+use gluon::ai::openai::{
     client::OpenAI,
     job::OpenAIJob,
     msg::{GptRole, OpenAIMsg},
 };
-use anyhow::Result;
+use parser::parser::{json::AsJson, rust::AsRust};
+
+use crate::state::AppState;
 
 pub async fn gen_project_scaffold(
-    client: &OpenAI,
-    job: &OpenAIJob,
-    api_description: &str,
-) -> Result<String> {
+    client: Arc<OpenAI>,
+    job: Arc<OpenAIJob>,
+    app_state: Arc<Mutex<AppState>>,
+) -> Result<Arc<String>> {
+    let mut state = app_state.lock().unwrap();
+
     let mut prompts = Vec::new();
 
     prompts.push(OpenAIMsg {
@@ -25,7 +32,7 @@ The API should retrieve the relevant data from a MySQL database.
 
 Based on the information provided write the project's folder structure, starting from `src`.
 
-Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json", api_description);
+Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json", state.specs);
 
     prompts.push(OpenAIMsg {
         role: GptRole::User,
@@ -37,17 +44,38 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
     let resp = client.chat(job, &prompts, &[], &[]).await?;
     let answer = resp.choices.first().unwrap().message.content.as_str();
 
-    Ok(String::from(answer))
+    // Update state
+    let scaffold_json = answer.strip_json()?;
+    let fs = scaffold_json.as_str().unwrap();
+    let fs = Arc::new(String::from(fs));
+
+    state.fs = Some(fs.clone());
+
+    Ok(fs)
 }
 
 pub async fn gen_work_schedule(
-    client: &OpenAI,
-    job: &OpenAIJob,
-    api_description: &str,
-    data_model: &Vec<String>,
-    project_scaffold: &str,
-) -> Result<String> {
+    client: Arc<OpenAI>,
+    job: Arc<OpenAIJob>,
+    app_state: Arc<Mutex<AppState>>,
+) -> Result<Arc<String>> {
+    let state = app_state.lock().unwrap();
+
     let mut prompts = Vec::new();
+
+    if state.data_model.is_none() {
+        // TODO: Consider relaxing this and instead gracefully handle the task without the data model
+        return Err(anyhow!("No data model available.."));
+    }
+
+    let data_model = state.data_model.as_ref().unwrap();
+    let api_description = &state.specs;
+
+    if state.fs.is_none() {
+        return Err(anyhow!("No folder scaffold config available.."));
+    }
+
+    let project_scaffold = state.fs.as_ref().unwrap();
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
@@ -93,19 +121,31 @@ Use the following schema:
 
     println!("{}", answer);
 
-    Ok(String::from(answer))
+    let tasks = answer.strip_json()?;
+    let dg = tasks.as_str().unwrap();
+    let dg = Arc::new(String::from(dg));
+
+    Ok(dg)
 }
 
 pub async fn gen_code(
-    client: &OpenAI,
-    job: &OpenAIJob,
-    api_description: String,
-    data_model: &Vec<String>,
-    project_scaffold: String,
-    prior_code: &Vec<String>,
-    filename: &str,
-) -> Result<String> {
+    client: Arc<OpenAI>,
+    job: Arc<OpenAIJob>,
+    app_state: Arc<Mutex<AppState>>,
+    filename: String,
+) -> Result<Arc<String>> {
+    let state = app_state.lock().unwrap();
     let mut prompts = Vec::new();
+
+    let data_model = state.data_model.as_ref().unwrap();
+    let api_description = &state.specs;
+
+    if state.fs.is_none() {
+        return Err(anyhow!("No folder scaffold config available.."));
+    }
+
+    let project_scaffold = state.fs.as_ref().unwrap();
+    let files = state.files.lock().unwrap();
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
@@ -123,10 +163,12 @@ pub async fn gen_code(
 
     prompts.push(OpenAIMsg {
         role: GptRole::User,
-        content: api_description,
+        content: String::from(api_description),
     });
 
-    for code in prior_code.iter() {
+    for file in files.keys() {
+        let code = files.get(file).unwrap();
+
         prompts.push(OpenAIMsg {
             role: GptRole::User,
             content: code.clone(),
@@ -135,7 +177,8 @@ pub async fn gen_code(
 
     prompts.push(OpenAIMsg {
         role: GptRole::User,
-        content: project_scaffold,
+        // Needs to be optimized
+        content: project_scaffold.to_string(),
     });
 
     let main_prompt = format!(
@@ -159,5 +202,15 @@ Your current task is to write the module `{}.rs
 
     println!("{}", answer);
 
-    Ok(String::from(answer))
+    // Update state
+    let mut raw = state.raw.lock().unwrap();
+    raw.insert(filename.to_string(), answer.to_string());
+
+    let code = answer.strip_rust()?;
+
+    let mut files = state.files.lock().unwrap();
+    files.insert(filename.to_string(), code.raw.clone());
+
+    // TODO: Optimize
+    Ok(Arc::new(code.raw.clone()))
 }
