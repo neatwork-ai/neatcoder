@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
     let scaffold_json = scaffold.as_str().as_json()?;
     let dep_graph_json = dep_graph.as_str().as_json()?;
 
-    let files: Files = match from_value::<Files>(dep_graph_json["order"].clone()) {
+    let mut files: Files = match from_value::<Files>(dep_graph_json["order"].clone()) {
         Ok(files) => files,
         Err(e) => {
             // Handle the error
@@ -84,8 +84,10 @@ async fn main() -> Result<()> {
 
     // Add jobs to the job queue
     for file in files.iter() {
+        let file_ = file.clone();
+
         let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<Mutex<AppState>>| {
-            gen_code(c, j, state, file.clone())
+            gen_code(c, j, state, file_)
         };
 
         let job = Job::new(Box::new(closure));
