@@ -3,32 +3,51 @@ use syn::File;
 use super::AsFormat;
 use crate::err::ParseError;
 
+/// Trait providing methods for working with Rust code.
 pub trait AsRust: AsFormat {
+    /// Converts the object to a Rust syntax tree.
     fn as_rust(&self) -> Result<Rust, ParseError>;
+
+    /// Strips the Rust formatting, expecting encapsulation as in OpenAI's format, and returns the Rust syntax tree.
     fn strip_rust(&self) -> Result<Rust, ParseError>;
+
+    /// Strips multiple Rust code blocks, assuming the same encapsulation as `strip_rust`.
     fn strip_rusts(&self) -> Result<Vec<Rust>, ParseError>;
 }
 
 impl<'a> AsRust for &'a str {
+    /// Implementation for converting a string slice to a Rust syntax tree.
     fn as_rust(&self) -> Result<Rust, ParseError> {
         self.as_format(deserialize_rust)
     }
 
+    /// Implementation for stripping Rust code from a string slice, assuming encapsulation like OpenAI.
     fn strip_rust(&self) -> Result<Rust, ParseError> {
         self.strip_format(deserialize_rust, "rust")
     }
 
+    /// Implementation for stripping multiple Rust code blocks from a string slice.
     fn strip_rusts(&self) -> Result<Vec<Rust>, ParseError> {
         self.strip_formats(deserialize_rust, "rust")
     }
 }
 
+/// Struct representing a Rust code block with both raw text and parsed AST.
 #[derive(Debug)]
 pub struct Rust {
+    /// Raw text of the Rust code
     pub raw: String,
+    /// Abstract syntax tree (AST) representation
     pub ast: File,
 }
 
+/// Function to deserialize a Rust code string into a `Rust` struct.
+///
+/// # Arguments
+/// * `rust_str` - The Rust code string to be deserialized.
+///
+/// # Returns
+/// * A `Result` containing a `Rust` struct if successful, or a `ParseError` if an error occurred.
 fn deserialize_rust(rust_str: &str) -> Result<Rust, ParseError> {
     println!("THE STR IS: {}", rust_str);
 

@@ -11,38 +11,52 @@ use std::{
 use super::AsFormat;
 use crate::err::ParseError;
 
+/// Trait providing methods for working with SQL code.
 pub trait AsSql: AsFormat {
+    /// Converts the object to an SQL syntax tree.
     fn as_sql(&self) -> Result<Sql, ParseError>;
+
+    /// Strips the SQL formatting and returns the SQL syntax tree.
     fn strip_sql(&self) -> Result<Sql, ParseError>;
+
+    /// Strips multiple SQL code blocks and returns them as a vector of `Sql` objects.
     fn strip_sqls(&self) -> Result<Vec<Sql>, ParseError>;
 }
 
 impl<'a> AsSql for &'a str {
+    /// Implementation of converting a string slice to an SQL syntax tree.
     fn as_sql(&self) -> Result<Sql, ParseError> {
         self.as_format(deserialize_sql)
     }
 
+    /// Implementation of stripping SQL code from a string slice.
     fn strip_sql(&self) -> Result<Sql, ParseError> {
         self.strip_format(deserialize_sql, "sql")
     }
 
+    /// Implementation of stripping multiple SQL code blocks from a string slice.
     fn strip_sqls(&self) -> Result<Vec<Sql>, ParseError> {
         self.strip_formats(deserialize_sql, "sql")
     }
 }
 
+/// Represents a collection of SQL statements.
 #[derive(Debug)]
 pub struct Sql(Vec<SqlStatement>);
 
+/// Represents an individual SQL statement, including the raw text and parsed AST.
 #[derive(Debug)]
 pub struct SqlStatement {
-    // If we make it such that `Statement` can be serialized back into a string
+    // TODO: If we make it such that `Statement` can be serialized back into a string
     // with correct identation and clean format, then we can consider removing `raw`
+    /// Raw text of the SQL statement
     pub raw: String,
+    /// Parsed AST representation
     pub stmt: Statement,
 }
 
 impl Sql {
+    /// Attempts to convert `Sql` into a single `SqlStatement`. Returns an error if `Sql` is not a singleton.
     pub fn as_stmt(mut self) -> Result<SqlStatement, ParseError> {
         if self.len() != 1 {
             Err(ParseError::from(anyhow!(
@@ -91,6 +105,13 @@ impl fmt::Display for SqlStatement {
     }
 }
 
+/// Function to deserialize an SQL code string into an `Sql` object.
+///
+/// # Arguments
+/// * `sql_str` - The SQL code string to be deserialized.
+///
+/// # Returns
+/// * A `Result` containing an `Sql` object if successful, or a `ParseError` if an error occurred.
 fn deserialize_sql(sql_str: &str) -> Result<Sql, ParseError> {
     // TODO: Support multiple dialects
     let dialect = GenericDialect {};
