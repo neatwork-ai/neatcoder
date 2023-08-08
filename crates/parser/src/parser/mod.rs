@@ -10,19 +10,49 @@ pub mod rust;
 pub mod sql;
 pub mod yaml;
 
+/// A supertrait defining methods to convert LLM string outputs into various Rust 
+/// native objects such as html, json, yaml, rust code, python code, etc.
 pub trait AsFormat {
+    /// Converts the LLM string output into a specified Rust native object.
+    ///
+    /// # Parameters
+    /// * `deserializer`: A function that takes a string slice and returns a Result containing
+    /// the desired object or an error that can be converted into a `ParseError`.
+    ///
+    /// # Returns
+    /// Result containing the desired Rust native object or a `ParseError`.
     fn as_format<F, T, E>(&self, deserializer: F) -> Result<T, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<ParseError>,
         T: Debug;
 
+    /// Strips the specific format delimiter from the LLM string output and then
+    /// converts it into a specified Rust native object.
+    ///
+    /// # Parameters
+    /// * `deserializer`: A function that takes a string slice and returns a Result containing
+    /// the desired object or an error that can be converted into a `ParseError`.
+    /// * `format`: A string representing the desired format, e.g., "html", "json", etc.
+    ///
+    /// # Returns
+    /// Result containing the desired Rust native object or a `ParseError`.
     fn strip_format<F, T, E>(&self, deserializer: F, format: &str) -> Result<T, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<ParseError>,
         T: Debug;
 
+    /// Strips multiple occurrences of a specific format delimiter from the LLM string output
+    /// and then converts them into a Vector of specified Rust native objects.
+    ///
+    /// # Parameters
+    /// * `deserializer`: A function that takes a string slice and returns a Result containing
+    /// the desired object or an error that can be converted into a `ParseError`.
+    /// * `format`: A string representing the desired format, e.g., "html", "json", etc.
+    ///
+    /// # Returns
+    /// Result containing a Vector of desired Rust native objects or a `ParseError`.
     fn strip_formats<F, T, E>(&self, deserializer: F, format: &str) -> Result<Vec<T>, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
@@ -30,7 +60,18 @@ pub trait AsFormat {
         T: Debug;
 }
 
+/// An implementation of `AsFormat` trait for string slices, allowing conversion of LLM string
+/// outputs into various Rust native objects.
 impl<'a> AsFormat for &'a str {
+    /// Converts the LLM string output (self) into a specified Rust native object using the
+    /// provided deserializer function.
+    ///
+    /// # Parameters
+    /// * `deserializer`: A closure that takes a string slice and returns a Result containing
+    /// the desired object or an error that can be converted into a `ParseError`.
+    ///
+    /// # Returns
+    /// Result containing the desired Rust native object or a `ParseError`.
     fn as_format<F, T, E>(&self, deserializer: F) -> Result<T, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
@@ -40,6 +81,18 @@ impl<'a> AsFormat for &'a str {
         deserializer(self).map_err(|e| e.into())
     }
 
+    /// Strips the specified format delimiter from the LLM string output (self), and then
+    /// converts the stripped content into a specified Rust native object.
+    ///
+    /// If the primary delimiter is not found, it falls back to the default delimiter "```".
+    ///
+    /// # Parameters
+    /// * `deserializer`: A closure that takes a string slice and returns a Result containing
+    /// the desired object or an error that can be converted into a `ParseError`.
+    /// * `format`: A string representing the desired format, e.g., "html", "json", etc.
+    ///
+    /// # Returns
+    /// Result containing the desired Rust native object or a `ParseError`.
     fn strip_format<F, T, E>(&self, deserializer: F, format: &str) -> Result<T, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
@@ -82,6 +135,16 @@ impl<'a> AsFormat for &'a str {
         format_str.as_format(deserializer)
     }
 
+    /// Strips multiple occurrences of a specific format delimiter from the LLM string output (self),
+    /// and then converts them into a Vector of specified Rust native objects.
+    ///
+    /// # Parameters
+    /// * `deserializer`: A closure that takes a string slice and returns a Result containing
+    /// the desired object or an error that can be converted into a `ParseError`.
+    /// * `format`: A string representing the desired format, e.g., "html", "json", etc.
+    ///
+    /// # Returns
+    /// Result containing a Vector of desired Rust native objects or a `ParseError`.
     fn strip_formats<F, T, E>(&self, deserializer: F, format: &str) -> Result<Vec<T>, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
