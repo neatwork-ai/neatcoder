@@ -1,0 +1,82 @@
+use csv::{Reader, StringRecord};
+use std::{
+    fmt::Debug,
+    io::Cursor,
+    ops::{Deref, DerefMut},
+};
+
+use crate::err::ParseError;
+
+use super::AsFormat;
+
+#[derive(Debug)]
+pub struct CsvTable(Vec<CsvRow>);
+
+impl AsRef<Vec<CsvRow>> for CsvTable {
+    fn as_ref(&self) -> &Vec<CsvRow> {
+        &self.0
+    }
+}
+
+impl Deref for CsvTable {
+    type Target = Vec<CsvRow>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for CsvTable {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Debug)]
+pub struct CsvRow(StringRecord);
+
+impl Deref for CsvRow {
+    type Target = StringRecord;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for CsvRow {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+pub trait AsCsv: AsFormat {
+    fn as_csv(&self) -> Result<CsvTable, ParseError>;
+    fn strip_csv(&self) -> Result<CsvTable, ParseError>;
+    fn strip_csvs(&self) -> Result<Vec<CsvTable>, ParseError>;
+}
+
+impl<'a> AsCsv for &'a str {
+    fn as_csv(&self) -> Result<CsvTable, ParseError> {
+        self.as_format(deserialize_csv)
+    }
+
+    // Assumes that the yaml is encapsulated in ```html{actual_html}``` which is how OpenAI does it
+    fn strip_csv(&self) -> Result<CsvTable, ParseError> {
+        self.strip_format(deserialize_csv, "csv")
+    }
+
+    fn strip_csvs(&self) -> Result<Vec<CsvTable>, ParseError> {
+        self.strip_formats(deserialize_csv, "csv")
+    }
+}
+
+fn deserialize_csv(input: &str) -> Result<CsvTable, ParseError> {
+    let mut reader = Reader::from_reader(Cursor::new(input));
+    let mut records = Vec::new();
+
+    for record in reader.records() {
+        records.push(CsvRow(record?));
+    }
+
+    Ok(CsvTable(records))
+}

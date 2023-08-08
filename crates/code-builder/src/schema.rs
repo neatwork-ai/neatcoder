@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use gluon::serde::sql::{AsSql, SqlStatement};
+use parser::parser::sql::{AsSql, SqlStatement};
 use sqlparser::ast::Statement;
 use std::fmt::Write;
 use std::{

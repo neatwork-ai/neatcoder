@@ -1,8 +1,9 @@
 [workspace]
 members = [
     "crates/gluon",
-    "crates/code-builder"
+    "crates/code-builder",
+    "crates/parser"
 ]
 exclude = [
-    "examples/projects/sonify/codebase",
+    "examples/projects/*/jobs/codebase",
 ]
