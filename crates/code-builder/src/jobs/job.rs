@@ -1,7 +1,7 @@
 use anyhow::Result;
-use futures::lock::Mutex;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::job::OpenAIJob;

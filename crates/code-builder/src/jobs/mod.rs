@@ -1,8 +1,8 @@
 use anyhow::Result;
-use futures::lock::Mutex;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::job::OpenAIJob;

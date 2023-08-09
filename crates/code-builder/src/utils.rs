@@ -12,13 +12,10 @@ pub async fn write_rust(
     job: Arc<OpenAIJob>,
     prompts: &Vec<&OpenAIMsg>,
 ) -> Result<(String, Rust)> {
-    println!("Writing rust...");
     let mut retries = 3;
 
     loop {
-        println!("Attempts left: {}", retries);
         let answer = client.chat(job.clone(), prompts, &[], &[]).await?;
-        println!("Got Answer");
 
         match answer.as_str().strip_rust() {
             Ok(result) => {

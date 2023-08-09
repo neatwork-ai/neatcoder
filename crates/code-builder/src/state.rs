@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
-use futures::lock::Mutex;
 use std::{collections::HashMap, sync::Arc};
+use tokio::sync::Mutex;
 
 pub struct AppState {
     pub specs: String,

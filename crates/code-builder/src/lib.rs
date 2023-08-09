@@ -1,6 +1,6 @@
 use anyhow::Result;
-use futures::lock::Mutex;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
+use parser::parser::sql::{AsSql, SqlStatement};
 use state::AppState;
 use std::{
     fs::{read_dir, File},
@@ -8,9 +8,8 @@ use std::{
     path::Path,
     sync::Arc,
 };
+use tokio::sync::Mutex;
 use workflows::generate_api::{gen_project_scaffold, gen_work_schedule};
-
-use parser::parser::sql::{AsSql, SqlStatement};
 
 pub mod crates;
 pub mod fs;

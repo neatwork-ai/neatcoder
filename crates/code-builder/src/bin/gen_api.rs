@@ -1,19 +1,22 @@
 use anyhow::{anyhow, Context, Result};
-use code_builder::genesis;
-use code_builder::jobs::job::Job;
-use code_builder::state::AppState;
-use code_builder::workflows::generate_api::gen_code;
-use code_builder::{fs::Files, get_sql_statements};
 use dotenv::dotenv;
-use futures::executor;
-use futures::lock::Mutex;
+use serde_json::{from_value, Value};
+use std::{
+    env,
+    fs::{self, File},
+    io::{Read, Write},
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+use tokio::sync::Mutex;
+
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 use parser::parser::json::AsJson;
-use serde_json::{from_value, Value};
-use std::sync::Arc;
-use std::{env, fs::File, path::Path};
-use std::{fs, io::Write};
-use std::{io::Read, path::PathBuf};
+
+use code_builder::{
+    fs::Files, genesis, get_sql_statements, jobs::job::Job, state::AppState,
+    workflows::generate_api::gen_code,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -42,7 +45,7 @@ async fn main() -> Result<()> {
 
     fs::create_dir_all(job_path.clone())?;
 
-    // LLM Agent Operations
+    // === LLM Agent Operations ===
 
     println!("Initializing OpenAI Client");
     let client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
@@ -74,12 +77,14 @@ async fn main() -> Result<()> {
 
     // Execute the jobs and handle the results
     println!("Building Project Scaffold");
-    let scaffold: Arc<String> =
-        executor::block_on(job_queue.execute(client.clone(), ai_job.clone(), app_state.clone()))?;
+    let scaffold: Arc<String> = job_queue
+        .execute(client.clone(), ai_job.clone(), app_state.clone())
+        .await?;
 
     println!("Building Task Dependency Map");
-    let dep_graph: Arc<String> =
-        executor::block_on(job_queue.execute(client.clone(), ai_job.clone(), app_state.clone()))?;
+    let dep_graph: Arc<String> = job_queue
+        .execute(client.clone(), ai_job.clone(), app_state.clone())
+        .await?;
 
     // These operations are redundant as they have been done by the job handles
     let scaffold_json = scaffold.as_str().as_json()?;
@@ -125,8 +130,10 @@ async fn main() -> Result<()> {
         println!("Running job {:?}", file);
         let file_path = Path::new(&file);
 
-        let code_string: Arc<String> =
-            executor::block_on(job.execute(client.clone(), ai_job.clone(), app_state.clone()))?;
+        let code_string: Arc<String> = job
+            .execute(client.clone(), ai_job.clone(), app_state.clone())
+            .await?;
+
         println!("Finished running job {:?}", file);
 
         if let Some(parent_path) = file_path.parent() {

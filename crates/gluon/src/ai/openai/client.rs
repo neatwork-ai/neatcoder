@@ -55,7 +55,6 @@ impl OpenAI {
         // fill in your own data as needed
         let req_body = self.request_body(job, msgs, funcs, stop_seq, false)?;
 
-        println!("Awaiting response");
         let res = client
             .post("https://api.openai.com/v1/chat/completions")
             .header(
@@ -69,7 +68,6 @@ impl OpenAI {
             .json(&req_body)
             .send()
             .await?;
-        println!("Got Response from OpenAI");
 
         let status = res.status();
 

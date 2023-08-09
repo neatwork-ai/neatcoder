@@ -1,11 +1,11 @@
 use anyhow::{anyhow, Result};
-use futures::lock::Mutex;
 use gluon::ai::openai::{
     client::OpenAI,
     job::OpenAIJob,
     msg::{GptRole, OpenAIMsg},
 };
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::{
     state::AppState,
@@ -48,6 +48,42 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
     let fs = Arc::new(scaffold_json.to_string());
 
     state.fs = Some(fs.clone());
+
+    Ok(fs)
+}
+
+pub async fn gen_project_scaffold_dummy_1(
+    client: Arc<OpenAI>,
+    job: Arc<OpenAIJob>,
+    app_state: Arc<Mutex<AppState>>,
+) -> Result<Arc<String>> {
+    let mut prompts = Vec::new();
+
+    prompts.push(OpenAIMsg {
+        role: GptRole::System,
+        content: String::from(
+            "You are a software engineer who is specialised in building APIs in Rust.",
+        ),
+    });
+
+    let main_prompt = format!("
+You are a Rust engineer tasked with creating an API in Rust based on the following project description:\n
+The API should retrieve the relevant data from a MySQL database.
+
+Based on the information provided write the project's folder structure, starting from `src`.
+
+Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json");
+
+    prompts.push(OpenAIMsg {
+        role: GptRole::User,
+        content: main_prompt,
+    });
+
+    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
+
+    let (_, scaffold_json) = write_json(client, job, &prompts).await?;
+
+    let fs = Arc::new(scaffold_json.to_string());
 
     Ok(fs)
 }
@@ -191,10 +227,7 @@ pub async fn gen_code(
     });
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    println!("L");
     let (answer, code) = write_rust(client, job, &prompts).await?;
-
-    println!("M");
 
     // Update state
     let mut raw = state.raw.lock().await;
