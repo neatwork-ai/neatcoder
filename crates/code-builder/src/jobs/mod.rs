@@ -1,9 +1,8 @@
 use anyhow::Result;
-use std::collections::VecDeque;
+use futures::lock::Mutex;
 use std::future::Future;
-use std::ops::{Deref, DerefMut};
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::job::OpenAIJob;

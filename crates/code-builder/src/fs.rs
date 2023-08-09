@@ -1,7 +1,6 @@
 use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
-    sync::Arc,
 };
 
 use serde::{Deserialize, Serialize};

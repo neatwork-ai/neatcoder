@@ -35,8 +35,6 @@ async fn main() -> Result<()> {
 
     let api_idea = generate_api_specs(&client, &job, &data_model).await?;
 
-    println!("API IDEA: {}", api_idea);
-
     // IO
     let project_path = Path::new("examples/projects/").join(project).join("specs/");
     fs::create_dir_all(project_path.clone())?;

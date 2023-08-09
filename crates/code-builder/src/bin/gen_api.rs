@@ -6,10 +6,11 @@ use code_builder::workflows::generate_api::gen_code;
 use code_builder::{fs::Files, get_sql_statements};
 use dotenv::dotenv;
 use futures::executor;
+use futures::lock::Mutex;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
-use parser::parser::{json::AsJson, rust::AsRust};
+use parser::parser::json::AsJson;
 use serde_json::{from_value, Value};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::{env, fs::File, path::Path};
 use std::{fs, io::Write};
 use std::{io::Read, path::PathBuf};
@@ -23,9 +24,27 @@ async fn main() -> Result<()> {
     let job_uuid = args.pop().unwrap();
     let project = args.pop().unwrap();
 
+    // === File System Operations ===
     let project_path = format!("examples/projects/{}", project);
     let project_path = Path::new(project_path.as_str());
 
+    let jobs_path = project_path.join("jobs");
+
+    let serial_number = fs::read_dir(jobs_path.clone())?
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
+        .count()
+        + 1;
+
+    let job_path = project_path
+        .join("jobs")
+        .join(serial_number.to_string().as_str());
+
+    fs::create_dir_all(job_path.clone())?;
+
+    // LLM Agent Operations
+
+    println!("Initializing OpenAI Client");
     let client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
 
     let ai_job = Arc::new(
@@ -34,6 +53,7 @@ async fn main() -> Result<()> {
             .top_p(0.9)?,
     );
 
+    println!("Fetching SQL data model...");
     let sql_stmts = get_sql_statements(project_path)?;
 
     let data_model = sql_stmts
@@ -41,18 +61,27 @@ async fn main() -> Result<()> {
         .map(|s| s.raw.clone())
         .collect::<Vec<String>>();
 
+    println!("Fetching API description...");
     let api_description = get_api_description(project_path.join("specs").as_path(), job_uuid)?;
 
-    let app_state = Arc::new(Mutex::new(AppState::new(api_description)));
+    println!("Initializing APP State...");
+    let app_state = Arc::new(Mutex::new(
+        AppState::new(api_description).with_model(data_model)?,
+    ));
 
+    println!("Initializing Job Queue...");
     let mut job_queue = genesis()?;
 
     // Execute the jobs and handle the results
+    println!("Building Project Scaffold");
     let scaffold: Arc<String> =
         executor::block_on(job_queue.execute(client.clone(), ai_job.clone(), app_state.clone()))?;
+
+    println!("Building Task Dependency Map");
     let dep_graph: Arc<String> =
         executor::block_on(job_queue.execute(client.clone(), ai_job.clone(), app_state.clone()))?;
 
+    // These operations are redundant as they have been done by the job handles
     let scaffold_json = scaffold.as_str().as_json()?;
     let dep_graph_json = dep_graph.as_str().as_json()?;
 
@@ -66,19 +95,16 @@ async fn main() -> Result<()> {
         }
     };
 
-    let jobs_path = project_path.join("jobs");
+    // Filter out files that are not rust files
+    files.retain(|file| {
+        if file.ends_with(".rs") {
+            true
+        } else {
+            println!("Filtered out: {}", file);
+            false
+        }
+    });
 
-    let serial_number = fs::read_dir(jobs_path.clone())?
-        .filter_map(Result::ok)
-        .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))
-        .count()
-        + 1;
-
-    let job_path = project_path
-        .join("jobs")
-        .join(serial_number.to_string().as_str());
-
-    fs::create_dir_all(job_path.clone())?;
     write_scaffold(scaffold_json.clone(), job_path.clone())?;
     write_graph(dep_graph_json, job_path.clone())?;
 
@@ -95,15 +121,13 @@ async fn main() -> Result<()> {
     }
 
     for job in job_queue.drain(..) {
+        let file = files.pop_front().unwrap();
+        println!("Running job {:?}", file);
+        let file_path = Path::new(&file);
+
         let code_string: Arc<String> =
             executor::block_on(job.execute(client.clone(), ai_job.clone(), app_state.clone()))?;
-
-        println!("The CODEE! {:?}", code_string);
-
-        let file = files.pop_front().unwrap();
-
-        // write to file
-        let file_path = Path::new(&file);
+        println!("Finished running job {:?}", file);
 
         if let Some(parent_path) = file_path.parent() {
             let log_path = job_path.join("logs/").join(parent_path);
@@ -122,8 +146,7 @@ async fn main() -> Result<()> {
             .with_context(|| format!(r#"Could not create "{path}""#, path = file_path.display()))?;
         log_file.write_all(code_string.as_bytes())?;
 
-        let code = code_string.as_str().strip_rust()?;
-        code_file.write_all(code.raw.as_bytes())?;
+        code_file.write_all(code_string.as_bytes())?;
     }
 
     Ok(())

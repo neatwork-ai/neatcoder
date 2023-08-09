@@ -62,7 +62,9 @@ pub async fn generate_knowledge_graph(client: &OpenAI, job: &OpenAIJob) -> Resul
         content: msg,
     };
 
-    let resp = client.chat(job, &[&sys_msg, &user_msg], &[], &[]).await?;
+    let resp = client
+        .chat_raw(job, &[&sys_msg, &user_msg], &[], &[])
+        .await?;
     let json = resp.choices.first().unwrap().message.content.as_str();
     println!("{}", json);
 

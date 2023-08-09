@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+// TODO: This code is curently dead so weither remove it or start using it.
 #[derive(Deserialize, Serialize)]
 pub struct Specs {
     pub language: Language,

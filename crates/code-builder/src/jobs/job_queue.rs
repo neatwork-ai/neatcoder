@@ -1,8 +1,10 @@
 use anyhow::Result;
+// use futures::lock::Mutex;
+use futures::lock::Mutex;
 use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};

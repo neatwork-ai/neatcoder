@@ -49,8 +49,6 @@ pub struct Rust {
 /// # Returns
 /// * A `Result` containing a `Rust` struct if successful, or a `ParseError` if an error occurred.
 fn deserialize_rust(rust_str: &str) -> Result<Rust, ParseError> {
-    println!("THE STR IS: {}", rust_str);
-
     let syntax_tree = syn::parse_file(rust_str)?;
 
     Ok(Rust {

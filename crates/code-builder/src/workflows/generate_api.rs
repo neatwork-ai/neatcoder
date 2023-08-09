@@ -1,21 +1,23 @@
-use std::sync::{Arc, Mutex};
-
 use anyhow::{anyhow, Result};
+use futures::lock::Mutex;
 use gluon::ai::openai::{
     client::OpenAI,
     job::OpenAIJob,
     msg::{GptRole, OpenAIMsg},
 };
-use parser::parser::{json::AsJson, rust::AsRust};
+use std::sync::Arc;
 
-use crate::state::AppState;
+use crate::{
+    state::AppState,
+    utils::{write_json, write_rust},
+};
 
 pub async fn gen_project_scaffold(
     client: Arc<OpenAI>,
     job: Arc<OpenAIJob>,
     app_state: Arc<Mutex<AppState>>,
 ) -> Result<Arc<String>> {
-    let mut state = app_state.lock().unwrap();
+    let mut state = app_state.lock().await;
 
     let mut prompts = Vec::new();
 
@@ -41,13 +43,9 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let resp = client.chat(job, &prompts, &[], &[]).await?;
-    let answer = resp.choices.first().unwrap().message.content.as_str();
+    let (_, scaffold_json) = write_json(client, job, &prompts).await?;
 
-    // Update state
-    let scaffold_json = answer.strip_json()?;
-    let fs = scaffold_json.as_str().unwrap();
-    let fs = Arc::new(String::from(fs));
+    let fs = Arc::new(scaffold_json.to_string());
 
     state.fs = Some(fs.clone());
 
@@ -59,7 +57,7 @@ pub async fn gen_work_schedule(
     job: Arc<OpenAIJob>,
     app_state: Arc<Mutex<AppState>>,
 ) -> Result<Arc<String>> {
-    let state = app_state.lock().unwrap();
+    let state = app_state.lock().await;
 
     let mut prompts = Vec::new();
 
@@ -116,14 +114,11 @@ Use the following schema:
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let resp = client.chat(job, &prompts, &[], &[]).await?;
-    let answer = resp.choices.first().unwrap().message.content.as_str();
+    let (answer, tasks) = write_json(client, job, &prompts).await?;
 
     println!("{}", answer);
 
-    let tasks = answer.strip_json()?;
-    let dg = tasks.as_str().unwrap();
-    let dg = Arc::new(String::from(dg));
+    let dg = Arc::new(tasks.to_string());
 
     Ok(dg)
 }
@@ -134,7 +129,7 @@ pub async fn gen_code(
     app_state: Arc<Mutex<AppState>>,
     filename: String,
 ) -> Result<Arc<String>> {
-    let state = app_state.lock().unwrap();
+    let state = app_state.lock().await;
     let mut prompts = Vec::new();
 
     let data_model = state.data_model.as_ref().unwrap();
@@ -145,7 +140,7 @@ pub async fn gen_code(
     }
 
     let project_scaffold = state.fs.as_ref().unwrap();
-    let files = state.files.lock().unwrap();
+    let mut files = state.files.lock().await;
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
@@ -183,10 +178,10 @@ pub async fn gen_code(
 
     let main_prompt = format!(
         "
-You are a Rust engineer tasked with creating an API in Rust.
-You are assigned to build the API based on the project folder structure
-Your current task is to write the module `{}.rs
-",
+        You are a Rust engineer tasked with creating an API in Rust.
+        You are assigned to build the API based on the project folder structure
+        Your current task is to write the module `{}.rs
+        ",
         filename
     );
 
@@ -194,21 +189,16 @@ Your current task is to write the module `{}.rs
         role: GptRole::User,
         content: main_prompt,
     });
-
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let resp = client.chat(job, &prompts, &[], &[]).await?;
-    let answer = resp.choices.first().unwrap().message.content.as_str();
+    println!("L");
+    let (answer, code) = write_rust(client, job, &prompts).await?;
 
-    println!("{}", answer);
+    println!("M");
 
     // Update state
-    let mut raw = state.raw.lock().unwrap();
+    let mut raw = state.raw.lock().await;
     raw.insert(filename.to_string(), answer.to_string());
-
-    let code = answer.strip_rust()?;
-
-    let mut files = state.files.lock().unwrap();
     files.insert(filename.to_string(), code.raw.clone());
 
     // TODO: Optimize

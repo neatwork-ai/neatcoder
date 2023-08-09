@@ -41,7 +41,9 @@ pub async fn generate_tree(client: &OpenAI, job: &OpenAIJob) -> Result<()> {
         content: msg,
     };
 
-    let resp = client.chat(job, &[&sys_msg, &user_msg], &[], &[]).await?;
+    let resp = client
+        .chat_raw(job, &[&sys_msg, &user_msg], &[], &[])
+        .await?;
     let json = resp.choices.first().unwrap().message.content.as_str();
     println!("{}", json);
 
@@ -88,7 +90,9 @@ pub async fn distribute_tasks(
             content: msg,
         };
 
-        let resp = client.chat(job, &[&sys_msg, &user_msg], &[], &[]).await?;
+        let resp = client
+            .chat_raw(job, &[&sys_msg, &user_msg], &[], &[])
+            .await?;
 
         let json = resp.choices.first().unwrap().message.content.as_str();
         println!("{}", json);

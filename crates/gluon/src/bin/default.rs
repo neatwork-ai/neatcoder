@@ -28,7 +28,9 @@ async fn main() -> Result<()> {
         content: String::from("Write an AGI."),
     };
 
-    let resp = client.chat(&job, &[&sys_msg, &user_msg], &[], &[]).await?;
+    let resp = client
+        .chat_raw(&job, &[&sys_msg, &user_msg], &[], &[])
+        .await?;
 
     println!("{:?}", resp);
 

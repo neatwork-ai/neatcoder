@@ -1,11 +1,12 @@
 use anyhow::Result;
+use futures::lock::Mutex;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 use state::AppState;
 use std::{
     fs::{read_dir, File},
     io::Read,
     path::Path,
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 use workflows::generate_api::{gen_project_scaffold, gen_work_schedule};
 
@@ -17,6 +18,7 @@ pub mod jobs;
 pub mod schema;
 pub mod specs;
 pub mod state;
+pub mod utils;
 pub mod workflows;
 
 use jobs::{job::Job, job_queue::JobQueue};
