@@ -2,8 +2,9 @@ use anyhow::Result;
 use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
+use tokio::sync::Mutex;
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 

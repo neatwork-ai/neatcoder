@@ -1,15 +1,15 @@
 use anyhow::Result;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
+use parser::parser::sql::{AsSql, SqlStatement};
 use state::AppState;
 use std::{
     fs::{read_dir, File},
     io::Read,
     path::Path,
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
+use tokio::sync::Mutex;
 use workflows::generate_api::{gen_project_scaffold, gen_work_schedule};
-
-use parser::parser::sql::{AsSql, SqlStatement};
 
 pub mod crates;
 pub mod fs;
@@ -17,6 +17,7 @@ pub mod jobs;
 pub mod schema;
 pub mod specs;
 pub mod state;
+pub mod utils;
 pub mod workflows;
 
 use jobs::{job::Job, job_queue::JobQueue};

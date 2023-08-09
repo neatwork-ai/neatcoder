@@ -2,8 +2,6 @@ use std::ops::Deref;
 
 use anyhow::{anyhow, Result};
 use futures::stream::StreamExt;
-use tokio::io::AsyncBufReadExt;
-// use futures_util::stream::stream::StreamExt;
 use reqwest::Client;
 use serde_json::{json, Value};
 
@@ -33,6 +31,19 @@ impl OpenAI {
     // === OpenAI IO ===
 
     pub async fn chat(
+        &self,
+        job: impl Deref<Target = OpenAIJob>,
+        msgs: &[&OpenAIMsg],
+        funcs: &[&String],
+        stop_seq: &[String],
+    ) -> Result<String> {
+        let chat = self.chat_raw(job, msgs, funcs, stop_seq).await?;
+        let answer = chat.choices.first().unwrap().message.content.as_str();
+
+        Ok(String::from(answer))
+    }
+
+    pub async fn chat_raw(
         &self,
         job: impl Deref<Target = OpenAIJob>,
         msgs: &[&OpenAIMsg],

@@ -8,7 +8,6 @@ pub async fn get_lib(lib: &str) -> Result<()> {
     // Construct the URL to fetch the crate data
     let url = format!("https://crates.io/api/v1/crates/{}", lib);
 
-    println!("Getting there..");
     // Make a GET request to the crates.io API
     // Create a client
     let client = reqwest::Client::new();
@@ -24,9 +23,7 @@ pub async fn get_lib(lib: &str) -> Result<()> {
     // Parse the JSON response
     let v: Value = serde_json::from_str(&response)?;
 
-    // Print the versions
     let versions = v["versions"].as_array();
-    println!("{:?}", versions);
 
     if versions.is_none() {
         return Err(anyhow!(format!(

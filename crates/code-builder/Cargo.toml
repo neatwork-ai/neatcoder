@@ -13,7 +13,7 @@ path = "src/bin/gen_data_model.rs"
 gluon = { path = "../gluon" }
 parser = { path = "../parser" }
 
-futures = "0.3"
+# futures = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 sqlparser = "0.36"
 anyhow = "1.0"

@@ -1,5 +1,9 @@
 use anyhow::Result;
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, msg::{OpenAIMsg, GptRole}};
+use gluon::ai::openai::{
+    client::OpenAI,
+    job::OpenAIJob,
+    msg::{GptRole, OpenAIMsg},
+};
 
 pub async fn generate_api_specs(
     client: &OpenAI,
@@ -31,8 +35,7 @@ pub async fn generate_api_specs(
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let resp = client.chat(job, &prompts, &[], &[]).await?;
-    let answer = resp.choices.first().unwrap().message.content.as_str();
+    let answer = client.chat(job, &prompts, &[], &[]).await?;
 
     Ok(String::from(answer))
 }

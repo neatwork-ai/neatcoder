@@ -1,5 +1,9 @@
 use anyhow::Result;
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, msg::{OpenAIMsg, GptRole}};
+use gluon::ai::openai::{
+    client::OpenAI,
+    job::OpenAIJob,
+    msg::{GptRole, OpenAIMsg},
+};
 
 pub async fn generate_db_schema(client: &OpenAI, job: &OpenAIJob) -> Result<(String, String)> {
     let sys_msg = OpenAIMsg {
@@ -12,10 +16,9 @@ pub async fn generate_db_schema(client: &OpenAI, job: &OpenAIJob) -> Result<(Str
         content: String::from("Generate a random idea for a company. The first word in your responde should be the company name."),
     };
 
-    let resp = client.chat(job, &[&sys_msg, &user_msg], &[], &[]).await?;
-    let answer = resp.choices.first().unwrap().message.content.as_str();
+    let answer = client.chat(job, &[&sys_msg, &user_msg], &[], &[]).await?;
 
-    let company_name = get_first_word(answer);
+    let company_name = get_first_word(&answer);
 
     let sys_msg_2 = OpenAIMsg {
         role: GptRole::System,
@@ -29,7 +32,7 @@ pub async fn generate_db_schema(client: &OpenAI, job: &OpenAIJob) -> Result<(Str
         ),
     };
 
-    let resp = client
+    let answer = client
         .chat(
             job,
             &[&sys_msg, &user_msg, &sys_msg_2, &user_msg_2],
@@ -37,7 +40,6 @@ pub async fn generate_db_schema(client: &OpenAI, job: &OpenAIJob) -> Result<(Str
             &[],
         )
         .await?;
-    let answer = resp.choices.first().unwrap().message.content.as_str();
 
     Ok((String::from(company_name), String::from(answer)))
 }

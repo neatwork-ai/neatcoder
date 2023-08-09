@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     let job = job.temperature(1.0).top_p(1.0)?;
 
     let dyn_resp = client
-        .chat(
+        .chat_raw(
             &job,
             &[
             &OpenAIMsg::system("You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
     println!("DYNAMIC: {}", dyn_json);
 
     let static_resp = client
-        .chat(
+        .chat_raw(
             &job,
             &[
             &OpenAIMsg::system("You are an entrepreneur creating a company called Promptify, a marketplace for LLM prompts"),
