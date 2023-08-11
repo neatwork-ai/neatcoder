@@ -13,7 +13,7 @@ pub async fn generate_db_schema(client: &OpenAI, job: &OpenAIJob) -> Result<(Str
 
     let user_msg = OpenAIMsg {
         role: GptRole::User,
-        content: String::from("Generate a random idea for a company. The first word in your responde should be the company name."),
+        content: String::from("Generate a random idea for a company. The first word in your response should be the company name."),
     };
 
     let answer = client.chat(job, &[&sys_msg, &user_msg], &[], &[]).await?;

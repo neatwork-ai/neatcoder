@@ -114,6 +114,7 @@ impl<'a> AsFormat for &'a str {
             default = true;
         
             // Fallback logic: try finding the fallback delimiter
+            // TODO: Fail greacefully
             self.find("```").expect(&format!(
                 "Unable to convert LLM output to {fmt}. Delimiters seem to be missing in: \n{input}",
                 input = self,
@@ -123,6 +124,7 @@ impl<'a> AsFormat for &'a str {
 
         let start_index = start_loc + if default != true {start_delimiter.len()} else {default_delimiter.len()};
 
+        // TODO: Fail greacefully
         let end_loc = self[start_index..].find(default_delimiter).expect(&format!(
             "Unable to convert LLM output to {fmt}. Could not find ending backticks '```': \n{}",
             self,

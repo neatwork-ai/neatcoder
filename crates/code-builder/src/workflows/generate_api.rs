@@ -52,42 +52,6 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
     Ok(fs)
 }
 
-pub async fn gen_project_scaffold_dummy_1(
-    client: Arc<OpenAI>,
-    job: Arc<OpenAIJob>,
-    app_state: Arc<Mutex<AppState>>,
-) -> Result<Arc<String>> {
-    let mut prompts = Vec::new();
-
-    prompts.push(OpenAIMsg {
-        role: GptRole::System,
-        content: String::from(
-            "You are a software engineer who is specialised in building APIs in Rust.",
-        ),
-    });
-
-    let main_prompt = format!("
-You are a Rust engineer tasked with creating an API in Rust based on the following project description:\n
-The API should retrieve the relevant data from a MySQL database.
-
-Based on the information provided write the project's folder structure, starting from `src`.
-
-Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json");
-
-    prompts.push(OpenAIMsg {
-        role: GptRole::User,
-        content: main_prompt,
-    });
-
-    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
-
-    let (_, scaffold_json) = write_json(client, job, &prompts).await?;
-
-    let fs = Arc::new(scaffold_json.to_string());
-
-    Ok(fs)
-}
-
 pub async fn gen_work_schedule(
     client: Arc<OpenAI>,
     job: Arc<OpenAIJob>,
