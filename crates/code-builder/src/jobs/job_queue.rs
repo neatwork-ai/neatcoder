@@ -83,7 +83,20 @@ impl JobQueue {
         client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
         app_state: Arc<Mutex<AppState>>,
+        job_id: &JobID,
     ) -> Result<Arc<String>> {
-        todo!()
+        let job = self
+            .jobs
+            .remove(&job_id)
+            .expect(&format!("Could not find job id in queue {:?}", job_id));
+
+        // Execute the job and await the result
+        let Job(job) = job; // destruct
+
+        let result = job
+            .call_box(client.clone(), ai_job.clone(), app_state.clone())
+            .await?;
+
+        Ok(result)
     }
 }
