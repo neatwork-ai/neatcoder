@@ -7,11 +7,22 @@ use tokio::sync::Mutex;
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::job::OpenAIJob;
 
-use crate::state::AppState;
+use self::commit::JobID;
+use self::state::AppState;
 
+pub mod commit;
 pub mod job;
 pub mod job_queue;
-pub mod commit;
+pub mod state;
+
+pub enum Request {
+    InitWork(String),
+    AddSchema(String),
+    GetJobQueue,
+    StartJob(JobID),
+    StopJob(JobID),
+    RetryJob(JobID),
+}
 
 pub trait JobTrait: Send + 'static {
     fn call_box(

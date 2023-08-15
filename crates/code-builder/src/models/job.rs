@@ -6,8 +6,8 @@ use tokio::sync::Mutex;
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::job::OpenAIJob;
 
+use super::state::AppState;
 use super::JobTrait;
-use crate::state::AppState;
 
 pub struct Job(pub(crate) Box<dyn JobTrait>);
 

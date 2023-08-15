@@ -10,8 +10,8 @@ use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 use super::{
     commit::{HashID, JobID},
     job::Job,
+    state::AppState,
 };
-use crate::state::AppState;
 
 pub struct JobQueue {
     jobs: HashMap<JobID, Job>,

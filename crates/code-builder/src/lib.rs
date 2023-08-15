@@ -1,7 +1,6 @@
 use anyhow::Result;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 use parser::parser::sql::{AsSql, SqlStatement};
-use state::AppState;
 use std::{
     fs::{read_dir, File},
     io::Read,
@@ -13,14 +12,13 @@ use workflows::generate_api::{gen_project_scaffold, gen_work_schedule};
 
 pub mod crates;
 pub mod fs;
-pub mod jobs;
+pub mod models;
 pub mod schema;
 pub mod specs;
-pub mod state;
 pub mod utils;
 pub mod workflows;
 
-use jobs::{job::Job, job_queue::JobQueue};
+use models::{job::Job, job_queue::JobQueue, state::AppState};
 
 pub fn genesis() -> Result<JobQueue> {
     let mut job_queue = JobQueue::empty();
