@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -18,7 +18,7 @@ pub mod job_queue;
 pub mod schema;
 pub mod state;
 
-#[derive(Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ClientCommand {
     InitWork { prompt: String },
     AddSchema { schema: String },

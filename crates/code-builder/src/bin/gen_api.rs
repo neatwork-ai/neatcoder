@@ -1,6 +1,7 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use dotenv::dotenv;
-use serde_json::{from_value, Value};
+use parser::parser::json::AsJson;
+use serde_json::Value;
 use std::{
     env,
     fs::{self, File},
@@ -11,7 +12,6 @@ use std::{
 use tokio::sync::Mutex;
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
-use parser::parser::json::AsJson;
 
 use code_builder::{
     get_sql_statements,

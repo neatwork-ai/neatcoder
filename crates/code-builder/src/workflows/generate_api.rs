@@ -28,13 +28,15 @@ pub async fn gen_project_scaffold(
         ),
     });
 
+    let specs = state.specs.as_ref().unwrap();
+
     let main_prompt = format!("
 You are a Rust engineer tasked with creating an API in Rust based on the following project description:\n{}\n
 The API should retrieve the relevant data from a MySQL database.
 
 Based on the information provided write the project's folder structure, starting from `src`.
 
-Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json", state.specs);
+Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json", specs);
 
     prompts.push(OpenAIMsg {
         role: GptRole::User,
@@ -65,7 +67,7 @@ pub async fn gen_work_schedule(
     }
 
     let data_model = state.data_model.as_ref().unwrap();
-    let api_description = &state.specs;
+    let api_description = &state.specs.as_ref().unwrap();
 
     if state.fs.is_none() {
         return Err(anyhow!("No folder scaffold config available.."));
@@ -131,7 +133,7 @@ pub async fn gen_code(
     let mut prompts = Vec::new();
 
     let data_model = state.data_model.as_ref().unwrap();
-    let api_description = &state.specs;
+    let api_description = state.specs.as_ref().unwrap();
 
     if state.fs.is_none() {
         return Err(anyhow!("No folder scaffold config available.."));

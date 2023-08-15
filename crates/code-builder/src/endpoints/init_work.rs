@@ -14,7 +14,15 @@ pub async fn handle(
     client: Arc<OpenAI>,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<Mutex<AppState>>,
+    init_prompt: String,
 ) -> Result<JobQueue> {
+    // Adding the inital prompt in the AppState
+    {
+        // Mutex gets unlocked once out of scope
+        let mut state = app_state.lock().await;
+        state.specs = Some(init_prompt);
+    }
+
     // Generates Job Queue with the two initial jobs:
     // 1. Build Project Scaffold
     // 2. Build Job Schedule
