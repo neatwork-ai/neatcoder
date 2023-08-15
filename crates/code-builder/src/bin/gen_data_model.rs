@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
-use code_builder::{schema::DataModel, workflows::generate_db_schema::generate_db_schema};
+use code_builder::models::schema::DataModel;
+use code_builder::workflows::generate_db_schema::generate_db_schema;
 use dotenv::dotenv;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 use heck::ToSnakeCase;

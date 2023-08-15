@@ -10,11 +10,7 @@ use std::{
 use tokio::sync::Mutex;
 use workflows::generate_api::{gen_project_scaffold, gen_work_schedule};
 
-pub mod crates;
-pub mod fs;
 pub mod models;
-pub mod schema;
-pub mod specs;
 pub mod utils;
 pub mod workflows;
 

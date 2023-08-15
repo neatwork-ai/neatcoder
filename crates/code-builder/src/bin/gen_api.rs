@@ -14,9 +14,8 @@ use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 use parser::parser::json::AsJson;
 
 use code_builder::{
-    fs::Files,
     genesis, get_sql_statements,
-    models::{job::Job, state::AppState},
+    models::{fs::Files, job::Job, state::AppState},
     workflows::generate_api::gen_code,
 };
 

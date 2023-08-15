@@ -11,8 +11,10 @@ use self::commit::JobID;
 use self::state::AppState;
 
 pub mod commit;
+pub mod fs;
 pub mod job;
 pub mod job_queue;
+pub mod schema;
 pub mod state;
 
 pub enum Request {
