@@ -6,7 +6,12 @@ use tokio::sync::Mutex;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 
 use crate::{
-    models::{fs::Files, job::Job, job_queue::JobQueue, state::AppState},
+    models::{
+        fs::Files,
+        job::{Job, JobType, Task},
+        job_queue::JobQueue,
+        state::AppState,
+    },
     workflows::{generate_api::gen_code, genesis::genesis},
 };
 
@@ -51,7 +56,12 @@ pub async fn handle(
             gen_code(c, j, state, file_)
         };
 
-        let job = Job::new(Box::new(closure));
+        let job = Job::new(
+            String::from("TODO: This is a placeholder"),
+            JobType::CodeGen,
+            Task(Box::new(closure)),
+        );
+
         job_queue.push_back(job);
     }
 

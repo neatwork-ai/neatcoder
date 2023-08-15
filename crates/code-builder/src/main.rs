@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde_json;
 use std::{env, sync::Arc};
+use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
 use tokio::{io::AsyncReadExt, net::TcpListener};
 
@@ -42,12 +43,19 @@ async fn main() -> Result<()> {
             Ok(command) => {
                 match command {
                     ClientCommand::InitWork { prompt } => {
-                        let job_queue =
-                            endpoints::init_work::handle(client.clone(), ai_job, app_state, prompt)
-                                .await?;
+                        let job_queue = endpoints::init_work::handle(
+                            client.clone(),
+                            ai_job.clone(),
+                            app_state.clone(),
+                            prompt,
+                        )
+                        .await?;
 
-                        // Handle ...
-                        todo!()
+                        // Serialize job_queue to JSON
+                        let response = serde_json::to_string(&job_queue)?;
+
+                        // Send the serialized job_queue to the client
+                        socket.write_all(response.as_bytes()).await?;
                     }
                     ClientCommand::AddSchema { schema } => {
                         // Handle ...

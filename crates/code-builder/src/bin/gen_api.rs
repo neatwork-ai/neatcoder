@@ -15,7 +15,11 @@ use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 
 use code_builder::{
     get_sql_statements,
-    models::{fs::Files, job::Job, state::AppState},
+    models::{
+        fs::Files,
+        job::{Job, JobType, Task},
+        state::AppState,
+    },
     workflows::{generate_api::gen_code, genesis::genesis},
 };
 
@@ -104,7 +108,12 @@ async fn main() -> Result<()> {
             gen_code(c, j, state, file_)
         };
 
-        let job = Job::new(Box::new(closure));
+        let job = Job::new(
+            String::from("TODO: This is a placeholder"),
+            JobType::CodeGen,
+            Task::new(Box::new(closure)),
+        );
+
         job_queue.push_back(job);
     }
 
@@ -113,7 +122,14 @@ async fn main() -> Result<()> {
         println!("Running job {:?}", file);
         let file_path = Path::new(&file);
 
-        let code_string: Arc<String> = job
+        let Job {
+            job_id,
+            job_name,
+            job_type,
+            task,
+        } = job; // destruct
+
+        let code_string: Arc<String> = task
             .execute(client.clone(), ai_job.clone(), app_state.clone())
             .await?;
 

@@ -28,7 +28,7 @@ pub enum ClientCommand {
     RetryJob { job_id: JobID },
 }
 
-pub trait JobTrait: Send + 'static {
+pub trait TaskTrait: Send + 'static {
     fn call_box(
         self: Box<Self>,
         client: Arc<OpenAI>,
@@ -37,7 +37,7 @@ pub trait JobTrait: Send + 'static {
     ) -> Pin<Box<dyn Future<Output = Result<Arc<String>>>>>;
 }
 
-impl<F, Fut> JobTrait for F
+impl<F, Fut> TaskTrait for F
 where
     F: FnOnce(Arc<OpenAI>, Arc<OpenAIJob>, Arc<Mutex<AppState>>) -> Fut + Send + 'static,
     Fut: Future<Output = Result<Arc<String>>> + 'static,

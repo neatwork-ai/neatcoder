@@ -1,4 +1,5 @@
 use anyhow::Result;
+use serde::Serialize;
 use std::{
     collections::{HashMap, VecDeque},
     sync::Arc,
@@ -8,11 +9,12 @@ use tokio::sync::Mutex;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 
 use super::{
-    commit::{HashID, JobID},
-    job::Job,
+    commit::JobID,
+    job::{Job, Task},
     state::AppState,
 };
 
+#[derive(Debug, Serialize)]
 pub struct JobQueue {
     jobs: HashMap<JobID, Job>,
     schedule: VecDeque<JobID>,
@@ -42,10 +44,17 @@ impl JobQueue {
                 .remove(&job_id)
                 .expect(&format!("Could not find job id in queue {:?}", job_id));
 
-            let Job(job) = job; // destruct
+            let Job {
+                job_id,
+                job_name,
+                job_type,
+                task,
+            } = job; // destruct
+
+            let Task(task) = task;
 
             // Execute the job and await the result
-            let result = job
+            let result = task
                 .call_box(client.clone(), ai_job.clone(), app_state.clone())
                 .await?;
 
@@ -72,9 +81,16 @@ impl JobQueue {
             .expect(&format!("Could not find job id in queue {:?}", job_id));
 
         // Execute the job and await the result
-        let Job(job) = job; // destruct
+        let Job {
+            job_id,
+            job_name,
+            job_type,
+            task,
+        } = job; // destruct
 
-        let result = job
+        let Task(task) = task;
+
+        let result = task
             .call_box(client.clone(), ai_job.clone(), app_state.clone())
             .await?;
 
@@ -94,9 +110,16 @@ impl JobQueue {
             .expect(&format!("Could not find job id in queue {:?}", job_id));
 
         // Execute the job and await the result
-        let Job(job) = job; // destruct
+        let Job {
+            job_id,
+            job_name,
+            job_type,
+            task,
+        } = job; // destruct
 
-        let result = job
+        let Task(task) = task;
+
+        let result: Arc<String> = task
             .call_box(client.clone(), ai_job.clone(), app_state.clone())
             .await?;
 
@@ -106,16 +129,16 @@ impl JobQueue {
 
 impl JobQueue {
     pub fn push_front(&mut self, job: Job) {
-        let job_id = HashID::generate_random();
+        let job_id = job.job_id;
 
         self.jobs.insert(job_id, job);
         self.schedule.push_front(job_id);
     }
 
     pub fn push_back(&mut self, job: Job) {
-        let job_id = HashID::generate_random();
+        let job_id = job.job_id;
 
-        self.jobs.insert(job_id, job);
+        self.jobs.insert(job.job_id, job);
         self.schedule.push_back(job_id);
     }
 
