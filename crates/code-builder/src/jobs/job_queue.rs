@@ -1,41 +1,26 @@
 use anyhow::Result;
 use std::{
-    collections::VecDeque,
-    ops::{Deref, DerefMut},
+    collections::{HashMap, VecDeque},
     sync::Arc,
 };
 use tokio::sync::Mutex;
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 
-use super::job::Job;
+use super::{commit::JobID, job::Job};
 use crate::state::AppState;
 
-pub struct JobQueue(VecDeque<Job>);
+pub struct JobQueue {
+    jobs: HashMap<JobID, Job>,
+    schedule: VecDeque<JobID>,
+}
 
 impl JobQueue {
     pub fn empty() -> Self {
-        Self(VecDeque::new())
-    }
-}
-
-impl AsRef<VecDeque<Job>> for JobQueue {
-    fn as_ref(&self) -> &VecDeque<Job> {
-        &self.0
-    }
-}
-
-impl Deref for JobQueue {
-    type Target = VecDeque<Job>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for JobQueue {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        Self {
+            jobs: HashMap::new(),
+            schedule: VecDeque::new(),
+        }
     }
 }
 
@@ -48,7 +33,12 @@ impl JobQueue {
     ) -> Result<Vec<Arc<String>>> {
         let mut results = Vec::new();
 
-        for job in self.drain(..) {
+        for job_id in self.schedule.drain(..) {
+            let job = self
+                .jobs
+                .remove(&job_id)
+                .expect(&format!("Could not find job id in queue {:?}", job_id));
+
             let Job(job) = job; // destruct
 
             // Execute the job and await the result
@@ -65,13 +55,18 @@ impl JobQueue {
         Ok(results)
     }
 
-    pub async fn execute(
+    pub async fn execute_next(
         &mut self,
         client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
         app_state: Arc<Mutex<AppState>>,
     ) -> Result<Arc<String>> {
-        let job = self.pop_front().unwrap();
+        let job_id = self.schedule.pop_front().unwrap();
+
+        let job = self
+            .jobs
+            .remove(&job_id)
+            .expect(&format!("Could not find job id in queue {:?}", job_id));
 
         // Execute the job and await the result
         let Job(job) = job; // destruct
@@ -81,5 +76,14 @@ impl JobQueue {
             .await?;
 
         Ok(result)
+    }
+
+    pub async fn execute_id(
+        &mut self,
+        client: Arc<OpenAI>,
+        ai_job: Arc<OpenAIJob>,
+        app_state: Arc<Mutex<AppState>>,
+    ) -> Result<Arc<String>> {
+        todo!()
     }
 }

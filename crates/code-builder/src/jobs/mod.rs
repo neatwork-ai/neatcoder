@@ -11,6 +11,7 @@ use crate::state::AppState;
 
 pub mod job;
 pub mod job_queue;
+pub mod commit;
 
 pub trait JobTrait: Send + 'static {
     fn call_box(
