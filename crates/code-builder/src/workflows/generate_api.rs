@@ -47,8 +47,6 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
     let fs = Arc::new(scaffold_json.to_string());
 
-    state.fs = Some(fs.clone());
-
     Ok(fs)
 }
 

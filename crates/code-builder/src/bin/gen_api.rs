@@ -14,9 +14,9 @@ use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 use parser::parser::json::AsJson;
 
 use code_builder::{
-    genesis, get_sql_statements,
+    get_sql_statements,
     models::{fs::Files, job::Job, state::AppState},
-    workflows::generate_api::gen_code,
+    workflows::{generate_api::gen_code, genesis::genesis},
 };
 
 #[tokio::main]
@@ -89,30 +89,12 @@ async fn main() -> Result<()> {
 
     // These operations are redundant as they have been done by the job handles
     let scaffold_json = scaffold.as_str().as_json()?;
-    let dep_graph_json = dep_graph.as_str().as_json()?;
+    let job_schedule = dep_graph.as_str().as_json()?;
 
-    let mut files: Files = match from_value::<Files>(dep_graph_json["order"].clone()) {
-        Ok(files) => files,
-        Err(e) => {
-            // Handle the error
-            return Err(anyhow!(
-                "Error converting dependecy graph to `Files` struct: {e}"
-            ));
-        }
-    };
-
-    // Filter out files that are not rust files
-    files.retain(|file| {
-        if file.ends_with(".rs") {
-            true
-        } else {
-            println!("Filtered out: {}", file);
-            false
-        }
-    });
+    let mut files = Files::from_schedule(job_schedule.clone())?;
 
     write_scaffold(scaffold_json.clone(), job_path.clone())?;
-    write_graph(dep_graph_json, job_path.clone())?;
+    write_graph(job_schedule, job_path.clone())?;
 
     // Add jobs to the job queue
     for file in files.iter() {
