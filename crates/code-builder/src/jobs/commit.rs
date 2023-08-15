@@ -1,3 +1,4 @@
+use rand::Rng;
 use sha2::{Digest, Sha256};
 
 pub type JobID = HashID;
@@ -39,6 +40,19 @@ impl std::ops::Deref for SmallHash {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl HashID {
+    pub fn generate_random() -> Self {
+        // Generate random data
+        let random_data: [u8; 32] = rand::thread_rng().gen();
+
+        // Hash the random data
+        let hash = Sha256::digest(&random_data);
+
+        // Convert the resulting hash into [u8; 32] and return
+        HashID(hash.into())
     }
 }
 

@@ -78,12 +78,12 @@ async fn main() -> Result<()> {
     // Execute the jobs and handle the results
     println!("Building Project Scaffold");
     let scaffold: Arc<String> = job_queue
-        .execute(client.clone(), ai_job.clone(), app_state.clone())
+        .execute_next(client.clone(), ai_job.clone(), app_state.clone())
         .await?;
 
     println!("Building Task Dependency Map");
     let dep_graph: Arc<String> = job_queue
-        .execute(client.clone(), ai_job.clone(), app_state.clone())
+        .execute_next(client.clone(), ai_job.clone(), app_state.clone())
         .await?;
 
     // These operations are redundant as they have been done by the job handles
@@ -125,7 +125,7 @@ async fn main() -> Result<()> {
         job_queue.push_back(job);
     }
 
-    for job in job_queue.drain(..) {
+    for (_job_id, job) in job_queue.drain() {
         let file = files.pop_front().unwrap();
         println!("Running job {:?}", file);
         let file_path = Path::new(&file);
