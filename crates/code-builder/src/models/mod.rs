@@ -1,4 +1,5 @@
 use anyhow::Result;
+use serde::Deserialize;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -17,13 +18,14 @@ pub mod job_queue;
 pub mod schema;
 pub mod state;
 
-pub enum Request {
-    InitWork(String),
-    AddSchema(String),
+#[derive(Deserialize)]
+pub enum ClientCommand {
+    InitWork { prompt: String },
+    AddSchema { schema: String },
     GetJobQueue,
-    StartJob(JobID),
-    StopJob(JobID),
-    RetryJob(JobID),
+    StartJob { job_id: JobID },
+    StopJob { job_id: JobID },
+    RetryJob { job_id: JobID },
 }
 
 pub trait JobTrait: Send + 'static {

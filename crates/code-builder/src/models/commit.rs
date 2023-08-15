@@ -1,10 +1,11 @@
 use rand::Rng;
+use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
 pub type JobID = HashID;
 pub type Commit = SmallHash;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug, Deserialize)]
 pub struct HashID(pub [u8; 32]);
 
 // References interior
