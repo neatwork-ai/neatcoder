@@ -1,6 +1,7 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use dotenv::dotenv;
-use serde_json::{from_value, Value};
+use parser::parser::json::AsJson;
+use serde_json::Value;
 use std::{
     env,
     fs::{self, File},
@@ -11,11 +12,15 @@ use std::{
 use tokio::sync::Mutex;
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
-use parser::parser::json::AsJson;
 
 use code_builder::{
-    fs::Files, genesis, get_sql_statements, jobs::job::Job, state::AppState,
-    workflows::generate_api::gen_code,
+    get_sql_statements,
+    models::{
+        fs::Files,
+        job::{Job, JobType, Task},
+        state::AppState,
+    },
+    workflows::{generate_api::gen_code, genesis::genesis},
 };
 
 #[tokio::main]
@@ -78,40 +83,22 @@ async fn main() -> Result<()> {
     // Execute the jobs and handle the results
     println!("Building Project Scaffold");
     let scaffold: Arc<String> = job_queue
-        .execute(client.clone(), ai_job.clone(), app_state.clone())
+        .execute_next(client.clone(), ai_job.clone(), app_state.clone())
         .await?;
 
     println!("Building Task Dependency Map");
     let dep_graph: Arc<String> = job_queue
-        .execute(client.clone(), ai_job.clone(), app_state.clone())
+        .execute_next(client.clone(), ai_job.clone(), app_state.clone())
         .await?;
 
     // These operations are redundant as they have been done by the job handles
     let scaffold_json = scaffold.as_str().as_json()?;
-    let dep_graph_json = dep_graph.as_str().as_json()?;
+    let job_schedule = dep_graph.as_str().as_json()?;
 
-    let mut files: Files = match from_value::<Files>(dep_graph_json["order"].clone()) {
-        Ok(files) => files,
-        Err(e) => {
-            // Handle the error
-            return Err(anyhow!(
-                "Error converting dependecy graph to `Files` struct: {e}"
-            ));
-        }
-    };
-
-    // Filter out files that are not rust files
-    files.retain(|file| {
-        if file.ends_with(".rs") {
-            true
-        } else {
-            println!("Filtered out: {}", file);
-            false
-        }
-    });
+    let mut files = Files::from_schedule(job_schedule.clone())?;
 
     write_scaffold(scaffold_json.clone(), job_path.clone())?;
-    write_graph(dep_graph_json, job_path.clone())?;
+    write_graph(job_schedule, job_path.clone())?;
 
     // Add jobs to the job queue
     for file in files.iter() {
@@ -121,16 +108,28 @@ async fn main() -> Result<()> {
             gen_code(c, j, state, file_)
         };
 
-        let job = Job::new(Box::new(closure));
+        let job = Job::new(
+            String::from("TODO: This is a placeholder"),
+            JobType::CodeGen,
+            Task::new(Box::new(closure)),
+        );
+
         job_queue.push_back(job);
     }
 
-    for job in job_queue.drain(..) {
+    for (_job_id, job) in job_queue.drain() {
         let file = files.pop_front().unwrap();
         println!("Running job {:?}", file);
         let file_path = Path::new(&file);
 
-        let code_string: Arc<String> = job
+        let Job {
+            job_id,
+            job_name,
+            job_type,
+            task,
+        } = job; // destruct
+
+        let code_string: Arc<String> = task
             .execute(client.clone(), ai_job.clone(), app_state.clone())
             .await?;
 

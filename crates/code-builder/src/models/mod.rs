@@ -1,4 +1,5 @@
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -7,12 +8,27 @@ use tokio::sync::Mutex;
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::job::OpenAIJob;
 
-use crate::state::AppState;
+use self::commit::JobID;
+use self::state::AppState;
 
+pub mod commit;
+pub mod fs;
 pub mod job;
 pub mod job_queue;
+pub mod schema;
+pub mod state;
 
-pub trait JobTrait: Send + 'static {
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ClientCommand {
+    InitWork { prompt: String },
+    AddSchema { schema: String },
+    GetJobQueue,
+    StartJob { job_id: JobID },
+    StopJob { job_id: JobID },
+    RetryJob { job_id: JobID },
+}
+
+pub trait TaskTrait: Send + 'static {
     fn call_box(
         self: Box<Self>,
         client: Arc<OpenAI>,
@@ -21,7 +37,7 @@ pub trait JobTrait: Send + 'static {
     ) -> Pin<Box<dyn Future<Output = Result<Arc<String>>>>>;
 }
 
-impl<F, Fut> JobTrait for F
+impl<F, Fut> TaskTrait for F
 where
     F: FnOnce(Arc<OpenAI>, Arc<OpenAIJob>, Arc<Mutex<AppState>>) -> Fut + Send + 'static,
     Fut: Future<Output = Result<Arc<String>>> + 'static,

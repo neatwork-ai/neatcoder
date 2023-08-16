@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 
 pub struct AppState {
-    pub specs: String,
+    pub specs: Option<String>,
     pub fs: Option<Arc<String>>,
     pub data_model: Option<Vec<String>>,
     pub files: Mutex<HashMap<String, String>>,
@@ -13,7 +13,17 @@ pub struct AppState {
 impl AppState {
     pub fn new(specs: String) -> Self {
         Self {
-            specs,
+            specs: Some(specs),
+            fs: None,
+            data_model: None,
+            files: Mutex::new(HashMap::new()),
+            raw: Mutex::new(HashMap::new()),
+        }
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            specs: None,
             fs: None,
             data_model: None,
             files: Mutex::new(HashMap::new()),
