@@ -1,8 +1,8 @@
-use std::{net::Shutdown, sync::Arc};
+use std::sync::Arc;
 
 use crate::endpoints::{self};
 
-use super::{job::Job, job_queue::JobQueue, state::AppState, types::JobRequest};
+use super::{job_queue::JobQueue, state::AppState, types::JobRequest};
 use anyhow::Error;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 use tokio::sync::{
@@ -13,7 +13,7 @@ use tokio::sync::{
 pub struct JobWorker {
     rx_job: Receiver<JobRequest>,
     job_queue: Arc<RwLock<JobQueue>>,
-    tx_result: Sender<Arc<Mutex<String>>>,
+    tx_result: Sender<Arc<Mutex<()>>>, // TODO: Refactor this to hold a String, or a `Response` value
     open_ai_client: Arc<OpenAI>,
 }
 
@@ -21,7 +21,7 @@ impl JobWorker {
     pub fn new(
         rx_job: Receiver<JobRequest>,
         job_queue: Arc<RwLock<JobQueue>>,
-        tx_result: Sender<Arc<Mutex<String>>>,
+        tx_result: Sender<Arc<Mutex<()>>>,
         open_ai_client: Arc<OpenAI>,
     ) -> Self {
         Self {
@@ -32,6 +32,7 @@ impl JobWorker {
         }
     }
 
+    // TODO: make an appropriate use of the return type
     pub async fn handle_request(&self, request: JobRequest) -> Result<(), Error> {
         match request {
             JobRequest::InitWork { prompt } => {
@@ -62,23 +63,23 @@ impl JobWorker {
     }
 
     pub async fn run(&mut self, shutdown: Arc<Mutex<bool>>) -> Result<(), Error> {
-        !// How to generate a shutdown signal, by the spawner:
-        !//
-        !// let shutdown = Arc::new(Mutex::new(false));
-        !// let shutdown_clone = Arc::clone(&shutdown);
-        !//
-        !// // then spawns a new thread
-        !// tokio::spawn(async move {
-        !//     signal::ctrl_c().await.expect("Failed to listen to SIGINT");
-        !//     shutdown_clone.lock().await = true;
-        !// })
+        // How to generate a shutdown signal, by the spawner:
+        //
+        // let shutdown = Arc::new(Mutex::new(false));
+        // let shutdown_clone = Arc::clone(&shutdown);
+        //
+        // // then spawns a new thread
+        // tokio::spawn(async move {
+        //     signal::ctrl_c().await.expect("Failed to listen to SIGINT");
+        //     shutdown_clone.lock().await = true;
+        // });
 
         loop {
             tokio::select! {
                 Some(request) = self.rx_job.recv() => {
                     let response = self.handle_request(request).await?;
                     // TODO: needs to send response back to client
-                    self.tx_result.send(Arc::new(Mutex::new(response)));
+                    self.tx_result.send(Arc::new(Mutex::new(())));
                 },
                 shutdown_value = shutdown.lock() => {
                     if *shutdown_value {
