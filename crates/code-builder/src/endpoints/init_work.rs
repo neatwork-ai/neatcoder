@@ -1,7 +1,7 @@
 use anyhow::Result;
 use parser::parser::json::AsJson;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock, RwLockWriteGuard};
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 
@@ -18,13 +18,14 @@ use crate::{
 pub async fn handle(
     client: Arc<OpenAI>,
     ai_job: Arc<OpenAIJob>,
-    app_state: Arc<Mutex<AppState>>,
+    job_queue: RwLockWriteGuard<'_, JobQueue>,
+    app_state: Arc<RwLock<AppState>>,
     init_prompt: String,
 ) -> Result<JobQueue> {
     // Adding the inital prompt in the AppState
     {
-        // Mutex gets unlocked once out of scope
-        let mut state = app_state.lock().await;
+        // RwLock gets unlocked once out of scope
+        let mut state = app_state.write().await;
         state.specs = Some(init_prompt);
     }
 

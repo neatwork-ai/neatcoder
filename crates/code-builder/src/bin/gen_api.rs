@@ -126,6 +126,7 @@ async fn main() -> Result<()> {
             job_id,
             job_name,
             job_type,
+            job_state,
             task,
         } = job; // destruct
 

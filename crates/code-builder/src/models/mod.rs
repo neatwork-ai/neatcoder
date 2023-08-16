@@ -1,6 +1,6 @@
 use anyhow::Result;
+use futures::future::Future;
 use serde::{Deserialize, Serialize};
-use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -15,8 +15,10 @@ pub mod commit;
 pub mod fs;
 pub mod job;
 pub mod job_queue;
+pub mod job_worker;
 pub mod schema;
 pub mod state;
+pub mod types;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ClientCommand {
