@@ -12,11 +12,20 @@ use super::commit::{HashID, JobID};
 use super::state::AppState;
 use super::TaskTrait;
 
+#[derive(Debug, PartialEq, Serialize)]
+pub enum JobState {
+    Unintialized,
+    InProgress,
+    Done,
+    Stopped,
+}
+
 #[derive(Serialize)]
 pub struct Job {
     pub job_id: JobID,
     pub job_name: String,
     pub job_type: JobType,
+    pub job_state: JobState,
     #[serde(skip_serializing)]
     pub task: Task,
 }
@@ -29,6 +38,7 @@ impl fmt::Debug for Job {
             .field("job_id", &self.job_id)
             .field("job_name", &self.job_name)
             .field("job_type", &self.job_type)
+            .field("job_state", &self.job_type)
             // .field("task", &self.task)  // Intentionally skipping task
             .finish()
     }
@@ -50,6 +60,7 @@ impl Job {
             job_id,
             job_name,
             job_type,
+            job_state: JobState::Unintialized,
             task,
         }
     }

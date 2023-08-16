@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde::Serialize;
 use std::{
     collections::{HashMap, VecDeque},
@@ -10,7 +10,7 @@ use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 
 use super::{
     commit::JobID,
-    job::{Job, Task},
+    job::{Job, JobState, Task},
     state::AppState,
 };
 
@@ -48,20 +48,23 @@ impl JobQueue {
                 job_id,
                 job_name,
                 job_type,
+                job_state,
                 task,
             } = job; // destruct
 
             let Task(task) = task;
 
-            // Execute the job and await the result
-            let result = task
-                .call_box(client.clone(), ai_job.clone(), app_state.clone())
-                .await?;
+            // Execute the job and await the result, only if the job has not been initialized yet
+            if job_state == JobState::Unintialized {
+                let result = task
+                    .call_box(client.clone(), ai_job.clone(), app_state.clone())
+                    .await?;
 
-            // TODO: These ARCs might be hard to manage along with mutexes, the
-            // safest is to instead drop them after each iteration instead accumulating
-            // them and return the result
-            results.push(result);
+                // TODO: These ARCs might be hard to manage along with mutexes, the
+                // safest is to instead drop them after each iteration instead accumulating
+                // them and return the result
+                results.push(result);
+            }
         }
 
         Ok(results)
@@ -85,16 +88,20 @@ impl JobQueue {
             job_id,
             job_name,
             job_type,
+            job_state,
             task,
         } = job; // destruct
 
         let Task(task) = task;
 
-        let result = task
-            .call_box(client.clone(), ai_job.clone(), app_state.clone())
-            .await?;
-
-        Ok(result)
+        if job_state == JobState::Unintialized {
+            let result = task
+                .call_box(client.clone(), ai_job.clone(), app_state.clone())
+                .await?;
+            Ok(result)
+        } else {
+            return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
+        }
     }
 
     pub async fn execute_id(
@@ -114,16 +121,21 @@ impl JobQueue {
             job_id,
             job_name,
             job_type,
+            job_state,
             task,
         } = job; // destruct
 
         let Task(task) = task;
 
-        let result: Arc<String> = task
-            .call_box(client.clone(), ai_job.clone(), app_state.clone())
-            .await?;
+        if job_state == JobState::Unintialized {
+            let result: Arc<String> = task
+                .call_box(client.clone(), ai_job.clone(), app_state.clone())
+                .await?;
 
-        Ok(result)
+            Ok(result)
+        } else {
+            return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
+        }
     }
 }
 
