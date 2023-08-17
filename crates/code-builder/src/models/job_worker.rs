@@ -3,6 +3,7 @@ use std::{pin::Pin, sync::Arc};
 use crate::endpoints::{self};
 
 use super::{
+    job::JobType,
     state::AppState,
     types::{JobRequest, JobResponse},
 };
@@ -20,7 +21,8 @@ use tokio::{
 pub struct JobWorker {
     open_ai_client: Arc<OpenAI>,
     app_state: Arc<RwLock<AppState>>,
-    job_queue: FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<String>, Error>>>>>,
+    job_queue:
+        FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>>>>>,
     rx_job: Receiver<JobRequest>,
     tx_result: Sender<JobResponse>, // TODO: Refactor this to hold a String, or a `Response` value
 }
@@ -96,7 +98,6 @@ impl JobWorker {
                     let response = self.handle_request(request).await?;
                 },
                 result = self.job_queue.next() => {
-                    let response =
                     self.tx_result.send(result).await?;
                 },
                 shutdown_value = shutdown.lock() => {

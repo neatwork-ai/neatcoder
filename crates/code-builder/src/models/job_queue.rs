@@ -34,7 +34,6 @@ impl JobQueue {
 impl JobQueue {
     pub fn execute_all(
         &mut self,
-        audit_trail: &mut FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<String>>>>>>,
         client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
         app_state: Arc<RwLock<AppState>>,
@@ -58,7 +57,6 @@ impl JobQueue {
             // Execute the job and await the result, only if the job has not been initialized yet
             if job_state == JobState::Unintialized {
                 let future = task.call_box(client.clone(), ai_job.clone(), app_state.clone());
-                audit_trail.push(future)
             } else {
                 return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
             }
@@ -69,7 +67,6 @@ impl JobQueue {
 
     pub fn execute_next(
         &mut self,
-        audit_trail: &mut FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<String>>>>>>,
         client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
         app_state: Arc<RwLock<AppState>>,
@@ -98,7 +95,6 @@ impl JobQueue {
                 "New job future added to the audit_trait, with job_id = {:?}",
                 job_id
             );
-            audit_trail.push(future);
         } else {
             return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
         }
@@ -107,7 +103,6 @@ impl JobQueue {
 
     pub fn execute_id(
         &mut self,
-        audit_trail: &mut FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<String>>>>>>,
         client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
         app_state: Arc<RwLock<AppState>>,
@@ -135,7 +130,6 @@ impl JobQueue {
                 "New job future added to the audit_trait, with job_id = {:?}",
                 job_id
             );
-            audit_trail.push(future)
         } else {
             return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
         }

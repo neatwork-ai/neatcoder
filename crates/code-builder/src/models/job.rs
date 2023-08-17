@@ -61,7 +61,7 @@ impl Job {
             job_name,
             job_type,
             job_state: JobState::Unintialized,
-            task,
+            task: task,
         }
     }
 }
