@@ -61,10 +61,6 @@ async fn main() -> Result<()> {
                         // Handle ...
                         todo!()
                     }
-                    ClientCommand::GetJobQueue => {
-                        // Handle ...
-                        todo!()
-                    }
                     ClientCommand::StartJob { job_id } => {
                         // Handle ...
                         todo!()
