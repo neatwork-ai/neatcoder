@@ -1,7 +1,7 @@
 use anyhow::Result;
-use parser::parser::json::AsJson;
-use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock, RwLockWriteGuard};
+use futures::{stream::FuturesUnordered, Future};
+use std::{pin::Pin, sync::Arc};
+use tokio::sync::RwLock;
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 
@@ -9,19 +9,20 @@ use crate::{
     models::{
         fs::Files,
         job::{Job, JobType, Task},
-        job_queue::JobQueue,
         state::AppState,
     },
     workflows::{generate_api::gen_code, genesis::genesis},
 };
 
 pub async fn handle(
-    client: Arc<OpenAI>,
+    open_ai_client: Arc<OpenAI>,
+    audit_trail: &mut FuturesUnordered<
+        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>>,
+    >,
     ai_job: Arc<OpenAIJob>,
-    job_queue: RwLockWriteGuard<'_, JobQueue>,
     app_state: Arc<RwLock<AppState>>,
     init_prompt: String,
-) -> Result<JobQueue> {
+) -> Result<()> {
     // Adding the inital prompt in the AppState
     {
         // RwLock gets unlocked once out of scope
@@ -32,28 +33,13 @@ pub async fn handle(
     // Generates Job Queue with the two initial jobs:
     // 1. Build Project Scaffold
     // 2. Build Job Schedule
-    let mut job_queue = genesis()?;
-
-    // Execute the jobs and handle the results
-    println!("Building Project Scaffold");
-    let _scaffold: Arc<String> = job_queue
-        .execute_next(client.clone(), ai_job.clone(), app_state.clone())
-        .await?;
-
-    println!("Building Job Schedule");
-    let job_schedule: Arc<String> = job_queue
-        .execute_next(client.clone(), ai_job.clone(), app_state.clone())
-        .await?;
-
-    let job_schedule_json = job_schedule.as_str().as_json()?;
-
-    let files = Files::from_schedule(job_schedule_json)?;
+    genesis(audit_trail, open_ai_client, ai_job, app_state);
 
     // Add code writing jobs to the job queue
     for file in files.iter() {
         let file_ = file.clone();
 
-        let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<Mutex<AppState>>| {
+        let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<RwLock<AppState>>| {
             gen_code(c, j, state, file_)
         };
 
@@ -63,8 +49,8 @@ pub async fn handle(
             Task(Box::new(closure)),
         );
 
-        job_queue.push_back(job);
+        audit_trail.push(job.task.call_box(open_ai_client, ai_job, app_state))
     }
 
-    Ok(job_queue)
+    Ok(())
 }

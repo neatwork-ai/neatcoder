@@ -3,12 +3,13 @@ use futures::future::Future;
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::job::OpenAIJob;
 
 use self::commit::JobID;
+use self::job::JobType;
 use self::state::AppState;
 
 pub mod commit;
@@ -35,21 +36,21 @@ pub trait TaskTrait: Send + 'static {
         self: Box<Self>,
         client: Arc<OpenAI>,
         job: Arc<OpenAIJob>,
-        app_state: Arc<Mutex<AppState>>,
-    ) -> Pin<Box<dyn Future<Output = Result<Arc<String>>>>>;
+        app_state: Arc<RwLock<AppState>>,
+    ) -> Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>>;
 }
 
 impl<F, Fut> TaskTrait for F
 where
-    F: FnOnce(Arc<OpenAI>, Arc<OpenAIJob>, Arc<Mutex<AppState>>) -> Fut + Send + 'static,
-    Fut: Future<Output = Result<Arc<String>>> + 'static,
+    F: FnOnce(Arc<OpenAI>, Arc<OpenAIJob>, Arc<RwLock<AppState>>) -> Fut + Send + 'static,
+    Fut: Future<Output = Result<Arc<(JobType, String)>>> + 'static,
 {
     fn call_box(
         self: Box<Self>,
         client: Arc<OpenAI>,
         job: Arc<OpenAIJob>,
-        app_state: Arc<Mutex<AppState>>,
-    ) -> Pin<Box<dyn Future<Output = Result<Arc<String>>>>> {
+        app_state: Arc<RwLock<AppState>>,
+    ) -> Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>> {
         Box::pin((*self)(client, job, app_state))
     }
 }

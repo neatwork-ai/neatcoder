@@ -5,19 +5,19 @@ use gluon::ai::openai::{
     msg::{GptRole, OpenAIMsg},
 };
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use crate::{
-    models::state::AppState,
+    models::{job::JobType, state::AppState},
     utils::{write_json, write_rust},
 };
 
 pub async fn gen_project_scaffold(
     client: Arc<OpenAI>,
     job: Arc<OpenAIJob>,
-    app_state: Arc<Mutex<AppState>>,
-) -> Result<Arc<String>> {
-    let mut state = app_state.lock().await;
+    app_state: Arc<RwLock<AppState>>,
+) -> Result<Arc<(JobType, String)>> {
+    let state = app_state.read().await;
 
     let mut prompts = Vec::new();
 
@@ -47,7 +47,7 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
     let (_, scaffold_json) = write_json(client, job, &prompts).await?;
 
-    let fs = Arc::new(scaffold_json.to_string());
+    let fs = Arc::new((JobType::Scaffold, scaffold_json.to_string()));
 
     Ok(fs)
 }
@@ -55,9 +55,9 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 pub async fn gen_work_schedule(
     client: Arc<OpenAI>,
     job: Arc<OpenAIJob>,
-    app_state: Arc<Mutex<AppState>>,
-) -> Result<Arc<String>> {
-    let state = app_state.lock().await;
+    app_state: Arc<RwLock<AppState>>,
+) -> Result<Arc<(JobType, String)>> {
+    let state = app_state.read().await;
 
     let mut prompts = Vec::new();
 
@@ -118,7 +118,7 @@ Use the following schema:
 
     println!("{}", answer);
 
-    let dg = Arc::new(tasks.to_string());
+    let dg = Arc::new((JobType::Ordering, tasks.to_string()));
 
     Ok(dg)
 }
@@ -126,10 +126,10 @@ Use the following schema:
 pub async fn gen_code(
     client: Arc<OpenAI>,
     job: Arc<OpenAIJob>,
-    app_state: Arc<Mutex<AppState>>,
+    app_state: Arc<RwLock<AppState>>,
     filename: String,
-) -> Result<Arc<String>> {
-    let state = app_state.lock().await;
+) -> Result<Arc<(JobType, String)>> {
+    let state = app_state.read().await;
     let mut prompts = Vec::new();
 
     let data_model = state.data_model.as_ref().unwrap();
@@ -199,5 +199,5 @@ pub async fn gen_code(
     files.insert(filename.to_string(), code.raw.clone());
 
     // TODO: Optimize
-    Ok(Arc::new(code.raw.clone()))
+    Ok(Arc::new((JobType::CodeGen, code.raw.clone())))
 }

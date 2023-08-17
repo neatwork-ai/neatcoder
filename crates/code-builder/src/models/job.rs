@@ -1,9 +1,9 @@
 use anyhow::Result;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::job::OpenAIJob;
@@ -12,7 +12,7 @@ use super::commit::{HashID, JobID};
 use super::state::AppState;
 use super::TaskTrait;
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub enum JobState {
     Unintialized,
     InProgress,
@@ -45,7 +45,7 @@ impl fmt::Debug for Job {
 }
 
 // Marker enum
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum JobType {
     Scaffold,
     Ordering,
@@ -77,8 +77,8 @@ impl Task {
         self,
         client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
-        app_state: Arc<Mutex<AppState>>,
-    ) -> Result<Arc<String>> {
+        app_state: Arc<RwLock<AppState>>,
+    ) -> Result<Arc<(JobType, String)>> {
         let Self(job) = self; // destruct
 
         // Execute the job and await the result

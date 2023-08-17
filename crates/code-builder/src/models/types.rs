@@ -1,17 +1,18 @@
-use std::hash::Hash;
-
 use super::{commit::HashID, job_queue::JobQueue};
+use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum JobRequest {
     InitWork { prompt: String },
     AddSchema { schema: String },
     GetJobQueue,
-    AddJobId { job_id: HashID },
+    AddJob { job_id: HashID },
     StopJob { job_id: HashID },
     RetryJob { job_id: HashID },
 }
 
-pub enum Response {
+#[derive(Debug, Serialize)]
+pub enum JobResponse {
     InitWork {
         result: Option<String>,
         is_success: bool,
@@ -23,7 +24,7 @@ pub enum Response {
     GetJobQueue {
         job_queue: JobQueue,
     },
-    AddJobId {
+    AddJob {
         job_id: HashID,
         is_success: bool,
     },

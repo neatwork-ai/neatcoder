@@ -1,11 +1,12 @@
 use anyhow::{anyhow, Result};
 use futures::{stream::FuturesUnordered, Future};
+use serde::Serialize;
 use std::{
     collections::{HashMap, VecDeque},
     pin::Pin,
     sync::Arc,
 };
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 
@@ -15,11 +16,10 @@ use super::{
     state::AppState,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct JobQueue {
     jobs: HashMap<JobID, Job>,
     schedule: VecDeque<JobID>,
-    audit_trail: FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<String>>>>>>,
 }
 
 impl JobQueue {
@@ -27,17 +27,17 @@ impl JobQueue {
         Self {
             jobs: HashMap::new(),
             schedule: VecDeque::new(),
-            audit_trail: FuturesUnordered::new(),
         }
     }
 }
 
 impl JobQueue {
-    pub async fn execute_all(
+    pub fn execute_all(
         &mut self,
+        audit_trail: &mut FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<String>>>>>>,
         client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
-        app_state: Arc<Mutex<AppState>>,
+        app_state: Arc<RwLock<AppState>>,
     ) -> Result<()> {
         for job_id in self.schedule.drain(..) {
             let job = self
@@ -58,8 +58,7 @@ impl JobQueue {
             // Execute the job and await the result, only if the job has not been initialized yet
             if job_state == JobState::Unintialized {
                 let future = task.call_box(client.clone(), ai_job.clone(), app_state.clone());
-
-                self.audit_trail.push(future)
+                audit_trail.push(future)
             } else {
                 return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
             }
@@ -68,11 +67,12 @@ impl JobQueue {
         Ok(())
     }
 
-    pub async fn execute_next(
+    pub fn execute_next(
         &mut self,
+        audit_trail: &mut FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<String>>>>>>,
         client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
-        app_state: Arc<Mutex<AppState>>,
+        app_state: Arc<RwLock<AppState>>,
     ) -> Result<()> {
         let job_id = self.schedule.pop_front().unwrap();
 
@@ -98,18 +98,19 @@ impl JobQueue {
                 "New job future added to the audit_trait, with job_id = {:?}",
                 job_id
             );
-            self.audit_trail.push(future);
+            audit_trail.push(future);
         } else {
             return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
         }
         Ok(())
     }
 
-    pub async fn execute_id(
+    pub fn execute_id(
         &mut self,
+        audit_trail: &mut FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<String>>>>>>,
         client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
-        app_state: Arc<Mutex<AppState>>,
+        app_state: Arc<RwLock<AppState>>,
         job_id: &JobID,
     ) -> Result<()> {
         let job = self
@@ -134,7 +135,7 @@ impl JobQueue {
                 "New job future added to the audit_trait, with job_id = {:?}",
                 job_id
             );
-            self.audit_trail.push(future)
+            audit_trail.push(future)
         } else {
             return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
         }

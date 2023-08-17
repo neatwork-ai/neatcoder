@@ -1,56 +1,72 @@
-use std::sync::Arc;
+use std::{pin::Pin, sync::Arc};
 
 use crate::endpoints::{self};
 
-use super::{job_queue::JobQueue, state::AppState, types::JobRequest};
+use super::{
+    state::AppState,
+    types::{JobRequest, JobResponse},
+};
 use anyhow::Error;
+use futures::{stream::FuturesUnordered, Future, StreamExt};
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
-use tokio::sync::{
-    mpsc::{Receiver, Sender},
-    Mutex, RwLock,
+use tokio::{
+    sync::{
+        mpsc::{Receiver, Sender},
+        Mutex, RwLock,
+    },
+    task::JoinHandle,
 };
 
 pub struct JobWorker {
-    rx_job: Receiver<JobRequest>,
-    job_queue: Arc<RwLock<JobQueue>>,
-    tx_result: Sender<Arc<Mutex<()>>>, // TODO: Refactor this to hold a String, or a `Response` value
     open_ai_client: Arc<OpenAI>,
+    app_state: Arc<RwLock<AppState>>,
+    job_queue: FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<String>, Error>>>>>,
+    rx_job: Receiver<JobRequest>,
+    tx_result: Sender<JobResponse>, // TODO: Refactor this to hold a String, or a `Response` value
 }
 
 impl JobWorker {
     pub fn new(
         rx_job: Receiver<JobRequest>,
-        job_queue: Arc<RwLock<JobQueue>>,
-        tx_result: Sender<Arc<Mutex<()>>>,
+        tx_result: Sender<JobResponse>,
         open_ai_client: Arc<OpenAI>,
     ) -> Self {
         Self {
             rx_job,
-            job_queue,
+            job_queue: FuturesUnordered::new(),
             tx_result,
             open_ai_client,
+            app_state: Arc::new(RwLock::new(AppState::empty())),
         }
     }
 
+    pub async fn spawn(
+        rx_job: Receiver<JobRequest>,
+        tx_result: Sender<JobResponse>,
+        open_ai_client: Arc<OpenAI>,
+        shutdown: Arc<Mutex<bool>>, // TODO: Refactor to `AtomicBool`
+    ) -> JoinHandle<Result<(), Error>> {
+        let worker = Self::new(rx_job, tx_result, open_ai_client);
+        tokio::spawn(worker.run(shutdown))
+    }
+
     // TODO: make an appropriate use of the return type
-    pub async fn handle_request(&self, request: JobRequest) -> Result<(), Error> {
+    pub async fn handle_request(&mut self, request: JobRequest) -> Result<(), Error> {
         match request {
             JobRequest::InitWork { prompt } => {
-                // Get a write lock for the internal job queue
-                let job_queue = self.job_queue.clone();
-                let job_queue_rw_guard = job_queue.write().await;
                 // Initialize an empty `AppState` instance
-                let app_state = Arc::new(RwLock::new(AppState::empty()));
                 let ai_job = Arc::new(
                     OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
                         .temperature(0.7)
                         .top_p(0.9)?,
                 );
                 let open_ai_client = self.open_ai_client.clone();
+                let app_state = self.app_state.clone();
+                let audit_trail = &mut self.job_queue;
                 endpoints::init_work::handle(
                     open_ai_client,
+                    audit_trail,
                     ai_job,
-                    job_queue_rw_guard,
                     app_state,
                     prompt,
                 )
@@ -78,8 +94,10 @@ impl JobWorker {
             tokio::select! {
                 Some(request) = self.rx_job.recv() => {
                     let response = self.handle_request(request).await?;
-                    // TODO: needs to send response back to client
-                    self.tx_result.send(Arc::new(Mutex::new(())));
+                },
+                result = self.job_queue.next() => {
+                    let response =
+                    self.tx_result.send(result).await?;
                 },
                 shutdown_value = shutdown.lock() => {
                     if *shutdown_value {
