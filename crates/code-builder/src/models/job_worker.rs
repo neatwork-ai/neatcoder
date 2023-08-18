@@ -6,6 +6,7 @@ use super::{
     job::JobType,
     state::AppState,
     types::{JobRequest, JobResponse},
+    JobFuts,
 };
 use anyhow::Error;
 use futures::{stream::FuturesUnordered, Future, StreamExt};
@@ -23,9 +24,7 @@ pub struct JobWorker {
     open_ai_client: Arc<OpenAI>,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
-    audit_trail: FuturesUnordered<
-        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static>>,
-    >,
+    audit_trail: JobFuts,
     rx_job: Receiver<JobRequest>,
     tx_result: Sender<JobResponse>, // TODO: Refactor this to hold a String, or a `Response` value
 }
@@ -48,14 +47,14 @@ impl JobWorker {
     }
 
     pub fn spawn(
+        &self,
         open_ai_client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
         rx_job: Receiver<JobRequest>,
         tx_result: Sender<JobResponse>,
         shutdown: Arc<Mutex<bool>>, // TODO: Refactor to `AtomicBool`
     ) -> JoinHandle<Result<(), Error>> {
-        let worker = Self::new(open_ai_client, ai_job, rx_job, tx_result);
-        tokio::spawn(worker.run(shutdown))
+        tokio::spawn(self.run(shutdown))
     }
 
     pub async fn run(&mut self, shutdown: Arc<Mutex<bool>>) -> Result<(), Error> {
@@ -110,7 +109,7 @@ impl JobWorker {
 pub fn handle_request(
     request: JobRequest,
     audit_trail: &mut FuturesUnordered<
-        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static>>,
+        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send + 'static>>,
     >,
     open_ai_client: Arc<OpenAI>,
     ai_job: Arc<OpenAIJob>,

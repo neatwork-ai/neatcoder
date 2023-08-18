@@ -1,5 +1,5 @@
 use anyhow::Result;
-use futures::{stream::FuturesUnordered, Future};
+use futures::Future;
 use parser::parser::json::AsJson;
 use serde_json::Value;
 use std::{pin::Pin, sync::Arc};
@@ -12,15 +12,14 @@ use crate::{
         fs::Files,
         job::{Job, JobType, Task},
         state::AppState,
+        JobFuts, TaskTrait,
     },
     workflows::{generate_api::gen_code, genesis::genesis},
 };
 
 pub fn handle(
     open_ai_client: Arc<OpenAI>,
-    audit_trail: &mut FuturesUnordered<
-        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>>,
-    >,
+    audit_trail: &mut JobFuts,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
     init_prompt: String,
@@ -38,9 +37,7 @@ pub async fn handle_scaffold_job() -> Result<()> {
 pub async fn handle_schedule_job(
     job_schedule: Value,
     open_ai_client: Arc<OpenAI>,
-    audit_trail: &mut FuturesUnordered<
-        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>>,
-    >,
+    audit_trail: &mut JobFuts,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<()> {
@@ -52,6 +49,12 @@ pub async fn handle_schedule_job(
         let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<RwLock<AppState>>| {
             gen_code(c, j, state, file_)
         };
+
+        // let closure = Box::new(
+        //     |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<RwLock<AppState>>| {
+        //         gen_code(c, j, state, file_.clone())
+        //     },
+        // );
 
         let job = Job::new(
             String::from("TODO: This is a placeholder"),
