@@ -1,14 +1,8 @@
-use anyhow::Result;
-use futures::{stream::FuturesUnordered, Future};
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
-use std::{pin::Pin, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::models::{
-    job::{Job, JobType, Task},
-    state::AppState,
-    JobFuts,
-};
+use crate::models::{job::Task, state::AppState, JobFuts};
 
 use super::generate_api::{gen_project_scaffold, gen_work_schedule};
 
@@ -22,6 +16,7 @@ pub fn genesis(
         gen_project_scaffold(c, j, state)
     };
 
+    // TODO: Reconsider adding back Job and JobQueue
     // let job = Job::new(
     //     String::from("Scaffolding Project"),
     //     JobType::Scaffold,
@@ -39,6 +34,7 @@ pub fn genesis(
         gen_work_schedule(c, j, state)
     };
 
+    // TODO: Reconsider adding back Job and JobQueue
     // let job = Job::new(
     //     String::from("Scheduling tasks"),
     //     JobType::Ordering,

@@ -33,8 +33,8 @@ impl JobWorker {
     pub fn new(
         open_ai_client: Arc<OpenAI>,
         ai_job: Arc<OpenAIJob>,
-        rx_job: Receiver<JobRequest>,
         tx_result: Sender<JobResponse>,
+        rx_job: Receiver<JobRequest>,
     ) -> Self {
         Self {
             rx_job,
@@ -46,16 +46,16 @@ impl JobWorker {
         }
     }
 
-    pub fn spawn(
-        &self,
-        open_ai_client: Arc<OpenAI>,
-        ai_job: Arc<OpenAIJob>,
-        rx_job: Receiver<JobRequest>,
-        tx_result: Sender<JobResponse>,
-        shutdown: Arc<Mutex<bool>>, // TODO: Refactor to `AtomicBool`
-    ) -> JoinHandle<Result<(), Error>> {
-        tokio::spawn(self.run(shutdown))
-    }
+    // pub fn spawn(
+    //     &self,
+    //     open_ai_client: Arc<OpenAI>,
+    //     ai_job: Arc<OpenAIJob>,
+    //     rx_job: Receiver<JobRequest>,
+    //     tx_result: Sender<JobResponse>,
+    //     shutdown: Arc<Mutex<bool>>, // TODO: Refactor to `AtomicBool`
+    // ) -> JoinHandle<Result<(), Error>> {
+    //     tokio::spawn(self.run(shutdown))
+    // }
 
     pub async fn run(&mut self, shutdown: Arc<Mutex<bool>>) -> Result<(), Error> {
         // How to generate a shutdown signal, by the spawner:

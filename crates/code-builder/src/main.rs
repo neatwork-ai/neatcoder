@@ -1,8 +1,11 @@
 use anyhow::Result;
 use code_builder::models::job_worker::{self, JobWorker};
+use code_builder::models::types::{JobRequest, JobResponse};
 use serde_json;
 use std::{env, sync::Arc};
 use tokio::io::AsyncWriteExt;
+use tokio::join;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::Mutex;
 use tokio::{io::AsyncReadExt, net::TcpListener};
 
@@ -31,11 +34,39 @@ async fn main() -> Result<()> {
 
     let app_state = Arc::new(Mutex::new(AppState::empty()));
 
-    let job_worker = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
+    let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
+    let (tx_job, rx_job) = tokio::sync::mpsc::channel(100);
+
+    let mut worker = JobWorker::new(open_ai_client, ai_job, tx_result, rx_job);
+    let shutdown = Arc::new(Mutex::new(false));
+    let shutdown_clone = Arc::clone(&shutdown);
+
+    // then spawns a new thread
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Failed to listen to SIGINT");
+        *shutdown_clone.lock().await = true;
+    });
+
+    let join_handle = tokio::spawn(async move { worker.run(shutdown).await });
 
     loop {
         let n = socket.read(&mut buf).await?;
+        let socked_read_fut = socket.read(&mut buf);
+        let rx_result_fut = rx_result.recv();
 
+        let join_handle = join!(socked_read_fut, rx_result_fut);
+
+        tokio::select! {
+            buf = socket.read(&mut buf) => {
+                if let Err(e) = buf {
+                    println!("TODO: add proper logging");
+                }
+                let n = buf.unwrap();
+
+            }
+        }
         if n == 0 {
             break;
         }
@@ -46,19 +77,7 @@ async fn main() -> Result<()> {
             Ok(command) => {
                 match command {
                     ClientCommand::InitWork { prompt } => {
-                        let job_queue = endpoints::init_work::handle(
-                            client.clone(),
-                            ai_job.clone(),
-                            app_state.clone(),
-                            prompt,
-                        )
-                        .await?;
-
-                        // Serialize job_queue to JSON
-                        let response = serde_json::to_string(&job_queue)?;
-
-                        // Send the serialized job_queue to the client
-                        socket.write_all(response.as_bytes()).await?;
+                        tx_job.send(JobRequest::InitWork { prompt }).await?;
                     }
                     ClientCommand::AddSchema { schema } => {
                         // Handle ...

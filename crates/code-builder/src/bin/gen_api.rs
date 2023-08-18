@@ -7,9 +7,8 @@ use std::{
     fs::{self, File},
     io::{Read, Write},
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, RwLock},
 };
-use tokio::sync::Mutex;
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 
@@ -25,138 +24,141 @@ use code_builder::{
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv().ok();
+    // TODO: Fix compilation
+    todo!();
 
-    let mut args: Vec<String> = env::args().collect();
+    // dotenv().ok();
 
-    let job_uuid = args.pop().unwrap();
-    let project = args.pop().unwrap();
+    // let mut args: Vec<String> = env::args().collect();
 
-    // === File System Operations ===
-    let project_path = format!("examples/projects/{}", project);
-    let project_path = Path::new(project_path.as_str());
+    // let job_uuid = args.pop().unwrap();
+    // let project = args.pop().unwrap();
 
-    let jobs_path = project_path.join("jobs");
+    // // === File System Operations ===
+    // let project_path = format!("examples/projects/{}", project);
+    // let project_path = Path::new(project_path.as_str());
 
-    let serial_number = fs::read_dir(jobs_path.clone())?
-        .filter_map(Result::ok)
-        .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
-        .count()
-        + 1;
+    // let jobs_path = project_path.join("jobs");
 
-    let job_path = project_path
-        .join("jobs")
-        .join(serial_number.to_string().as_str());
+    // let serial_number = fs::read_dir(jobs_path.clone())?
+    //     .filter_map(Result::ok)
+    //     .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
+    //     .count()
+    //     + 1;
 
-    fs::create_dir_all(job_path.clone())?;
+    // let job_path = project_path
+    //     .join("jobs")
+    //     .join(serial_number.to_string().as_str());
 
-    // === LLM Agent Operations ===
+    // fs::create_dir_all(job_path.clone())?;
 
-    println!("Initializing OpenAI Client");
-    let client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
+    // // === LLM Agent Operations ===
 
-    let ai_job = Arc::new(
-        OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
-            .temperature(0.7)
-            .top_p(0.9)?,
-    );
+    // println!("Initializing OpenAI Client");
+    // let client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
 
-    println!("Fetching SQL data model...");
-    let sql_stmts = get_sql_statements(project_path)?;
+    // let ai_job = Arc::new(
+    //     OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
+    //         .temperature(0.7)
+    //         .top_p(0.9)?,
+    // );
 
-    let data_model = sql_stmts
-        .iter()
-        .map(|s| s.raw.clone())
-        .collect::<Vec<String>>();
+    // println!("Fetching SQL data model...");
+    // let sql_stmts = get_sql_statements(project_path)?;
 
-    println!("Fetching API description...");
-    let api_description = get_api_description(project_path.join("specs").as_path(), job_uuid)?;
+    // let data_model = sql_stmts
+    //     .iter()
+    //     .map(|s| s.raw.clone())
+    //     .collect::<Vec<String>>();
 
-    println!("Initializing APP State...");
-    let app_state = Arc::new(Mutex::new(
-        AppState::new(api_description).with_model(data_model)?,
-    ));
+    // println!("Fetching API description...");
+    // let api_description = get_api_description(project_path.join("specs").as_path(), job_uuid)?;
 
-    println!("Initializing Job Queue...");
-    let mut job_queue = genesis()?;
+    // println!("Initializing APP State...");
+    // let app_state = Arc::new(RwLock::new(
+    //     AppState::new(api_description).with_model(data_model)?,
+    // ));
 
-    // Execute the jobs and handle the results
-    println!("Building Project Scaffold");
-    let scaffold: Arc<String> = job_queue
-        .execute_next(client.clone(), ai_job.clone(), app_state.clone())
-        .await?;
+    // println!("Initializing Job Queue...");
+    // let mut job_queue = genesis()?;
 
-    println!("Building Task Dependency Map");
-    let dep_graph: Arc<String> = job_queue
-        .execute_next(client.clone(), ai_job.clone(), app_state.clone())
-        .await?;
+    // // Execute the jobs and handle the results
+    // println!("Building Project Scaffold");
+    // let scaffold: Arc<String> = job_queue
+    //     .execute_next(client.clone(), ai_job.clone(), app_state.clone())
+    //     .await?;
 
-    // These operations are redundant as they have been done by the job handles
-    let scaffold_json = scaffold.as_str().as_json()?;
-    let job_schedule = dep_graph.as_str().as_json()?;
+    // println!("Building Task Dependency Map");
+    // let dep_graph: Arc<String> = job_queue
+    //     .execute_next(client.clone(), ai_job.clone(), app_state.clone())
+    //     .await?;
 
-    let mut files = Files::from_schedule(job_schedule.clone())?;
+    // // These operations are redundant as they have been done by the job handles
+    // let scaffold_json = scaffold.as_str().as_json()?;
+    // let job_schedule = dep_graph.as_str().as_json()?;
 
-    write_scaffold(scaffold_json.clone(), job_path.clone())?;
-    write_graph(job_schedule, job_path.clone())?;
+    // let mut files = Files::from_schedule(job_schedule.clone())?;
 
-    // Add jobs to the job queue
-    for file in files.iter() {
-        let file_ = file.clone();
+    // write_scaffold(scaffold_json.clone(), job_path.clone())?;
+    // write_graph(job_schedule, job_path.clone())?;
 
-        let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<Mutex<AppState>>| {
-            gen_code(c, j, state, file_)
-        };
+    // // Add jobs to the job queue
+    // for file in files.iter() {
+    //     let file_ = file.clone();
 
-        let job = Job::new(
-            String::from("TODO: This is a placeholder"),
-            JobType::CodeGen,
-            Task::new(Box::new(closure)),
-        );
+    //     let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<RwLock<AppState>>| {
+    //         gen_code(c, j, state, file_)
+    //     };
 
-        job_queue.push_back(job);
-    }
+    //     let job = Job::new(
+    //         String::from("TODO: This is a placeholder"),
+    //         JobType::CodeGen,
+    //         Task::new(Box::new(closure)),
+    //     );
 
-    for (_job_id, job) in job_queue.drain() {
-        let file = files.pop_front().unwrap();
-        println!("Running job {:?}", file);
-        let file_path = Path::new(&file);
+    //     job_queue.push_back(job);
+    // }
 
-        let Job {
-            job_id,
-            job_name,
-            job_type,
-            job_state,
-            task,
-        } = job; // destruct
+    // for (_job_id, job) in job_queue.drain() {
+    //     let file = files.pop_front().unwrap();
+    //     println!("Running job {:?}", file);
+    //     let file_path = Path::new(&file);
 
-        let code_string: Arc<String> = task
-            .execute(client.clone(), ai_job.clone(), app_state.clone())
-            .await?;
+    //     let Job {
+    //         job_id,
+    //         job_name,
+    //         job_type,
+    //         job_state,
+    //         task,
+    //     } = job; // destruct
 
-        println!("Finished running job {:?}", file);
+    //     let code_string: Arc<String> = task
+    //         .execute(client.clone(), ai_job.clone(), app_state.clone())
+    //         .await?;
 
-        if let Some(parent_path) = file_path.parent() {
-            let log_path = job_path.join("logs/").join(parent_path);
+    //     println!("Finished running job {:?}", file);
 
-            let parent_path = job_path.join("codebase/").join(parent_path);
-            fs::create_dir_all(parent_path)?;
-            fs::create_dir_all(log_path)?;
-        }
+    //     if let Some(parent_path) = file_path.parent() {
+    //         let log_path = job_path.join("logs/").join(parent_path);
 
-        let file_path = job_path.join(format!("codebase/{}", file));
-        let mut code_file = File::create(file_path.clone())
-            .with_context(|| format!(r#"Could not create "{path}""#, path = file_path.display()))?;
+    //         let parent_path = job_path.join("codebase/").join(parent_path);
+    //         fs::create_dir_all(parent_path)?;
+    //         fs::create_dir_all(log_path)?;
+    //     }
 
-        let log_path = job_path.join(format!("logs/{}", file));
-        let mut log_file = File::create(log_path.clone())
-            .with_context(|| format!(r#"Could not create "{path}""#, path = file_path.display()))?;
-        log_file.write_all(code_string.as_bytes())?;
+    //     let file_path = job_path.join(format!("codebase/{}", file));
+    //     let mut code_file = File::create(file_path.clone())
+    //         .with_context(|| format!(r#"Could not create "{path}""#, path = file_path.display()))?;
 
-        code_file.write_all(code_string.as_bytes())?;
-    }
+    //     let log_path = job_path.join(format!("logs/{}", file));
+    //     let mut log_file = File::create(log_path.clone())
+    //         .with_context(|| format!(r#"Could not create "{path}""#, path = file_path.display()))?;
+    //     log_file.write_all(code_string.as_bytes())?;
 
-    Ok(())
+    //     code_file.write_all(code_string.as_bytes())?;
+    // }
+
+    // Ok(())
 }
 
 fn get_api_description(path: &Path, filename: String) -> Result<String> {
