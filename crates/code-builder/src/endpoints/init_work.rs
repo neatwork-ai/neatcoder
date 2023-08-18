@@ -3,7 +3,7 @@ use futures::{stream::FuturesUnordered, Future};
 use parser::parser::json::AsJson;
 use serde_json::Value;
 use std::{pin::Pin, sync::Arc};
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 
@@ -11,6 +11,7 @@ use crate::{
     models::{
         fs::Files,
         job::{Job, JobType, Task},
+        job_worker::JobFutures,
         state::AppState,
     },
     workflows::{generate_api::gen_code, genesis::genesis},
@@ -18,9 +19,7 @@ use crate::{
 
 pub fn handle(
     open_ai_client: Arc<OpenAI>,
-    audit_trail: &mut FuturesUnordered<
-        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>>,
-    >,
+    audit_trail: &mut JobFutures,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
     init_prompt: String,
@@ -38,9 +37,7 @@ pub async fn handle_scaffold_job() -> Result<()> {
 pub async fn handle_schedule_job(
     job_schedule: Value,
     open_ai_client: Arc<OpenAI>,
-    audit_trail: &mut FuturesUnordered<
-        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>>,
-    >,
+    audit_trail: &mut JobFutures,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<()> {

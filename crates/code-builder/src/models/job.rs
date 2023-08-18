@@ -52,6 +52,8 @@ pub enum JobType {
     CodeGen,
 }
 
+unsafe impl Send for JobType {}
+
 impl Job {
     pub fn new(job_name: String, job_type: JobType, task: Task) -> Self {
         let job_id = HashID::generate_random();

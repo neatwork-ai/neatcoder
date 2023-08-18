@@ -191,13 +191,16 @@ pub async fn gen_code(
     });
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let (answer, code) = write_rust(client, job, &prompts).await?;
+    let (answer, code_raw) = {
+        let (answer, code) = write_rust(client, job, &prompts).await?;
+        (answer.to_string(), code.raw.clone())
+    };
 
     // Update state
     let mut raw = state.raw.lock().await;
     raw.insert(filename.to_string(), answer.to_string());
-    files.insert(filename.to_string(), code.raw.clone());
+    files.insert(filename.to_string(), code_raw.clone());
 
     // TODO: Optimize
-    Ok(Arc::new((JobType::CodeGen, code.raw.clone())))
+    Ok(Arc::new((JobType::CodeGen, code_raw.clone())))
 }

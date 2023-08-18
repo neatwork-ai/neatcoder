@@ -43,7 +43,7 @@ pub trait TaskTrait: Send + 'static {
 impl<F, Fut> TaskTrait for F
 where
     F: FnOnce(Arc<OpenAI>, Arc<OpenAIJob>, Arc<RwLock<AppState>>) -> Fut + Send + 'static,
-    Fut: Future<Output = Result<Arc<(JobType, String)>>> + 'static,
+    Fut: Future<Output = Result<Arc<(JobType, String)>>> + Send + 'static,
 {
     fn call_box(
         self: Box<Self>,

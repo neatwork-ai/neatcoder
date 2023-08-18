@@ -3,7 +3,7 @@ use std::{pin::Pin, sync::Arc};
 use crate::endpoints::{self};
 
 use super::{
-    job::JobType,
+    job::{Job, JobType},
     state::AppState,
     types::{JobRequest, JobResponse},
 };
@@ -19,13 +19,15 @@ use tokio::{
     task::JoinHandle,
 };
 
+pub type JobFutures = FuturesUnordered<
+    Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static + Send>>,
+>;
+
 pub struct JobWorker {
     open_ai_client: Arc<OpenAI>,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
-    audit_trail: FuturesUnordered<
-        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static>>,
-    >,
+    job_futures: JobFutures,
     rx_job: Receiver<JobRequest>,
     tx_result: Sender<JobResponse>, // TODO: Refactor this to hold a String, or a `Response` value
 }
@@ -40,7 +42,7 @@ impl JobWorker {
         Self {
             rx_job,
             ai_job,
-            audit_trail: FuturesUnordered::new(),
+            job_futures: FuturesUnordered::new(),
             tx_result,
             open_ai_client,
             app_state: Arc::new(RwLock::new(AppState::empty())),
@@ -54,8 +56,7 @@ impl JobWorker {
         tx_result: Sender<JobResponse>,
         shutdown: Arc<Mutex<bool>>, // TODO: Refactor to `AtomicBool`
     ) -> JoinHandle<Result<(), Error>> {
-        let worker = Self::new(open_ai_client, ai_job, rx_job, tx_result);
-        tokio::spawn(worker.run(shutdown))
+        tokio::spawn(Self::new(open_ai_client, ai_job, rx_job, tx_result).run(shutdown))
     }
 
     pub async fn run(&mut self, shutdown: Arc<Mutex<bool>>) -> Result<(), Error> {
@@ -70,21 +71,29 @@ impl JobWorker {
         //     shutdown_clone.lock().await = true;
         // });
 
+        let (rx_futures, tx_futures) =
+            tokio::sync::mpsc::channel::<Result<Arc<(JobType, String)>, Error>>(100);
+
         loop {
             tokio::select! {
                 Some(request) = self.rx_job.recv() => {
-                    let response = handle_request(request, &mut self.audit_trail, self.open_ai_client.clone(), self.ai_job.clone(), self.app_state.clone())?;
+                    let response = handle_request(request, &mut self.job_futures, self.open_ai_client.clone(), self.ai_job.clone(), self.app_state.clone())?;
                 },
-                Some(Ok(result)) = self.audit_trail.next() => {
-                    let job_type = &result.0;
+                Some(result) = self.job_futures.next() => {
+                    if let Err(e) = result {
+                        println!("TODO: handle errors with logging");
+                        continue;
+                    }
+                    let inner = result.unwrap();
+                    let (job_type, message) = inner.as_ref();
                     let response = match job_type {
                         JobType::Scaffold => {
                             endpoints::init_work::handle_scaffold_job();
                             JobResponse::Scaffold
                         },
                         JobType::Ordering => {
-                            let job_schedule = result.1.as_str().as_json()?;
-                            endpoints::init_work::handle_schedule_job(job_schedule.clone(), self.open_ai_client.clone(), &mut self.audit_trail, self.ai_job.clone(), self.app_state.clone());
+                            let job_schedule = message.as_str().as_json()?;
+                            endpoints::init_work::handle_schedule_job(job_schedule.clone(), self.open_ai_client.clone(), &mut self.job_futures, self.ai_job.clone(), self.app_state.clone());
                             JobResponse::Ordering { schedule_json: job_schedule}
                         },
                         JobType::CodeGen => {
@@ -109,9 +118,7 @@ impl JobWorker {
 // TODO: make an appropriate use of the return type
 pub fn handle_request(
     request: JobRequest,
-    audit_trail: &mut FuturesUnordered<
-        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static>>,
-    >,
+    audit_trail: &mut JobFutures,
     open_ai_client: Arc<OpenAI>,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,

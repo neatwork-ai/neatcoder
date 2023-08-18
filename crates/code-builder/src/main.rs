@@ -31,6 +31,7 @@ async fn main() -> Result<()> {
 
     let app_state = Arc::new(Mutex::new(AppState::empty()));
 
+    
     let job_worker = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
 
     loop {
