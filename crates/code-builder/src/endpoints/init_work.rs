@@ -1,8 +1,6 @@
 use anyhow::Result;
-use futures::Future;
-use parser::parser::json::AsJson;
 use serde_json::Value;
-use std::{pin::Pin, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
@@ -12,7 +10,7 @@ use crate::{
         fs::Files,
         job::{Job, JobType, Task},
         state::AppState,
-        JobFuts, TaskTrait,
+        JobFuts,
     },
     workflows::{generate_api::gen_code, genesis::genesis},
 };
@@ -22,7 +20,7 @@ pub fn handle(
     audit_trail: &mut JobFuts,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
-    init_prompt: String,
+    _init_prompt: String,
 ) {
     // Generates Job Queue with the two initial jobs:
     // 1. Build Project Scaffold

@@ -12,12 +12,9 @@ use anyhow::Error;
 use futures::{stream::FuturesUnordered, Future, StreamExt};
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 use parser::parser::json::AsJson;
-use tokio::{
-    sync::{
-        mpsc::{Receiver, Sender},
-        Mutex, RwLock,
-    },
-    task::JoinHandle,
+use tokio::sync::{
+    mpsc::{Receiver, Sender},
+    Mutex, RwLock,
 };
 
 pub struct JobWorker {
@@ -72,18 +69,18 @@ impl JobWorker {
         loop {
             tokio::select! {
                 Some(request) = self.rx_job.recv() => {
-                    let response = handle_request(request, &mut self.audit_trail, self.open_ai_client.clone(), self.ai_job.clone(), self.app_state.clone())?;
+                    handle_request(request, &mut self.audit_trail, self.open_ai_client.clone(), self.ai_job.clone(), self.app_state.clone())?;
                 },
                 Some(Ok(result)) = self.audit_trail.next() => {
                     let job_type = &result.0;
                     let response = match job_type {
                         JobType::Scaffold => {
-                            endpoints::init_work::handle_scaffold_job();
+                            endpoints::init_work::handle_scaffold_job().await?;
                             JobResponse::Scaffold
                         },
                         JobType::Ordering => {
                             let job_schedule = result.1.as_str().as_json()?;
-                            endpoints::init_work::handle_schedule_job(job_schedule.clone(), self.open_ai_client.clone(), &mut self.audit_trail, self.ai_job.clone(), self.app_state.clone());
+                            endpoints::init_work::handle_schedule_job(job_schedule.clone(), self.open_ai_client.clone(), &mut self.audit_trail, self.ai_job.clone(), self.app_state.clone()).await?;
                             JobResponse::Ordering { schedule_json: job_schedule}
                         },
                         JobType::CodeGen => {
@@ -91,7 +88,7 @@ impl JobWorker {
                         },
                     };
                     let tx = self.tx_result.clone();
-                    tx.send(response).await;
+                    tx.send(response).await.expect("Failed to send response back");
                 },
                 shutdown_value = shutdown.lock() => {
                     if *shutdown_value {

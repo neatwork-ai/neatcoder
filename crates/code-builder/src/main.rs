@@ -1,18 +1,12 @@
 use anyhow::Result;
-use code_builder::models::job_worker::{self, JobWorker};
-use code_builder::models::types::{JobRequest, JobResponse};
+use code_builder::models::job_worker::JobWorker;
+use code_builder::models::types::JobRequest;
 use serde_json;
 use std::{env, sync::Arc};
-use tokio::io::AsyncWriteExt;
-use tokio::join;
-use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::Mutex;
 use tokio::{io::AsyncReadExt, net::TcpListener};
 
-use code_builder::{
-    endpoints,
-    models::{state::AppState, ClientCommand},
-};
+use code_builder::models::ClientCommand;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 
 #[tokio::main]
@@ -32,8 +26,6 @@ async fn main() -> Result<()> {
             .top_p(0.9)?,
     );
 
-    let app_state = Arc::new(Mutex::new(AppState::empty()));
-
     let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
     let (tx_job, rx_job) = tokio::sync::mpsc::channel(100);
 
@@ -49,60 +41,59 @@ async fn main() -> Result<()> {
         *shutdown_clone.lock().await = true;
     });
 
-    let join_handle = tokio::spawn(async move { worker.run(shutdown).await });
+    let _join_handle = tokio::spawn(async move { worker.run(shutdown).await });
 
     loop {
-        let n = socket.read(&mut buf).await?;
-        let socked_read_fut = socket.read(&mut buf);
-        let rx_result_fut = rx_result.recv();
-
-        let join_handle = join!(socked_read_fut, rx_result_fut);
-
         tokio::select! {
-            buf = socket.read(&mut buf) => {
-                if let Err(e) = buf {
-                    println!("TODO: add proper logging");
+            result = socket.read(&mut buf) => {
+                let n = if let Err(e) = result {
+                    println!("TODO: add proper logging {e}");
+                    continue;
+                } else {
+                    result.unwrap()
+                };
+
+                if n == 0 {
+                    break;
                 }
-                let n = buf.unwrap();
 
-            }
-        }
-        if n == 0 {
-            break;
-        }
+                let message_str = String::from_utf8_lossy(&buf[..n]);
 
-        let message_str = String::from_utf8_lossy(&buf[..n]);
-
-        match serde_json::from_str::<ClientCommand>(&message_str) {
-            Ok(command) => {
-                match command {
-                    ClientCommand::InitWork { prompt } => {
-                        tx_job.send(JobRequest::InitWork { prompt }).await?;
+                match serde_json::from_str::<ClientCommand>(&message_str) {
+                    Ok(command) => {
+                        match command {
+                            ClientCommand::InitWork { prompt } => {
+                                tx_job.send(JobRequest::InitWork { prompt }).await?;
+                            }
+                            ClientCommand::AddSchema { .. } => {
+                                // Handle ...
+                                todo!()
+                            }
+                            ClientCommand::GetJobQueue => {
+                                // Handle ...
+                                todo!()
+                            }
+                            ClientCommand::StartJob { .. } => {
+                                // Handle ...
+                                todo!()
+                            }
+                            ClientCommand::StopJob { .. } => {
+                                // Handle ...
+                                todo!()
+                            }
+                            ClientCommand::RetryJob { .. } => {
+                                // Handle ...
+                                todo!()
+                            }
+                        }
                     }
-                    ClientCommand::AddSchema { schema } => {
-                        // Handle ...
-                        todo!()
-                    }
-                    ClientCommand::GetJobQueue => {
-                        // Handle ...
-                        todo!()
-                    }
-                    ClientCommand::StartJob { job_id } => {
-                        // Handle ...
-                        todo!()
-                    }
-                    ClientCommand::StopJob { job_id } => {
-                        // Handle ...
-                        todo!()
-                    }
-                    ClientCommand::RetryJob { job_id } => {
-                        // Handle ...
-                        todo!()
+                    Err(e) => {
+                        eprintln!("Failed to parse command: {}", e);
                     }
                 }
-            }
-            Err(e) => {
-                eprintln!("Failed to parse command: {}", e);
+            },
+            message = rx_result.recv() => {
+                println!("Received a new job response: {:?}", message);
             }
         }
     }
