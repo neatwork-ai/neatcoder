@@ -1,5 +1,6 @@
-use anyhow::Result;
+use anyhow::{Error, Result};
 use futures::future::Future;
+use futures::stream::FuturesUnordered;
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -31,13 +32,17 @@ pub enum ClientCommand {
     RetryJob { job_id: JobID },
 }
 
+pub type JobFuts = FuturesUnordered<
+    Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send + 'static>>,
+>;
+
 pub trait TaskTrait: Send + 'static {
     fn call_box(
         self: Box<Self>,
         client: Arc<OpenAI>,
         job: Arc<OpenAIJob>,
         app_state: Arc<RwLock<AppState>>,
-    ) -> Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>>;
+    ) -> Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send>>;
 }
 
 impl<F, Fut> TaskTrait for F
@@ -50,7 +55,7 @@ where
         client: Arc<OpenAI>,
         job: Arc<OpenAIJob>,
         app_state: Arc<RwLock<AppState>>,
-    ) -> Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send>> {
         Box::pin((*self)(client, job, app_state))
     }
 }

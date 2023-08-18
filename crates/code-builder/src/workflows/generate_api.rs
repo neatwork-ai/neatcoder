@@ -202,5 +202,5 @@ pub async fn gen_code(
     files.insert(filename.to_string(), code_raw.clone());
 
     // TODO: Optimize
-    Ok(Arc::new((JobType::CodeGen, code_raw.clone())))
+    Ok(Arc::new((JobType::CodeGen, code_raw)))
 }
