@@ -1,4 +1,5 @@
 use anyhow::Result;
+use code_builder::models::job_worker::{self, JobWorker};
 use serde_json;
 use std::{env, sync::Arc};
 use tokio::io::AsyncWriteExt;
@@ -20,7 +21,7 @@ async fn main() -> Result<()> {
     let (mut socket, _socket_addr) = listener.accept().await?;
     let mut buf = vec![0u8; 1024];
 
-    let client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
+    let open_ai_client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
 
     let ai_job = Arc::new(
         OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
@@ -29,6 +30,8 @@ async fn main() -> Result<()> {
     );
 
     let app_state = Arc::new(Mutex::new(AppState::empty()));
+
+    let job_worker = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
 
     loop {
         let n = socket.read(&mut buf).await?;

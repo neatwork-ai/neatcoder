@@ -17,7 +17,7 @@ pub async fn gen_project_scaffold(
     job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<Arc<(JobType, String)>> {
-    let state = app_state.read().await;
+    let state = app_state.write().await;
 
     let mut prompts = Vec::new();
 

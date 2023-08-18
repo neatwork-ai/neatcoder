@@ -1,5 +1,6 @@
 use super::{commit::HashID, job_queue::JobQueue};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum JobRequest {
@@ -35,5 +36,10 @@ pub enum JobResponse {
     RetryJob {
         job_id: HashID,
         is_success: bool,
+    },
+    CodeGen,
+    Scaffold,
+    Ordering {
+        schedule_json: Value,
     },
 }

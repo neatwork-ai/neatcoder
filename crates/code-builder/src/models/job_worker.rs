@@ -9,7 +9,8 @@ use super::{
 };
 use anyhow::Error;
 use futures::{stream::FuturesUnordered, Future, StreamExt};
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
+use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
+use parser::parser::json::AsJson;
 use tokio::{
     sync::{
         mpsc::{Receiver, Sender},
@@ -20,64 +21,41 @@ use tokio::{
 
 pub struct JobWorker {
     open_ai_client: Arc<OpenAI>,
+    ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
-    job_queue:
-        FuturesUnordered<Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>>>>>,
+    audit_trail: FuturesUnordered<
+        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static>>,
+    >,
     rx_job: Receiver<JobRequest>,
     tx_result: Sender<JobResponse>, // TODO: Refactor this to hold a String, or a `Response` value
 }
 
 impl JobWorker {
     pub fn new(
+        open_ai_client: Arc<OpenAI>,
+        ai_job: Arc<OpenAIJob>,
         rx_job: Receiver<JobRequest>,
         tx_result: Sender<JobResponse>,
-        open_ai_client: Arc<OpenAI>,
     ) -> Self {
         Self {
             rx_job,
-            job_queue: FuturesUnordered::new(),
+            ai_job,
+            audit_trail: FuturesUnordered::new(),
             tx_result,
             open_ai_client,
             app_state: Arc::new(RwLock::new(AppState::empty())),
         }
     }
 
-    pub async fn spawn(
+    pub fn spawn(
+        open_ai_client: Arc<OpenAI>,
+        ai_job: Arc<OpenAIJob>,
         rx_job: Receiver<JobRequest>,
         tx_result: Sender<JobResponse>,
-        open_ai_client: Arc<OpenAI>,
         shutdown: Arc<Mutex<bool>>, // TODO: Refactor to `AtomicBool`
     ) -> JoinHandle<Result<(), Error>> {
-        let worker = Self::new(rx_job, tx_result, open_ai_client);
+        let worker = Self::new(open_ai_client, ai_job, rx_job, tx_result);
         tokio::spawn(worker.run(shutdown))
-    }
-
-    // TODO: make an appropriate use of the return type
-    pub async fn handle_request(&mut self, request: JobRequest) -> Result<(), Error> {
-        match request {
-            JobRequest::InitWork { prompt } => {
-                // Initialize an empty `AppState` instance
-                let ai_job = Arc::new(
-                    OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
-                        .temperature(0.7)
-                        .top_p(0.9)?,
-                );
-                let open_ai_client = self.open_ai_client.clone();
-                let app_state = self.app_state.clone();
-                let audit_trail = &mut self.job_queue;
-                endpoints::init_work::handle(
-                    open_ai_client,
-                    audit_trail,
-                    ai_job,
-                    app_state,
-                    prompt,
-                )
-                .await?;
-            }
-            _ => todo!(),
-        }
-
-        Ok(())
     }
 
     pub async fn run(&mut self, shutdown: Arc<Mutex<bool>>) -> Result<(), Error> {
@@ -95,10 +73,26 @@ impl JobWorker {
         loop {
             tokio::select! {
                 Some(request) = self.rx_job.recv() => {
-                    let response = self.handle_request(request).await?;
+                    let response = handle_request(request, &mut self.audit_trail, self.open_ai_client.clone(), self.ai_job.clone(), self.app_state.clone())?;
                 },
-                result = self.job_queue.next() => {
-                    self.tx_result.send(result).await?;
+                Some(Ok(result)) = self.audit_trail.next() => {
+                    let job_type = &result.0;
+                    let response = match job_type {
+                        JobType::Scaffold => {
+                            endpoints::init_work::handle_scaffold_job();
+                            JobResponse::Scaffold
+                        },
+                        JobType::Ordering => {
+                            let job_schedule = result.1.as_str().as_json()?;
+                            endpoints::init_work::handle_schedule_job(job_schedule.clone(), self.open_ai_client.clone(), &mut self.audit_trail, self.ai_job.clone(), self.app_state.clone());
+                            JobResponse::Ordering { schedule_json: job_schedule}
+                        },
+                        JobType::CodeGen => {
+                            JobResponse::CodeGen
+                        },
+                    };
+                    let tx = self.tx_result.clone();
+                    tx.send(response).await;
                 },
                 shutdown_value = shutdown.lock() => {
                     if *shutdown_value {
@@ -110,4 +104,26 @@ impl JobWorker {
 
         Ok(())
     }
+}
+
+// TODO: make an appropriate use of the return type
+pub fn handle_request(
+    request: JobRequest,
+    audit_trail: &mut FuturesUnordered<
+        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static>>,
+    >,
+    open_ai_client: Arc<OpenAI>,
+    ai_job: Arc<OpenAIJob>,
+    app_state: Arc<RwLock<AppState>>,
+) -> Result<(), Error> {
+    match request {
+        JobRequest::InitWork { prompt } => {
+            let open_ai_client = open_ai_client.clone();
+            let app_state = app_state.clone();
+            endpoints::init_work::handle(open_ai_client, audit_trail, ai_job, app_state, prompt);
+        }
+        _ => todo!(),
+    }
+
+    Ok(())
 }

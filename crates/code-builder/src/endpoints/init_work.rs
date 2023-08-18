@@ -1,6 +1,7 @@
 use anyhow::Result;
 use futures::{stream::FuturesUnordered, Future};
 use parser::parser::json::AsJson;
+use serde_json::Value;
 use std::{pin::Pin, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -15,7 +16,7 @@ use crate::{
     workflows::{generate_api::gen_code, genesis::genesis},
 };
 
-pub async fn handle(
+pub fn handle(
     open_ai_client: Arc<OpenAI>,
     audit_trail: &mut FuturesUnordered<
         Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>>,
@@ -23,20 +24,11 @@ pub async fn handle(
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
     init_prompt: String,
-) -> Result<()> {
-    // Adding the inital prompt in the AppState
-    {
-        // RwLock gets unlocked once out of scope
-        let mut state = app_state.write().await;
-        state.specs = Some(init_prompt);
-    }
-
+) {
     // Generates Job Queue with the two initial jobs:
     // 1. Build Project Scaffold
     // 2. Build Job Schedule
     genesis(audit_trail, open_ai_client, ai_job, app_state);
-
-    Ok(())
 }
 
 pub async fn handle_scaffold_job() -> Result<()> {
@@ -44,7 +36,7 @@ pub async fn handle_scaffold_job() -> Result<()> {
 }
 
 pub async fn handle_schedule_job(
-    job_schedule: Arc<String>,
+    job_schedule: Value,
     open_ai_client: Arc<OpenAI>,
     audit_trail: &mut FuturesUnordered<
         Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>>>>>,
@@ -52,8 +44,7 @@ pub async fn handle_schedule_job(
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<()> {
-    let job_schedule_json = job_schedule.as_str().as_json()?;
-    let files = Files::from_schedule(job_schedule_json)?;
+    let files = Files::from_schedule(job_schedule)?;
 
     // Add code writing jobs to the job queue
     for file in files.iter() {
@@ -68,12 +59,11 @@ pub async fn handle_schedule_job(
             Task(Box::new(closure)),
         );
 
-        audit_trail.push(job.task.call_box(
+        audit_trail.push(job.task.0.call_box(
             open_ai_client.clone(),
             ai_job.clone(),
             app_state.clone(),
         ));
-        // audit_trail.push();
     }
     Ok(())
 }
