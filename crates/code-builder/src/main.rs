@@ -1,14 +1,13 @@
 use anyhow::Result;
+use bincode;
+use code_builder::models::job_worker::JobWorker;
+use code_builder::models::shutdown::ShutdownSignal;
+use code_builder::models::types::JobRequest;
 use serde_json;
 use std::{env, sync::Arc};
-use tokio::io::AsyncWriteExt;
-use tokio::sync::Mutex;
 use tokio::{io::AsyncReadExt, net::TcpListener};
 
-use code_builder::{
-    endpoints,
-    models::{state::AppState, ClientCommand},
-};
+use code_builder::models::ClientCommand;
 use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
 
 #[tokio::main]
@@ -20,7 +19,7 @@ async fn main() -> Result<()> {
     let (mut socket, _socket_addr) = listener.accept().await?;
     let mut buf = vec![0u8; 1024];
 
-    let client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
+    let open_ai_client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
 
     let ai_job = Arc::new(
         OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
@@ -28,59 +27,74 @@ async fn main() -> Result<()> {
             .top_p(0.9)?,
     );
 
-    let app_state = Arc::new(Mutex::new(AppState::empty()));
+    let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
+    let (tx_job, rx_job) = tokio::sync::mpsc::channel(100);
 
+    let shutdown = ShutdownSignal::new();
+
+    let _join_handle = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
     loop {
-        let n = socket.read(&mut buf).await?;
+        tokio::select! {
+            result = socket.read(&mut buf) => {
+                let n = if let Err(e) = result {
+                    println!("TODO: add proper logging {e}");
+                    continue;
+                } else {
+                    result.unwrap()
+                };
 
-        if n == 0 {
-            break;
-        }
+                if n == 0 {
+                    break;
+                }
 
-        let message_str = String::from_utf8_lossy(&buf[..n]);
+                let message_str = String::from_utf8_lossy(&buf[..n]);
 
-        match serde_json::from_str::<ClientCommand>(&message_str) {
-            Ok(command) => {
-                match command {
-                    ClientCommand::InitWork { prompt } => {
-                        let job_queue = endpoints::init_work::handle(
-                            client.clone(),
-                            ai_job.clone(),
-                            app_state.clone(),
-                            prompt,
-                        )
-                        .await?;
-
-                        // Serialize job_queue to JSON
-                        let response = serde_json::to_string(&job_queue)?;
-
-                        // Send the serialized job_queue to the client
-                        socket.write_all(response.as_bytes()).await?;
+                match serde_json::from_str::<ClientCommand>(&message_str) {
+                    Ok(command) => {
+                        match command {
+                            ClientCommand::InitWork { prompt } => {
+                                tx_job.send(JobRequest::InitWork { prompt }).await?;
+                            }
+                            ClientCommand::AddSchema { .. } => {
+                                // Handle ...
+                                todo!()
+                            }
+                            ClientCommand::GetJobQueue => {
+                                // Handle ...
+                                todo!()
+                            }
+                            ClientCommand::StartJob { .. } => {
+                                // Handle ...
+                                todo!()
+                            }
+                            ClientCommand::StopJob { .. } => {
+                                // Handle ...
+                                todo!()
+                            }
+                            ClientCommand::RetryJob { .. } => {
+                                // Handle ...
+                                todo!()
+                            }
+                        }
                     }
-                    ClientCommand::AddSchema { schema } => {
-                        // Handle ...
-                        todo!()
-                    }
-                    ClientCommand::GetJobQueue => {
-                        // Handle ...
-                        todo!()
-                    }
-                    ClientCommand::StartJob { job_id } => {
-                        // Handle ...
-                        todo!()
-                    }
-                    ClientCommand::StopJob { job_id } => {
-                        // Handle ...
-                        todo!()
-                    }
-                    ClientCommand::RetryJob { job_id } => {
-                        // Handle ...
-                        todo!()
+                    Err(e) => {
+                        eprintln!("Failed to parse command: {}", e);
                     }
                 }
-            }
-            Err(e) => {
-                eprintln!("Failed to parse command: {}", e);
+            },
+            message = rx_result.recv() => {
+                println!("Received a new job response: {:?}", message);
+                if let Some(msg) = message {
+                    socket.writable().await?;
+                    let buffer: Vec<u8> = bincode::serialize(&msg)?;
+                    match socket.try_write(&buffer) {
+                        Ok(n) => {
+                            println!("Write new content to buffer, with length: {n}");
+                            continue
+                        },
+                        Err(e) => println!("Failed to write message to buffer, with error: {e}"),
+                    }
+                }
             }
         }
     }
