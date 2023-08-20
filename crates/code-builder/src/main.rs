@@ -1,6 +1,7 @@
 use anyhow::Result;
 use bincode;
 use code_builder::models::job_worker::JobWorker;
+use code_builder::models::shutdown::ShutdownSignal;
 use code_builder::models::types::JobRequest;
 use serde_json;
 use std::{env, sync::Arc};
@@ -30,16 +31,7 @@ async fn main() -> Result<()> {
     let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
     let (tx_job, rx_job) = tokio::sync::mpsc::channel(100);
 
-    let shutdown = Arc::new(Mutex::new(false));
-    let shutdown_clone = Arc::clone(&shutdown);
-
-    // then spawns a new thread
-    tokio::spawn(async move {
-        tokio::signal::ctrl_c()
-            .await
-            .expect("Failed to listen to SIGINT");
-        *shutdown_clone.lock().await = true;
-    });
+    let shutdown = ShutdownSignal::new();
 
     let _join_handle = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
     loop {

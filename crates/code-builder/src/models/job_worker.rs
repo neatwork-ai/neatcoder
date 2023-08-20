@@ -4,15 +4,13 @@ use crate::endpoints::{self};
 
 use super::{
     job::JobType,
+    shutdown::ShutdownSignal,
     state::AppState,
     types::{JobRequest, JobResponse},
 };
 use anyhow::Error;
 use futures::{stream::FuturesUnordered, Future, StreamExt};
-use gluon::ai::{
-    self,
-    openai::{client::OpenAI, job::OpenAIJob},
-};
+use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 use parser::parser::json::AsJson;
 use tokio::{
     sync::{
@@ -57,7 +55,7 @@ impl JobWorker {
         ai_job: Arc<OpenAIJob>,
         rx_job: Receiver<JobRequest>,
         tx_result: Sender<JobResponse>,
-        shutdown: Arc<Mutex<bool>>, // TODO: Refactor to `AtomicBool`
+        shutdown: ShutdownSignal, // TODO: Refactor to `AtomicBool`
     ) -> JoinHandle<Result<(), Error>> {
         tokio::spawn(async move {
             Self::new(open_ai_client, ai_job, tx_result, rx_job)
@@ -66,7 +64,7 @@ impl JobWorker {
         })
     }
 
-    pub async fn run(&mut self, shutdown: Arc<Mutex<bool>>) -> Result<(), Error> {
+    pub async fn run(&mut self, shutdown: ShutdownSignal) -> Result<(), Error> {
         loop {
             tokio::select! {
                 Some(request) = self.rx_job.recv() => {
@@ -96,9 +94,13 @@ impl JobWorker {
                     let tx = self.tx_result.clone();
                     tx.send(response).await.expect("Failed to send response back");
                 },
-                shutdown_value = shutdown.lock() => {
-                    if *shutdown_value {
-                        break;
+                shutdown_handle = shutdown.wait_for_signal().await => {
+                    if let Ok(signal) = shutdown_handle {
+                        if *signal.lock().await {
+                            break;
+                        }
+                    } else if let Err(e) = shutdown_handle {
+                        println!("Failed to get signal, with error: {e}")
                     }
                 }
             }

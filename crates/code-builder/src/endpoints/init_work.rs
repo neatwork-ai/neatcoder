@@ -9,15 +9,15 @@ use crate::{
     models::{
         fs::Files,
         job::{Job, JobType, Task},
+        job_worker::JobFutures,
         state::AppState,
-        JobFuts,
     },
     workflows::{generate_api::gen_code, genesis::genesis},
 };
 
 pub fn handle(
     open_ai_client: Arc<OpenAI>,
-    audit_trail: &mut JobFuts,
+    job_futures: &mut JobFutures,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
     _init_prompt: String,
@@ -25,7 +25,7 @@ pub fn handle(
     // Generates Job Queue with the two initial jobs:
     // 1. Build Project Scaffold
     // 2. Build Job Schedule
-    genesis(audit_trail, open_ai_client, ai_job, app_state);
+    genesis(job_futures, open_ai_client, ai_job, app_state);
 }
 
 pub async fn handle_scaffold_job() -> Result<()> {
@@ -35,7 +35,7 @@ pub async fn handle_scaffold_job() -> Result<()> {
 pub async fn handle_schedule_job(
     job_schedule: Value,
     open_ai_client: Arc<OpenAI>,
-    audit_trail: &mut JobFuts,
+    job_futures: &mut JobFutures,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<()> {
@@ -60,7 +60,7 @@ pub async fn handle_schedule_job(
             Task(Box::new(closure)),
         );
 
-        audit_trail.push(job.task.0.call_box(
+        job_futures.push(job.task.0.call_box(
             open_ai_client.clone(),
             ai_job.clone(),
             app_state.clone(),

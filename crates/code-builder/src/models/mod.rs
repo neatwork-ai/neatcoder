@@ -1,6 +1,5 @@
 use anyhow::{Error, Result};
 use futures::future::Future;
-use futures::stream::FuturesUnordered;
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -19,6 +18,7 @@ pub mod job;
 pub mod job_queue;
 pub mod job_worker;
 pub mod schema;
+pub mod shutdown;
 pub mod state;
 pub mod types;
 
@@ -31,10 +31,6 @@ pub enum ClientCommand {
     StopJob { job_id: JobID },
     RetryJob { job_id: JobID },
 }
-
-pub type JobFuts = FuturesUnordered<
-    Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send + 'static>>,
->;
 
 pub trait TaskTrait: Send + 'static {
     fn call_box(
