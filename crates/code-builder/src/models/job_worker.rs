@@ -15,7 +15,7 @@ use parser::parser::json::AsJson;
 use tokio::{
     sync::{
         mpsc::{Receiver, Sender},
-        Mutex, RwLock,
+        RwLock,
     },
     task::JoinHandle,
 };
@@ -72,7 +72,7 @@ impl JobWorker {
                 },
                 Some(result) = self.job_futures.next() => {
                     if let Err(e) = result {
-                        println!("TODO: handle errors with logging");
+                        println!("TODO: handle errors with logging: {e}");
                         continue;
                     }
                     let inner = result.unwrap();

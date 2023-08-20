@@ -5,7 +5,6 @@ use code_builder::models::shutdown::ShutdownSignal;
 use code_builder::models::types::JobRequest;
 use serde_json;
 use std::{env, sync::Arc};
-use tokio::sync::Mutex;
 use tokio::{io::AsyncReadExt, net::TcpListener};
 
 use code_builder::models::ClientCommand;
