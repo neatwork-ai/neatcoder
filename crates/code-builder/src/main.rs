@@ -1,4 +1,5 @@
 use anyhow::Result;
+use bincode;
 use code_builder::models::job_worker::JobWorker;
 use code_builder::models::types::JobRequest;
 use serde_json;
@@ -29,7 +30,6 @@ async fn main() -> Result<()> {
     let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
     let (tx_job, rx_job) = tokio::sync::mpsc::channel(100);
 
-    let mut worker = JobWorker::new(open_ai_client, ai_job, tx_result, rx_job);
     let shutdown = Arc::new(Mutex::new(false));
     let shutdown_clone = Arc::clone(&shutdown);
 
@@ -41,8 +41,7 @@ async fn main() -> Result<()> {
         *shutdown_clone.lock().await = true;
     });
 
-    let _join_handle = tokio::spawn(async move { worker.run(shutdown).await });
-
+    let _join_handle = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
     loop {
         tokio::select! {
             result = socket.read(&mut buf) => {
@@ -94,6 +93,17 @@ async fn main() -> Result<()> {
             },
             message = rx_result.recv() => {
                 println!("Received a new job response: {:?}", message);
+                if let Some(msg) = message {
+                    socket.writable().await?;
+                    let buffer: Vec<u8> = bincode::serialize(&msg)?;
+                    match socket.try_write(&buffer) {
+                        Ok(n) => {
+                            println!("Write new content to buffer, with length: {n}");
+                            continue
+                        },
+                        Err(e) => println!("Failed to write message to buffer, with error: {e}"),
+                    }
+                }
             }
         }
     }

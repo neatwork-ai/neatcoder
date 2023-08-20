@@ -9,7 +9,6 @@ use crate::{
     models::{
         fs::Files,
         job::{Job, JobType, Task},
-        job_worker::JobFutures,
         state::AppState,
         JobFuts,
     },

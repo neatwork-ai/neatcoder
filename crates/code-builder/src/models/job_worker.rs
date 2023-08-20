@@ -9,11 +9,17 @@ use super::{
 };
 use anyhow::Error;
 use futures::{stream::FuturesUnordered, Future, StreamExt};
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
+use gluon::ai::{
+    self,
+    openai::{client::OpenAI, job::OpenAIJob},
+};
 use parser::parser::json::AsJson;
-use tokio::sync::{
-    mpsc::{Receiver, Sender},
-    Mutex, RwLock,
+use tokio::{
+    sync::{
+        mpsc::{Receiver, Sender},
+        Mutex, RwLock,
+    },
+    task::JoinHandle,
 };
 
 pub type JobFutures = FuturesUnordered<
@@ -46,29 +52,21 @@ impl JobWorker {
         }
     }
 
-    // pub fn spawn(
-    //     &self,
-    //     open_ai_client: Arc<OpenAI>,
-    //     ai_job: Arc<OpenAIJob>,
-    //     rx_job: Receiver<JobRequest>,
-    //     tx_result: Sender<JobResponse>,
-    //     shutdown: Arc<Mutex<bool>>, // TODO: Refactor to `AtomicBool`
-    // ) -> JoinHandle<Result<(), Error>> {
-    //     tokio::spawn(self.run(shutdown))
-    // }
+    pub fn spawn(
+        open_ai_client: Arc<OpenAI>,
+        ai_job: Arc<OpenAIJob>,
+        rx_job: Receiver<JobRequest>,
+        tx_result: Sender<JobResponse>,
+        shutdown: Arc<Mutex<bool>>, // TODO: Refactor to `AtomicBool`
+    ) -> JoinHandle<Result<(), Error>> {
+        tokio::spawn(async move {
+            Self::new(open_ai_client, ai_job, tx_result, rx_job)
+                .run(shutdown)
+                .await
+        })
+    }
 
     pub async fn run(&mut self, shutdown: Arc<Mutex<bool>>) -> Result<(), Error> {
-        // How to generate a shutdown signal, by the spawner:
-        //
-        // let shutdown = Arc::new(Mutex::new(false));
-        // let shutdown_clone = Arc::clone(&shutdown);
-        //
-        // // then spawns a new thread
-        // tokio::spawn(async move {
-        //     signal::ctrl_c().await.expect("Failed to listen to SIGINT");
-        //     shutdown_clone.lock().await = true;
-        // });
-
         loop {
             tokio::select! {
                 Some(request) = self.rx_job.recv() => {

@@ -2,12 +2,12 @@ use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::models::{job::Task, state::AppState, JobFuts};
+use crate::models::{job::Task, job_worker::JobFutures, state::AppState};
 
 use super::generate_api::{gen_project_scaffold, gen_work_schedule};
 
 pub fn genesis(
-    audit_trail: &mut JobFuts,
+    job_futures: &mut JobFutures,
     open_ai_client: Arc<OpenAI>,
     ai_job: Arc<OpenAIJob>,
     app_state: Arc<RwLock<AppState>>,
@@ -25,7 +25,7 @@ pub fn genesis(
 
     let task = Task(Box::new(closure));
 
-    audit_trail.push(
+    job_futures.push(
         task.0
             .call_box(open_ai_client.clone(), ai_job.clone(), app_state.clone()),
     );
@@ -43,5 +43,5 @@ pub fn genesis(
 
     let task = Task(Box::new(closure));
 
-    audit_trail.push(task.0.call_box(open_ai_client, ai_job, app_state));
+    job_futures.push(task.0.call_box(open_ai_client, ai_job, app_state));
 }
