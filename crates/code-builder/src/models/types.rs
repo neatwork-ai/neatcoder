@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum JobRequest {
-    InitWork { prompt: String },
+    InitPrompt { prompt: String },
     AddModel { path: String, schema: String },
     AddJob { job_id: Uuid },
     StopJob { job_id: Uuid },

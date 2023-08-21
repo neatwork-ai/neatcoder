@@ -23,7 +23,7 @@ pub mod types;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ClientCommand {
-    InitWork { prompt: String },
+    InitPrompt { prompt: String },
     AddModel { path: String, schema: String },
     StartJob { job_id: Uuid },
     StopJob { job_id: Uuid },

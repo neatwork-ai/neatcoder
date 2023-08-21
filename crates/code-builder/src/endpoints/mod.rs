@@ -1,2 +1,2 @@
 pub mod add_interface;
-pub mod init_work;
+pub mod init_prompt;

@@ -79,13 +79,13 @@ impl JobWorker {
                     let (job_type, message) = inner.as_ref();
                     let response = match job_type {
                         JobType::Scaffold => {
-                            endpoints::init_work::handle_scaffold_job().await?;
+                            endpoints::init_prompt::handle_scaffold_job().await?;
                             JobResponse::Scaffold
                         },
                         JobType::Ordering => {
                             let job_schedule = message.as_str().as_json()?;
 
-                            endpoints::init_work::handle_schedule_job(
+                            endpoints::init_prompt::handle_schedule_job(
                                 job_schedule.clone(),
                                 self.open_ai_client.clone(),
                                 &mut self.job_futures,
@@ -129,10 +129,10 @@ pub fn handle_request(
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<(), Error> {
     match request {
-        JobRequest::InitWork { prompt } => {
+        JobRequest::InitPrompt { prompt } => {
             let open_ai_client = open_ai_client.clone();
             let app_state = app_state.clone();
-            endpoints::init_work::handle(open_ai_client, audit_trail, ai_job, app_state, prompt);
+            endpoints::init_prompt::handle(open_ai_client, audit_trail, ai_job, app_state, prompt);
         }
         // JobRequest::AddModel { path, schema } => {
         //     let open_ai_client = open_ai_client.clone();
