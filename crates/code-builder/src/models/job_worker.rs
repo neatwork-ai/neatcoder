@@ -84,7 +84,15 @@ impl JobWorker {
                         },
                         JobType::Ordering => {
                             let job_schedule = message.as_str().as_json()?;
-                            endpoints::init_work::handle_schedule_job(job_schedule.clone(), self.open_ai_client.clone(), &mut self.job_futures, self.ai_job.clone(), self.app_state.clone()).await?;
+
+                            endpoints::init_work::handle_schedule_job(
+                                job_schedule.clone(),
+                                self.open_ai_client.clone(),
+                                &mut self.job_futures,
+                                self.ai_job.clone(),
+                                self.app_state.clone()
+                            ).await?;
+
                             JobResponse::Ordering { schedule_json: job_schedule}
                         },
                         JobType::CodeGen => {
