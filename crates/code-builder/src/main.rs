@@ -55,9 +55,8 @@ async fn main() -> Result<()> {
                             ClientCommand::InitWork { prompt } => {
                                 tx_job.send(JobRequest::InitWork { prompt }).await?;
                             }
-                            ClientCommand::AddSchema { .. } => {
-                                // Handle ...
-                                todo!()
+                            ClientCommand::AddModel { path, schema } => {
+                                tx_job.send(JobRequest::AddModel { path, schema }).await?;
                             }
                             ClientCommand::StartJob { .. } => {
                                 // Handle ...

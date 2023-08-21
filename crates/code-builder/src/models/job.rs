@@ -38,7 +38,7 @@ impl fmt::Debug for Job {
             .field("job_id", &self.job_id)
             .field("job_name", &self.job_name)
             .field("job_type", &self.job_type)
-            .field("job_state", &self.job_type)
+            .field("job_state", &self.job_state)
             // .field("task", &self.task)  // Intentionally skipping task
             .finish()
     }

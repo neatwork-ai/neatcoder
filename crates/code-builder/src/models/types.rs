@@ -5,8 +5,7 @@ use serde_json::Value;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum JobRequest {
     InitWork { prompt: String },
-    AddSchema { schema: String },
-    GetJobQueue,
+    AddModel { path: String, schema: String },
     AddJob { job_id: HashID },
     StopJob { job_id: HashID },
     RetryJob { job_id: HashID },
@@ -18,12 +17,9 @@ pub enum JobResponse {
         result: Option<String>,
         is_success: bool,
     },
-    AddSchema {
+    AddModel {
         result: Option<String>,
         is_success: bool,
-    },
-    GetJobQueue {
-        job_queue: JobQueue,
     },
     AddJob {
         job_id: HashID,

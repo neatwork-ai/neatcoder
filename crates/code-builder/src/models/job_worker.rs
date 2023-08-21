@@ -126,6 +126,11 @@ pub fn handle_request(
             let app_state = app_state.clone();
             endpoints::init_work::handle(open_ai_client, audit_trail, ai_job, app_state, prompt);
         }
+        // JobRequest::AddModel { path, schema } => {
+        //     let open_ai_client = open_ai_client.clone();
+        //     let app_state = app_state.clone();
+        //     endpoints::add_model::handle();
+        // }
         _ => todo!(),
     }
 
