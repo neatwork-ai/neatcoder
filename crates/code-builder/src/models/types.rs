@@ -1,14 +1,14 @@
-use super::{commit::HashID, job_queue::JobQueue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum JobRequest {
     InitWork { prompt: String },
     AddModel { path: String, schema: String },
-    AddJob { job_id: HashID },
-    StopJob { job_id: HashID },
-    RetryJob { job_id: HashID },
+    AddJob { job_id: Uuid },
+    StopJob { job_id: Uuid },
+    RetryJob { job_id: Uuid },
 }
 
 #[derive(Debug, Serialize)]
@@ -22,15 +22,15 @@ pub enum JobResponse {
         is_success: bool,
     },
     AddJob {
-        job_id: HashID,
+        job_id: Uuid,
         is_success: bool,
     },
     StopJobId {
-        job_id: HashID,
+        job_id: Uuid,
         is_success: bool,
     },
     RetryJob {
-        job_id: HashID,
+        job_id: Uuid,
         is_success: bool,
     },
     CodeGen,

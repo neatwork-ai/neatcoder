@@ -1,11 +1,12 @@
-use super::{commit::JobID, job::Job};
+use super::job::Job;
 use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize)]
 pub struct JobQueue {
-    jobs: HashMap<JobID, Job>,
-    schedule: VecDeque<JobID>,
+    jobs: HashMap<Uuid, Job>,
+    schedule: VecDeque<Uuid>,
 }
 
 impl JobQueue {
@@ -74,12 +75,12 @@ impl JobQueue {
 }
 
 pub struct JobQueueIterator {
-    jobs: HashMap<JobID, Job>,
-    schedule: VecDeque<JobID>,
+    jobs: HashMap<Uuid, Job>,
+    schedule: VecDeque<Uuid>,
 }
 
 impl Iterator for JobQueueIterator {
-    type Item = (JobID, Job);
+    type Item = (Uuid, Job);
 
     fn next(&mut self) -> Option<Self::Item> {
         let job_id = self.schedule.pop_front()?;

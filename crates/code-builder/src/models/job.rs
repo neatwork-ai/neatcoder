@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::params::OpenAIParams;
 
-use super::commit::{HashID, JobID};
 use super::state::AppState;
 use super::TaskTrait;
 
@@ -21,7 +21,7 @@ pub enum JobState {
 
 #[derive(Debug, Serialize)]
 pub struct Job {
-    pub job_id: JobID,
+    pub job_id: Uuid,
     pub job_name: String,
     pub job_type: JobType,
     pub job_state: JobState,
@@ -39,7 +39,7 @@ unsafe impl Send for JobType {}
 
 impl Job {
     pub fn new(job_name: String, job_type: JobType) -> Self {
-        let job_id = HashID::generate_random();
+        let job_id = Uuid::new_v4();
 
         Self {
             job_id,

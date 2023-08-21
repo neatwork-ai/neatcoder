@@ -4,15 +4,14 @@ use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::params::OpenAIParams;
 
-use self::commit::JobID;
 use self::job::JobType;
 use self::state::AppState;
 
-pub mod commit;
 pub mod fs;
 pub mod job;
 pub mod job_queue;
@@ -26,9 +25,9 @@ pub mod types;
 pub enum ClientCommand {
     InitWork { prompt: String },
     AddModel { path: String, schema: String },
-    StartJob { job_id: JobID },
-    StopJob { job_id: JobID },
-    RetryJob { job_id: JobID },
+    StartJob { job_id: Uuid },
+    StopJob { job_id: Uuid },
+    RetryJob { job_id: Uuid },
 }
 
 pub trait TaskTrait: Send + 'static {
