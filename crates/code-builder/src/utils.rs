@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, msg::OpenAIMsg};
+use gluon::ai::openai::{client::OpenAI, msg::OpenAIMsg, params::OpenAIParams};
 use parser::parser::{
     json::AsJson,
     rust::{AsRust, Rust},
@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 pub async fn write_rust(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIJob>,
+    job: Arc<OpenAIParams>,
     prompts: &Vec<&OpenAIMsg>,
 ) -> Result<(String, Rust)> {
     let mut retries = 3;
@@ -37,7 +37,7 @@ pub async fn write_rust(
 
 pub async fn write_json(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIJob>,
+    job: Arc<OpenAIParams>,
     prompts: &Vec<&OpenAIMsg>,
 ) -> Result<(String, Value)> {
     let mut retries = 3;

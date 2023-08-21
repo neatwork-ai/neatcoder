@@ -1,15 +1,15 @@
 use crate::{
     ai::openai::{
         client::OpenAI,
-        job::OpenAIJob,
         msg::{GptRole, OpenAIMsg},
+        params::OpenAIParams,
     },
     output::tasks::Tasks,
     Sample,
 };
 use anyhow::Result;
 
-pub async fn generate_tree(client: &OpenAI, job: &OpenAIJob) -> Result<()> {
+pub async fn generate_tree(client: &OpenAI, job: &OpenAIParams) -> Result<()> {
     let sys_msg = OpenAIMsg {
         role: GptRole::System,
         content: String::from("You are a technical entrepreneur on steroids."),
@@ -68,7 +68,7 @@ pub async fn generate_tree(client: &OpenAI, job: &OpenAIJob) -> Result<()> {
 
 pub async fn distribute_tasks(
     client: &OpenAI,
-    job: &OpenAIJob,
+    job: &OpenAIParams,
     tasks: &Tasks,
     context: &str,
 ) -> Result<()> {

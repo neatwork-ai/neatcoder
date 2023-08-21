@@ -1,11 +1,11 @@
 use anyhow::Result;
 use gluon::ai::openai::{
     client::OpenAI,
-    job::OpenAIJob,
     msg::{GptRole, OpenAIMsg},
+    params::OpenAIParams,
 };
 
-pub async fn generate_db_schema(client: &OpenAI, job: &OpenAIJob) -> Result<(String, String)> {
+pub async fn generate_db_schema(client: &OpenAI, job: &OpenAIParams) -> Result<(String, String)> {
     let sys_msg = OpenAIMsg {
         role: GptRole::System,
         content: String::from("You are a entrepreneur with product management background."),

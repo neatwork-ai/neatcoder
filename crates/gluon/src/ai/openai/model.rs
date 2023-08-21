@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum OpenAIModels {
     Gpt432k,
     Gpt4,

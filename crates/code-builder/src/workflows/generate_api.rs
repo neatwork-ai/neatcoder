@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
 use gluon::ai::openai::{
     client::OpenAI,
-    job::OpenAIJob,
     msg::{GptRole, OpenAIMsg},
+    params::OpenAIParams,
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -14,7 +14,7 @@ use crate::{
 
 pub async fn gen_project_scaffold(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIJob>,
+    job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<Arc<(JobType, String)>> {
     let state = app_state.write().await;
@@ -54,26 +54,25 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
 pub async fn gen_work_schedule(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIJob>,
+    job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<Arc<(JobType, String)>> {
     let state = app_state.read().await;
 
     let mut prompts = Vec::new();
 
-    if state.data_model.is_none() {
+    if state.interfaces.is_empty() {
         // TODO: Consider relaxing this and instead gracefully handle the task without the data model
         return Err(anyhow!("No data model available.."));
     }
 
-    let data_model = state.data_model.as_ref().unwrap();
     let api_description = &state.specs.as_ref().unwrap();
 
-    if state.fs.is_none() {
+    if state.scaffold.is_none() {
         return Err(anyhow!("No folder scaffold config available.."));
     }
 
-    let project_scaffold = state.fs.as_ref().unwrap();
+    let project_scaffold = state.scaffold.as_ref().unwrap();
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
@@ -82,7 +81,7 @@ pub async fn gen_work_schedule(
         ),
     });
 
-    for model in data_model.iter() {
+    for model in state.interfaces.iter() {
         prompts.push(OpenAIMsg {
             role: GptRole::User,
             content: model.clone(),
@@ -125,22 +124,21 @@ Use the following schema:
 
 pub async fn gen_code(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIJob>,
+    job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
     filename: String,
 ) -> Result<Arc<(JobType, String)>> {
     let state = app_state.read().await;
     let mut prompts = Vec::new();
 
-    let data_model = state.data_model.as_ref().unwrap();
     let api_description = state.specs.as_ref().unwrap();
 
-    if state.fs.is_none() {
+    if state.scaffold.is_none() {
         return Err(anyhow!("No folder scaffold config available.."));
     }
 
-    let project_scaffold = state.fs.as_ref().unwrap();
-    let mut files = state.files.lock().await;
+    let project_scaffold = state.scaffold.as_ref().unwrap();
+    let mut files = state.codebase.lock().await;
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
@@ -149,7 +147,7 @@ pub async fn gen_code(
         ),
     });
 
-    for model in data_model.iter() {
+    for model in state.interfaces.iter() {
         prompts.push(OpenAIMsg {
             role: GptRole::User,
             content: model.clone(),

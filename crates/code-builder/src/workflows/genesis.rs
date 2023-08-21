@@ -1,4 +1,4 @@
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
+use gluon::ai::openai::{client::OpenAI, params::OpenAIParams};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -9,10 +9,10 @@ use super::generate_api::{gen_project_scaffold, gen_work_schedule};
 pub fn genesis(
     job_futures: &mut JobFutures,
     open_ai_client: Arc<OpenAI>,
-    ai_job: Arc<OpenAIJob>,
+    ai_job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) {
-    let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<RwLock<AppState>>| {
+    let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
         gen_project_scaffold(c, j, state)
     };
 
@@ -30,7 +30,7 @@ pub fn genesis(
             .call_box(open_ai_client.clone(), ai_job.clone(), app_state.clone()),
     );
 
-    let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<RwLock<AppState>>| {
+    let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
         gen_work_schedule(c, j, state)
     };
 

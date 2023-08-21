@@ -1,17 +1,8 @@
-use std::{pin::Pin, sync::Arc};
-
-use crate::endpoints::{self};
-
-use super::{
-    job::JobType,
-    shutdown::ShutdownSignal,
-    state::AppState,
-    types::{JobRequest, JobResponse},
-};
 use anyhow::Error;
 use futures::{stream::FuturesUnordered, Future, StreamExt};
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
+use gluon::ai::openai::{client::OpenAI, params::OpenAIParams};
 use parser::parser::json::AsJson;
+use std::{pin::Pin, sync::Arc};
 use tokio::{
     sync::{
         mpsc::{Receiver, Sender},
@@ -20,13 +11,22 @@ use tokio::{
     task::JoinHandle,
 };
 
+use super::{
+    job::JobType,
+    shutdown::ShutdownSignal,
+    state::AppState,
+    types::{JobRequest, JobResponse},
+};
+use crate::endpoints::{self};
+
 pub type JobFutures = FuturesUnordered<
     Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static + Send>>,
 >;
 
+#[derive(Debug)]
 pub struct JobWorker {
     open_ai_client: Arc<OpenAI>,
-    ai_job: Arc<OpenAIJob>,
+    ai_job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
     job_futures: JobFutures,
     rx_job: Receiver<JobRequest>,
@@ -36,7 +36,7 @@ pub struct JobWorker {
 impl JobWorker {
     pub fn new(
         open_ai_client: Arc<OpenAI>,
-        ai_job: Arc<OpenAIJob>,
+        ai_job: Arc<OpenAIParams>,
         tx_result: Sender<JobResponse>,
         rx_job: Receiver<JobRequest>,
     ) -> Self {
@@ -52,7 +52,7 @@ impl JobWorker {
 
     pub fn spawn(
         open_ai_client: Arc<OpenAI>,
-        ai_job: Arc<OpenAIJob>,
+        ai_job: Arc<OpenAIParams>,
         rx_job: Receiver<JobRequest>,
         tx_result: Sender<JobResponse>,
         shutdown: ShutdownSignal, // TODO: Refactor to `AtomicBool`
@@ -84,7 +84,15 @@ impl JobWorker {
                         },
                         JobType::Ordering => {
                             let job_schedule = message.as_str().as_json()?;
-                            endpoints::init_work::handle_schedule_job(job_schedule.clone(), self.open_ai_client.clone(), &mut self.job_futures, self.ai_job.clone(), self.app_state.clone()).await?;
+
+                            endpoints::init_work::handle_schedule_job(
+                                job_schedule.clone(),
+                                self.open_ai_client.clone(),
+                                &mut self.job_futures,
+                                self.ai_job.clone(),
+                                self.app_state.clone()
+                            ).await?;
+
                             JobResponse::Ordering { schedule_json: job_schedule}
                         },
                         JobType::CodeGen => {
@@ -117,7 +125,7 @@ pub fn handle_request(
         Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send + 'static>>,
     >,
     open_ai_client: Arc<OpenAI>,
-    ai_job: Arc<OpenAIJob>,
+    ai_job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<(), Error> {
     match request {
@@ -126,6 +134,11 @@ pub fn handle_request(
             let app_state = app_state.clone();
             endpoints::init_work::handle(open_ai_client, audit_trail, ai_job, app_state, prompt);
         }
+        // JobRequest::AddModel { path, schema } => {
+        //     let open_ai_client = open_ai_client.clone();
+        //     let app_state = app_state.clone();
+        //     endpoints::add_model::handle();
+        // }
         _ => todo!(),
     }
 
