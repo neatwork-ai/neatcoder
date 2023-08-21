@@ -5,7 +5,7 @@ use code_builder::models::shutdown::ShutdownSignal;
 use code_builder::models::types::JobRequest;
 use serde_json;
 use std::{env, sync::Arc};
-use tokio::{io::AsyncReadExt, net::TcpListener};
+use tokio::{io::AsyncReadExt, net::TcpListener, sync::Mutex};
 
 use code_builder::models::ClientCommand;
 use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
@@ -32,7 +32,15 @@ async fn main() -> Result<()> {
 
     let shutdown = ShutdownSignal::new();
 
-    let _join_handle = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
+    let socket = Arc::new(Mutex::new(socket));
+    let _join_handle = JobWorker::spawn(
+        open_ai_client,
+        ai_job,
+        rx_job,
+        tx_result,
+        socket.clone(),
+        shutdown,
+    );
     loop {
         tokio::select! {
             result = socket.read(&mut buf) => {

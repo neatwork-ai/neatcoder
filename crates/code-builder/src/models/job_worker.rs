@@ -4,9 +4,10 @@ use gluon::ai::openai::{client::OpenAI, params::OpenAIParams};
 use parser::parser::json::AsJson;
 use std::{pin::Pin, sync::Arc};
 use tokio::{
+    net::TcpStream,
     sync::{
         mpsc::{Receiver, Sender},
-        RwLock,
+        Mutex, RwLock,
     },
     task::JoinHandle,
 };
@@ -55,16 +56,21 @@ impl JobWorker {
         ai_job: Arc<OpenAIParams>,
         rx_job: Receiver<JobRequest>,
         tx_result: Sender<JobResponse>,
+        tcp_stream: Arc<Mutex<TcpStream>>,
         shutdown: ShutdownSignal, // TODO: Refactor to `AtomicBool`
     ) -> JoinHandle<Result<(), Error>> {
         tokio::spawn(async move {
             Self::new(open_ai_client, ai_job, tx_result, rx_job)
-                .run(shutdown)
+                .run(tcp_stream, shutdown)
                 .await
         })
     }
 
-    pub async fn run(&mut self, shutdown: ShutdownSignal) -> Result<(), Error> {
+    pub async fn run(
+        &mut self,
+        tcp_stream: Arc<Mutex<TcpStream>>,
+        shutdown: ShutdownSignal,
+    ) -> Result<(), Error> {
         loop {
             tokio::select! {
                 Some(request) = self.rx_job.recv() => {
@@ -90,13 +96,14 @@ impl JobWorker {
                                 self.open_ai_client.clone(),
                                 &mut self.job_futures,
                                 self.ai_job.clone(),
-                                self.app_state.clone()
+                                self.app_state.clone(),
+                                tcp_stream.clone()
                             ).await?;
 
                             JobResponse::Ordering { schedule_json: job_schedule}
                         },
                         JobType::CodeGen => {
-                            JobResponse::CodeGen
+                            JobResponse::CodeGen { is_sucess: true}
                         },
                     };
                     let tx = self.tx_result.clone();
@@ -139,6 +146,7 @@ pub fn handle_request(
         //     let app_state = app_state.clone();
         //     endpoints::add_model::handle();
         // }
+        JobRequest::CodeGen { filename } => {}
         _ => todo!(),
     }
 

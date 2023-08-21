@@ -1,7 +1,10 @@
 use anyhow::Result;
 use serde_json::Value;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::{
+    net::{tcp, TcpStream},
+    sync::{Mutex, RwLock},
+};
 
 use gluon::ai::openai::{client::OpenAI, params::OpenAIParams};
 
@@ -11,6 +14,7 @@ use crate::{
         job::{Job, JobType, Task},
         job_worker::JobFutures,
         state::AppState,
+        types::JobRequest,
     },
     workflows::{generate_api::gen_code, genesis::genesis},
 };
@@ -38,14 +42,22 @@ pub async fn handle_schedule_job(
     job_futures: &mut JobFutures,
     ai_job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
+    tcp_stream: Arc<Mutex<TcpStream>>,
 ) -> Result<()> {
     let files = Files::from_schedule(job_schedule)?;
+    let tcp_stream = tcp_stream.clone();
 
     // Add code writing jobs to the job queue
     for file in files.iter() {
         let file_ = file.clone();
         let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
-            gen_code(c, j, state, file_)
+            gen_code(
+                c,
+                j,
+                state,
+                JobRequest::CodeGen { filename: file_ },
+                tcp_stream.clone(),
+            )
         };
 
         let job = Job::new(

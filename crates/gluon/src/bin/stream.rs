@@ -1,5 +1,6 @@
 use anyhow::Result;
 use dotenv::dotenv;
+use futures::StreamExt;
 use gluon::ai::openai::{
     client::OpenAI,
     model::OpenAIModels,
@@ -28,9 +29,19 @@ async fn main() -> Result<()> {
         content: String::from("Write an AGI."),
     };
 
-    client
+    let mut stream = client
         .chat_stream(&job, &[&sys_msg, &user_msg], &[], &[])
         .await?;
+
+    while let Some(item) = stream.next().await {
+        match item {
+            Ok(bytes) => {
+                let token = std::str::from_utf8(&bytes).unwrap();
+                println!("{}", token);
+            }
+            Err(err) => eprintln!("Error: {}", err),
+        }
+    }
 
     Ok(())
 }

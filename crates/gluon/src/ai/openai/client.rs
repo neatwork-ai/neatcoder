@@ -1,7 +1,8 @@
 use std::{fmt, ops::Deref};
 
 use anyhow::{anyhow, Result};
-use futures::stream::StreamExt;
+use bytes::Bytes;
+use futures::Stream;
 use reqwest::Client;
 use serde_json::{json, Value};
 
@@ -104,7 +105,7 @@ impl OpenAI {
         msgs: &[&OpenAIMsg],
         funcs: &[&String],
         stop_seq: &[String],
-    ) -> Result<()> {
+    ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
         let client = Client::new();
 
         // fill in your own data as needed
@@ -124,30 +125,9 @@ impl OpenAI {
             .send()
             .await?;
 
-        let mut stream = response.bytes_stream();
+        let stream = response.bytes_stream();
 
-        while let Some(item) = stream.next().await {
-            match item {
-                Ok(bytes) => {
-                    let s = std::str::from_utf8(&bytes).unwrap();
-                    println!("{}", s);
-                }
-                Err(err) => eprintln!("Error: {}", err),
-            }
-        }
-
-        // // Convert the response into a Stream of Lines
-        // let mut lines_stream = response.lines_stream();
-
-        // // Process each line as it arrives
-        // while let Some(line) = lines_stream.next().await {
-        //     match line {
-        //         Ok(content) => println!("{}", content),
-        //         Err(err) => eprintln!("Error: {}", err),
-        //     }
-        // }
-
-        Ok(())
+        Ok(stream)
     }
 
     fn request_body(
