@@ -99,6 +99,10 @@ async fn main() -> Result<()> {
                         Err(e) => println!("Failed to write message to buffer, with error: {e}"),
                     }
                 }
+                else {
+                    println!("Channel closed. Shutting down...");
+                break;
+                }
             }
         }
     }
