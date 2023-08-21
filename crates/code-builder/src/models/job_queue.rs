@@ -1,18 +1,6 @@
-use anyhow::{anyhow, Result};
+use super::{commit::JobID, job::Job};
 use serde::Serialize;
-use std::{
-    collections::{HashMap, VecDeque},
-    sync::Arc,
-};
-use tokio::sync::RwLock;
-
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
-
-use super::{
-    commit::JobID,
-    job::{Job, JobState, Task},
-    state::AppState,
-};
+use std::collections::{HashMap, VecDeque};
 
 #[derive(Debug, Serialize)]
 pub struct JobQueue {
@@ -26,112 +14,6 @@ impl JobQueue {
             jobs: HashMap::new(),
             schedule: VecDeque::new(),
         }
-    }
-}
-
-impl JobQueue {
-    pub fn execute_all(
-        &mut self,
-        client: Arc<OpenAI>,
-        ai_job: Arc<OpenAIJob>,
-        app_state: Arc<RwLock<AppState>>,
-    ) -> Result<()> {
-        for job_id in self.schedule.drain(..) {
-            let job = self
-                .jobs
-                .remove(&job_id)
-                .expect(&format!("Could not find job id in queue {:?}", job_id));
-
-            let Job {
-                job_id,
-                job_name,
-                job_type,
-                job_state,
-                task,
-            } = job; // destruct
-
-            let Task(task) = task;
-
-            // Execute the job and await the result, only if the job has not been initialized yet
-            if job_state == JobState::Unintialized {
-                let future = task.call_box(client.clone(), ai_job.clone(), app_state.clone());
-            } else {
-                return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn execute_next(
-        &mut self,
-        client: Arc<OpenAI>,
-        ai_job: Arc<OpenAIJob>,
-        app_state: Arc<RwLock<AppState>>,
-    ) -> Result<()> {
-        let job_id = self.schedule.pop_front().unwrap();
-
-        let job = self
-            .jobs
-            .remove(&job_id)
-            .expect(&format!("Could not find job id in queue {:?}", job_id));
-
-        // Execute the job and await the result
-        let Job {
-            job_id,
-            job_name,
-            job_type,
-            job_state,
-            task,
-        } = job; // destruct
-
-        let Task(task) = task;
-
-        if job_state == JobState::Unintialized {
-            let future = task.call_box(client.clone(), ai_job.clone(), app_state.clone());
-            println!(
-                "New job future added to the audit_trait, with job_id = {:?}",
-                job_id
-            );
-        } else {
-            return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
-        }
-        Ok(())
-    }
-
-    pub fn execute_id(
-        &mut self,
-        client: Arc<OpenAI>,
-        ai_job: Arc<OpenAIJob>,
-        app_state: Arc<RwLock<AppState>>,
-        job_id: &JobID,
-    ) -> Result<()> {
-        let job = self
-            .jobs
-            .remove(&job_id)
-            .expect(&format!("Could not find job id in queue {:?}", job_id));
-
-        // Execute the job and await the result
-        let Job {
-            job_id,
-            job_name,
-            job_type,
-            job_state,
-            task,
-        } = job; // destruct
-
-        let Task(task) = task;
-
-        if job_state == JobState::Unintialized {
-            let future = task.call_box(client.clone(), ai_job.clone(), app_state.clone());
-            println!(
-                "New job future added to the audit_trait, with job_id = {:?}",
-                job_id
-            );
-        } else {
-            return Err(anyhow!("Invalid Job State for Job Id = {:?}", job_id));
-        }
-        Ok(())
     }
 }
 

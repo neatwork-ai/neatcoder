@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
+use gluon::ai::openai::{client::OpenAI, params::OpenAIParams};
 
 use crate::{
     models::{
@@ -18,7 +18,7 @@ use crate::{
 pub fn handle(
     open_ai_client: Arc<OpenAI>,
     job_futures: &mut JobFutures,
-    ai_job: Arc<OpenAIJob>,
+    ai_job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
     _init_prompt: String,
 ) {
@@ -36,7 +36,7 @@ pub async fn handle_schedule_job(
     job_schedule: Value,
     open_ai_client: Arc<OpenAI>,
     job_futures: &mut JobFutures,
-    ai_job: Arc<OpenAIJob>,
+    ai_job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<()> {
     let files = Files::from_schedule(job_schedule)?;
@@ -44,23 +44,18 @@ pub async fn handle_schedule_job(
     // Add code writing jobs to the job queue
     for file in files.iter() {
         let file_ = file.clone();
-        let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<RwLock<AppState>>| {
+        let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
             gen_code(c, j, state, file_)
         };
-
-        // let closure = Box::new(
-        //     |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<RwLock<AppState>>| {
-        //         gen_code(c, j, state, file_.clone())
-        //     },
-        // );
 
         let job = Job::new(
             String::from("TODO: This is a placeholder"),
             JobType::CodeGen,
-            Task(Box::new(closure)),
         );
 
-        job_futures.push(job.task.0.call_box(
+        let task = Task(Box::new(closure));
+
+        job_futures.push(task.0.call_box(
             open_ai_client.clone(),
             ai_job.clone(),
             app_state.clone(),

@@ -8,7 +8,7 @@ use std::{env, sync::Arc};
 use tokio::{io::AsyncReadExt, net::TcpListener};
 
 use code_builder::models::ClientCommand;
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
+use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -22,7 +22,7 @@ async fn main() -> Result<()> {
     let open_ai_client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
 
     let ai_job = Arc::new(
-        OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
+        OpenAIParams::empty(OpenAIModels::Gpt35Turbo)
             .temperature(0.7)
             .top_p(0.9)?,
     );

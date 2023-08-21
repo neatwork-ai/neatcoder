@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 
+#[derive(Debug)]
 pub struct AppState {
     pub specs: Option<String>,
     pub fs: Option<Arc<String>>,

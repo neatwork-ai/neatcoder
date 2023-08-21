@@ -1,15 +1,15 @@
 use crate::{
     ai::openai::{
         client::OpenAI,
-        job::OpenAIJob,
         msg::{GptRole, OpenAIMsg},
+        params::OpenAIParams,
     },
     output::tasks::Tasks,
     workflows::generative_tree::distribute_tasks,
 };
 use anyhow::Result;
 
-pub async fn generate_knowledge_graph(client: &OpenAI, job: &OpenAIJob) -> Result<()> {
+pub async fn generate_knowledge_graph(client: &OpenAI, job: &OpenAIParams) -> Result<()> {
     let sys_msg = OpenAIMsg {
         role: GptRole::System,
         content: String::from("Given a textual document, produce me a Knowledge Graph representation of its semantical relevant concepts."),

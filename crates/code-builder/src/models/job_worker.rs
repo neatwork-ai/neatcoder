@@ -1,17 +1,8 @@
-use std::{pin::Pin, sync::Arc};
-
-use crate::endpoints::{self};
-
-use super::{
-    job::JobType,
-    shutdown::ShutdownSignal,
-    state::AppState,
-    types::{JobRequest, JobResponse},
-};
 use anyhow::Error;
 use futures::{stream::FuturesUnordered, Future, StreamExt};
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob};
+use gluon::ai::openai::{client::OpenAI, params::OpenAIParams};
 use parser::parser::json::AsJson;
+use std::{pin::Pin, sync::Arc};
 use tokio::{
     sync::{
         mpsc::{Receiver, Sender},
@@ -20,13 +11,22 @@ use tokio::{
     task::JoinHandle,
 };
 
+use super::{
+    job::JobType,
+    shutdown::ShutdownSignal,
+    state::AppState,
+    types::{JobRequest, JobResponse},
+};
+use crate::endpoints::{self};
+
 pub type JobFutures = FuturesUnordered<
     Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static + Send>>,
 >;
 
+#[derive(Debug)]
 pub struct JobWorker {
     open_ai_client: Arc<OpenAI>,
-    ai_job: Arc<OpenAIJob>,
+    ai_job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
     job_futures: JobFutures,
     rx_job: Receiver<JobRequest>,
@@ -36,7 +36,7 @@ pub struct JobWorker {
 impl JobWorker {
     pub fn new(
         open_ai_client: Arc<OpenAI>,
-        ai_job: Arc<OpenAIJob>,
+        ai_job: Arc<OpenAIParams>,
         tx_result: Sender<JobResponse>,
         rx_job: Receiver<JobRequest>,
     ) -> Self {
@@ -52,7 +52,7 @@ impl JobWorker {
 
     pub fn spawn(
         open_ai_client: Arc<OpenAI>,
-        ai_job: Arc<OpenAIJob>,
+        ai_job: Arc<OpenAIParams>,
         rx_job: Receiver<JobRequest>,
         tx_result: Sender<JobResponse>,
         shutdown: ShutdownSignal, // TODO: Refactor to `AtomicBool`
@@ -117,7 +117,7 @@ pub fn handle_request(
         Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send + 'static>>,
     >,
     open_ai_client: Arc<OpenAI>,
-    ai_job: Arc<OpenAIJob>,
+    ai_job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<(), Error> {
     match request {

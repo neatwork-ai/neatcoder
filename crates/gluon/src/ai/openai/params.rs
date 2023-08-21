@@ -4,7 +4,8 @@ use std::collections::HashMap;
 
 use super::model::OpenAIModels;
 
-pub struct OpenAIJob {
+#[derive(Debug)]
+pub struct OpenAIParams {
     pub model: OpenAIModels,
     // TODO: THIS SHOULD BE Scale02
     /// Temperature is used to control the randomness or creativity
@@ -68,7 +69,7 @@ pub struct OpenAIJob {
     pub user: Option<String>,
 }
 
-impl OpenAIJob {
+impl OpenAIParams {
     pub fn empty(model: OpenAIModels) -> Self {
         Self {
             model,
@@ -187,7 +188,7 @@ impl OpenAIModels {
     }
 }
 
-impl Default for OpenAIJob {
+impl Default for OpenAIParams {
     fn default() -> Self {
         Self {
             model: OpenAIModels::Gpt35Turbo,

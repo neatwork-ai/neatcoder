@@ -2,9 +2,9 @@ use anyhow::Result;
 use dotenv::dotenv;
 use gluon::ai::openai::{
     client::OpenAI,
-    job::OpenAIJob,
     model::OpenAIModels,
     msg::{GptRole, OpenAIMsg},
+    params::OpenAIParams,
 };
 use std::env;
 
@@ -14,7 +14,7 @@ async fn main() -> Result<()> {
 
     let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
 
-    let job = OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
+    let job = OpenAIParams::empty(OpenAIModels::Gpt35Turbo)
         .temperature(0.7)
         .top_p(0.9)?;
 

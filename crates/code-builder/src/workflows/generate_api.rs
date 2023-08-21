@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
 use gluon::ai::openai::{
     client::OpenAI,
-    job::OpenAIJob,
     msg::{GptRole, OpenAIMsg},
+    params::OpenAIParams,
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -14,7 +14,7 @@ use crate::{
 
 pub async fn gen_project_scaffold(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIJob>,
+    job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<Arc<(JobType, String)>> {
     let state = app_state.write().await;
@@ -54,7 +54,7 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
 pub async fn gen_work_schedule(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIJob>,
+    job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<Arc<(JobType, String)>> {
     let state = app_state.read().await;
@@ -125,7 +125,7 @@ Use the following schema:
 
 pub async fn gen_code(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIJob>,
+    job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
     filename: String,
 ) -> Result<Arc<(JobType, String)>> {

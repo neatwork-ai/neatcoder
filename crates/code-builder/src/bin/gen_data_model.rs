@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use code_builder::models::schema::DataModel;
 use code_builder::workflows::generate_db_schema::generate_db_schema;
 use dotenv::dotenv;
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
+use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
 use heck::ToSnakeCase;
 use std::{env, fs::File, path::Path};
 use std::{fs, io::Write};
@@ -13,7 +13,7 @@ async fn main() -> Result<()> {
 
     let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
 
-    let job = OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
+    let job = OpenAIParams::empty(OpenAIModels::Gpt35Turbo)
         .temperature(0.7)
         .top_p(0.9)?;
 

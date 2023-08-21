@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use serde::{Serialize, Serializer};
 use std::{marker::PhantomData, ops::Deref};
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct BoundedFloat<T> {
     inner: f64,
     _marker: PhantomData<T>,
@@ -59,11 +59,11 @@ impl<T> Serialize for BoundedFloat<T> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Range22;
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Range01;
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Range100s;
 
 impl MinMax for Range22 {

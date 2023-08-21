@@ -1,7 +1,7 @@
 use anyhow::Result;
 use dotenv::dotenv;
 use gluon::{
-    ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels, msg::OpenAIMsg},
+    ai::openai::{client::OpenAI, model::OpenAIModels, msg::OpenAIMsg, params::OpenAIParams},
     input::{
         instruction::{Instruction, InstructionType},
         prompt_builder::{build_prompt, build_prompt_dyn},
@@ -15,7 +15,7 @@ async fn main() -> Result<()> {
 
     let client = OpenAI::new(env::var("OPENAI_API_KEY")?);
 
-    let job = OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
+    let job = OpenAIParams::empty(OpenAIModels::Gpt35Turbo)
         .temperature(0.7)
         .top_p(0.9)?;
 

@@ -1,8 +1,8 @@
 use super::instruction::Instruction;
 use crate::ai::openai::{
     client::OpenAI,
-    job::OpenAIJob,
     msg::{GptRole, OpenAIMsg},
+    params::OpenAIParams,
 };
 use anyhow::Result;
 
@@ -33,7 +33,7 @@ use anyhow::Result;
 /// in your startup is a lucrative opportunity.
 pub async fn build_prompt_dyn(
     client: &OpenAI,
-    job: &OpenAIJob,
+    job: &OpenAIParams,
     instructions: &[Instruction],
     sys_msg: Option<&str>,
     user_msg: Option<&str>,

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use gluon::ai::openai::client::OpenAI;
-use gluon::ai::openai::job::OpenAIJob;
+use gluon::ai::openai::params::OpenAIParams;
 
 use self::commit::JobID;
 use self::job::JobType;
@@ -35,20 +35,20 @@ pub trait TaskTrait: Send + 'static {
     fn call_box(
         self: Box<Self>,
         client: Arc<OpenAI>,
-        job: Arc<OpenAIJob>,
+        job: Arc<OpenAIParams>,
         app_state: Arc<RwLock<AppState>>,
     ) -> Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send>>;
 }
 
 impl<F, Fut> TaskTrait for F
 where
-    F: FnOnce(Arc<OpenAI>, Arc<OpenAIJob>, Arc<RwLock<AppState>>) -> Fut + Send + 'static,
+    F: FnOnce(Arc<OpenAI>, Arc<OpenAIParams>, Arc<RwLock<AppState>>) -> Fut + Send + 'static,
     Fut: Future<Output = Result<Arc<(JobType, String)>>> + Send + 'static,
 {
     fn call_box(
         self: Box<Self>,
         client: Arc<OpenAI>,
-        job: Arc<OpenAIJob>,
+        job: Arc<OpenAIParams>,
         app_state: Arc<RwLock<AppState>>,
     ) -> Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send>> {
         Box::pin((*self)(client, job, app_state))

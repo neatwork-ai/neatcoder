@@ -10,7 +10,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use gluon::ai::openai::{client::OpenAI, job::OpenAIJob, model::OpenAIModels};
+use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
 
 use code_builder::{
     get_sql_statements,
@@ -58,7 +58,7 @@ async fn main() -> Result<()> {
     // let client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
 
     // let ai_job = Arc::new(
-    //     OpenAIJob::empty(OpenAIModels::Gpt35Turbo)
+    //     OpenAIParams::empty(OpenAIModels::Gpt35Turbo)
     //         .temperature(0.7)
     //         .top_p(0.9)?,
     // );
@@ -106,7 +106,7 @@ async fn main() -> Result<()> {
     // for file in files.iter() {
     //     let file_ = file.clone();
 
-    //     let closure = |c: Arc<OpenAI>, j: Arc<OpenAIJob>, state: Arc<RwLock<AppState>>| {
+    //     let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
     //         gen_code(c, j, state, file_)
     //     };
 

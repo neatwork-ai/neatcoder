@@ -1,13 +1,13 @@
 use anyhow::Result;
 use gluon::ai::openai::{
     client::OpenAI,
-    job::OpenAIJob,
     msg::{GptRole, OpenAIMsg},
+    params::OpenAIParams,
 };
 
 pub async fn generate_api_specs(
     client: &OpenAI,
-    job: &OpenAIJob,
+    job: &OpenAIParams,
     data_model: &Vec<String>,
 ) -> Result<String> {
     let mut prompts = Vec::new();

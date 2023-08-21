@@ -1,14 +1,31 @@
-use std::ops::Deref;
+use std::{fmt, ops::Deref};
 
 use anyhow::{anyhow, Result};
 use futures::stream::StreamExt;
 use reqwest::Client;
 use serde_json::{json, Value};
 
-use super::{job::OpenAIJob, msg::OpenAIMsg, output::Body};
+use super::{msg::OpenAIMsg, output::Body, params::OpenAIParams};
 
 pub struct OpenAI {
     api_key: Option<String>,
+}
+
+/// We manually implement `Debug` to intentionally maskl the API Key with
+/// the value `Some` or `None`, for security reasons.
+impl fmt::Debug for OpenAI {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let value = if self.api_key.is_some() {
+            "Some"
+        } else {
+            "None"
+        };
+
+        // TODO: Conside indicating at least if API key is Some or None
+        f.debug_struct("OpenAI")
+            .field("api_key", &value) // We hide the API Key and only indicate if it is Some or None
+            .finish()
+    }
 }
 
 impl OpenAI {
@@ -32,7 +49,7 @@ impl OpenAI {
 
     pub async fn chat(
         &self,
-        job: impl Deref<Target = OpenAIJob>,
+        job: impl Deref<Target = OpenAIParams>,
         msgs: &[&OpenAIMsg],
         funcs: &[&String],
         stop_seq: &[String],
@@ -45,7 +62,7 @@ impl OpenAI {
 
     pub async fn chat_raw(
         &self,
-        job: impl Deref<Target = OpenAIJob>,
+        job: impl Deref<Target = OpenAIParams>,
         msgs: &[&OpenAIMsg],
         funcs: &[&String],
         stop_seq: &[String],
@@ -83,7 +100,7 @@ impl OpenAI {
 
     pub async fn chat_stream(
         &self,
-        job: &OpenAIJob,
+        job: &OpenAIParams,
         msgs: &[&OpenAIMsg],
         funcs: &[&String],
         stop_seq: &[String],
@@ -135,11 +152,11 @@ impl OpenAI {
 
     fn request_body(
         &self,
-        job: impl Deref<Target = OpenAIJob>,
+        job: impl Deref<Target = OpenAIParams>,
         msgs: &[&OpenAIMsg],
-        // TODO: Add to OpenAIJob
+        // TODO: Add to OpenAIParams
         funcs: &[&String],
-        // TODO: Add to OpenAIJob
+        // TODO: Add to OpenAIParams
         stop_seq: &[String],
         stream: bool,
     ) -> Result<Value> {
