@@ -19,6 +19,7 @@ use super::{
 };
 use crate::endpoints::{self};
 
+// TODO: Potentially link `JobFutures` with `Jobs` via Uuid.
 pub type JobFutures = FuturesUnordered<
     Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static + Send>>,
 >;
@@ -79,19 +80,19 @@ impl JobWorker {
                     let (job_type, message) = inner.as_ref();
                     let response = match job_type {
                         JobType::Scaffold => {
-                            endpoints::init_prompt::handle_scaffold_job().await?;
+                            // endpoints::init_prompt::handle_scaffold_job().await?;
                             JobResponse::Scaffold
                         },
                         JobType::Ordering => {
                             let job_schedule = message.as_str().as_json()?;
 
-                            endpoints::init_prompt::handle_schedule_job(
-                                job_schedule.clone(),
-                                self.open_ai_client.clone(),
-                                &mut self.job_futures,
-                                self.ai_job.clone(),
-                                self.app_state.clone()
-                            ).await?;
+                            // endpoints::init_prompt::handle_schedule_job(
+                            //     job_schedule.clone(),
+                            //     self.open_ai_client.clone(),
+                            //     &mut self.job_futures,
+                            //     self.ai_job.clone(),
+                            //     self.app_state.clone()
+                            // ).await?;
 
                             JobResponse::Ordering { schedule_json: job_schedule}
                         },

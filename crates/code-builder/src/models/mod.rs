@@ -23,10 +23,15 @@ pub mod types;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ClientCommand {
+    #[serde(rename = "initPrompt")]
     InitPrompt { prompt: String },
+    #[serde(rename = "addModel")]
     AddModel { path: String, schema: String },
+    #[serde(rename = "startJob")]
     StartJob { job_id: Uuid },
+    #[serde(rename = "stopJob")]
     StopJob { job_id: Uuid },
+    #[serde(rename = "retryJob")]
     RetryJob { job_id: Uuid },
 }
 

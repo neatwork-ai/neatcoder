@@ -82,7 +82,7 @@ async fn main() -> Result<()> {
                         }
                     }
                     Err(e) => {
-                        eprintln!("Failed to parse command: {}", e);
+                        eprintln!("Unknown command received: {}", e);
                     }
                 }
             },

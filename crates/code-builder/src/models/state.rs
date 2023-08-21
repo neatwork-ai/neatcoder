@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::Mutex;
 
 use super::jobs::Jobs;
 
@@ -14,13 +13,13 @@ pub struct AppState {
     pub interfaces: Vec<String>,
     /// HashMap containing all the code files in the codebase
     /// Should be read as HashMap<FileName, Code String>
-    pub codebase: Mutex<HashMap<String, String>>,
+    pub codebase: HashMap<String, String>,
     // TODO: This should be refactored out, potentially logged or stored in a
     // Database, instead of being part of the AppState
     /// HashMap containing all the prompts to ChatGPT
-    pub raw: Mutex<HashMap<String, String>>,
+    pub raw: HashMap<String, String>,
     /// Keeps track of all the jobs performed or to be performed by the worker
-    pub jobs: Mutex<Jobs>,
+    pub jobs: Jobs,
 }
 
 impl AppState {
@@ -29,9 +28,9 @@ impl AppState {
             specs: Some(specs),
             scaffold: None,
             interfaces: Vec::new(),
-            codebase: Mutex::new(HashMap::new()),
-            raw: Mutex::new(HashMap::new()),
-            jobs: Mutex::new(Jobs::empty()),
+            codebase: HashMap::new(),
+            raw: HashMap::new(),
+            jobs: Jobs::empty(),
         }
     }
 
@@ -40,9 +39,9 @@ impl AppState {
             specs: None,
             scaffold: None,
             interfaces: Vec::new(),
-            codebase: Mutex::new(HashMap::new()),
-            raw: Mutex::new(HashMap::new()),
-            jobs: Mutex::new(Jobs::empty()),
+            codebase: HashMap::new(),
+            raw: HashMap::new(),
+            jobs: Jobs::empty(),
         }
     }
 
