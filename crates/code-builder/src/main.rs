@@ -1,8 +1,9 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use bincode;
 use code_builder::models::job_worker::JobWorker;
 use code_builder::models::shutdown::ShutdownSignal;
 use code_builder::models::types::JobRequest;
+use dotenv::dotenv;
 use serde_json;
 use std::{env, sync::Arc};
 use tokio::{io::AsyncReadExt, net::TcpListener};
@@ -12,20 +13,24 @@ use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParam
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:7878").await?; // Binding to localhost on port 7878
+    dotenv().ok();
 
-    println!("Listening on {:?}", listener.local_addr());
+    let api_key = env::var("OPENAI_API_KEY")
+        .map_err(|_| anyhow!("OPENAI_API_KEY environment variable not found"))?;
 
-    let (mut socket, _socket_addr) = listener.accept().await?;
-    let mut buf = vec![0u8; 1024];
-
-    let open_ai_client = Arc::new(OpenAI::new(env::var("OPENAI_API_KEY")?));
+    let open_ai_client = Arc::new(OpenAI::new(api_key));
 
     let ai_job = Arc::new(
         OpenAIParams::empty(OpenAIModels::Gpt35Turbo)
             .temperature(0.7)
             .top_p(0.9)?,
     );
+
+    let listener = TcpListener::bind("127.0.0.1:7878").await?; // Binding to localhost on port 7878
+    println!("Listening on {:?}", listener.local_addr());
+
+    let (mut socket, _socket_addr) = listener.accept().await?;
+    let mut buf = vec![0u8; 1024];
 
     let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
     let (tx_job, rx_job) = tokio::sync::mpsc::channel(100);
