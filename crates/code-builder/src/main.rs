@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
             .top_p(0.9)?,
     );
 
-    let listener = TcpListener::bind("127.0.0.1:7878").await?; // Binding to localhost on port 7878
+    let listener = TcpListener::bind("127.0.0.1:1895").await?; // Binding to localhost on port 7878
     println!("Listening on {:?}", listener.local_addr());
 
     let (mut socket, _socket_addr) = listener.accept().await?;
@@ -94,6 +94,10 @@ async fn main() -> Result<()> {
                         },
                         Err(e) => println!("Failed to write message to buffer, with error: {e}"),
                     }
+                }
+                else {
+                    println!("Channel closed. Shutting down...");
+                break;
                 }
             }
         }
