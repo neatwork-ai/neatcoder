@@ -13,6 +13,7 @@ use self::job::JobType;
 use self::state::AppState;
 
 pub mod fs;
+pub mod interfaces;
 pub mod job;
 pub mod job_worker;
 pub mod jobs;
