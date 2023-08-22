@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use std::{collections::HashMap, sync::Arc};
 
-use super::jobs::Jobs;
+use super::{interfaces::Interface, jobs::Jobs};
 
 #[derive(Debug)]
 pub struct AppState {
@@ -10,7 +10,7 @@ pub struct AppState {
     /// JSON String containing the File System Scaffold
     pub scaffold: Option<Arc<String>>,
     /// Vector of strings containing the interface config files (e.g. SQL DLLs, etc.)
-    pub interfaces: Vec<String>,
+    pub interfaces: Vec<Interface>,
     /// HashMap containing all the code files in the codebase
     /// Should be read as HashMap<FileName, Code String>
     pub codebase: HashMap<String, String>,
@@ -45,7 +45,7 @@ impl AppState {
         }
     }
 
-    pub fn with_interfaces(mut self, interfaces: Vec<String>) -> Result<Self> {
+    pub fn with_interfaces(mut self, interfaces: Vec<Interface>) -> Result<Self> {
         if !self.interfaces.is_empty() {
             return Err(anyhow!("Data model already exists"));
         }

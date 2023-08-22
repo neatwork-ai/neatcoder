@@ -64,10 +64,10 @@ async fn main() -> Result<()> {
                             ClientCommand::InitPrompt { prompt } => {
                                 tx_job.send(JobRequest::InitPrompt { prompt }).await?;
                             }
-                            ClientCommand::AddSchema { path, schema } => {
+                            ClientCommand::AddInterface { path, schema } => {
                                 tx_job.send(JobRequest::AddModel { path, schema }).await?;
                             }
-                            ClientCommand::RemoveSchema { path, schema } => {
+                            ClientCommand::RemoveInterface { path, schema } => {
                                 // Handle ...
                                 todo!()
                             }

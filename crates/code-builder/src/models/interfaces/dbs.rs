@@ -1,16 +1,25 @@
+use anyhow::Result;
+use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
+use std::fmt::{self, Display};
+
+use super::AsContext;
+
+#[derive(Debug)]
 pub struct Database {
     pub name: String,
-    pub port: usize,
-    pub host: Option<String>,
-    pub stores: Vec<Store>,
     pub db_type: DbType,
+    pub port: Option<usize>,
+    pub host: Option<String>,
+    pub stores: Vec<DbStore>,
 }
 
-pub struct Store {
+#[derive(Debug)]
+pub struct DbStore {
     pub name: String,
     pub schema: String,
 }
 
+#[derive(Debug)]
 pub enum DbType {
     // === Tabular Store Types ===
     // Traditional RDBMS systems that store data in rows and columns. Used mainly for OLTP operations.
@@ -113,4 +122,87 @@ pub enum DbType {
     EXist,
     /// An enterprise NoSQL database.
     MarkLogic,
+}
+
+impl AsContext for Database {
+    fn add_context(&self, msg_sequence: &mut Vec<OpenAIMsg>) -> Result<()> {
+        let mut main_prompt = format!(
+            "
+Have in consideration the following {} Database:
+
+- database name: {}
+",
+            self.db_type, self.name
+        );
+
+        if let Some(port) = &self.port {
+            main_prompt = format!("{}\n{} {}", main_prompt, "- database port:", port);
+        }
+
+        if let Some(host) = &self.host {
+            main_prompt = format!("{}\n{} {}", main_prompt, "- database host:", host);
+        }
+
+        msg_sequence.push(OpenAIMsg {
+            role: GptRole::User,
+            content: main_prompt,
+        });
+
+        for store in self.stores.iter() {
+            let prompt = format!("
+Consider the following schema as part of the {} database. It's called `{}` and the schema is:\n```\n{}```
+            ", self.name, store.name, store.schema);
+
+            msg_sequence.push(OpenAIMsg {
+                role: GptRole::User,
+                content: prompt,
+            });
+        }
+
+        Ok(())
+    }
+}
+
+impl Display for DbType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let tag = match self {
+            DbType::ClickHouse => "ClickHouse",
+            DbType::DuckDb => "DuckDb",
+            DbType::MsSql => "MsSql",
+            DbType::MySql => "MySql",
+            DbType::PostgreSql => "PostgreSql",
+            DbType::SQLite => "SQLite",
+            DbType::BigQuery => "BigQuery",
+            DbType::Redshift => "Redshift",
+            DbType::Snowflake => "Snowflake",
+            DbType::Hive => "Hive",
+            DbType::Cassandra => "Cassandra",
+            DbType::Hbase => "Hbase",
+            DbType::ScyellaDB => "ScyellaDB",
+            DbType::InfluxDB => "InfluxDB",
+            DbType::TimescaleDB => "TimescaleDB",
+            DbType::OpenTSDB => "OpenTSDB",
+            DbType::MongoDB => "MongoDB",
+            DbType::CounchDB => "CounchDB",
+            DbType::RavenDB => "RavenDB",
+            DbType::Firestore => "Firestore",
+            DbType::DynamoDB => "DynamoDB",
+            DbType::CosmosDB => "CosmosDB",
+            DbType::Redis => "Redis",
+            DbType::BerkeleyDB => "BerkeleyDB",
+            DbType::Riak => "Riak",
+            DbType::CouchBase => "CouchBase",
+            DbType::Db4o => "Db4o",
+            DbType::Versant => "Versant",
+            DbType::Neo4j => "Neo4j",
+            DbType::OrientDB => "OrientDB",
+            DbType::AmazonNeptune => "AmazonNeptune",
+            DbType::ArangoDB => "ArangoDB",
+            DbType::BaseX => "BaseX",
+            DbType::EXist => "EXist",
+            DbType::MarkLogic => "MarkLogic",
+        };
+
+        f.write_str(tag)
+    }
 }

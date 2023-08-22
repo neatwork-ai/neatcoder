@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::{
-    models::{job::JobType, state::AppState},
+    models::{interfaces::AsContext, job::JobType, state::AppState},
     utils::{write_json, write_rust},
 };
 
@@ -84,11 +84,9 @@ pub async fn gen_execution_plan(
         ),
     });
 
-    for model in state.interfaces.iter() {
-        prompts.push(OpenAIMsg {
-            role: GptRole::User,
-            content: model.clone(),
-        });
+    for interface in state.interfaces.iter() {
+        // Attaches context to the message sequence
+        interface.add_context(&mut prompts)?;
     }
 
     prompts.push(OpenAIMsg {
@@ -149,11 +147,9 @@ pub async fn gen_code(
         ),
     });
 
-    for model in state.interfaces.iter() {
-        prompts.push(OpenAIMsg {
-            role: GptRole::User,
-            content: model.clone(),
-        });
+    for interface in state.interfaces.iter() {
+        // Attaches context to the message sequence
+        interface.add_context(&mut prompts)?;
     }
 
     prompts.push(OpenAIMsg {
