@@ -35,6 +35,7 @@ pub enum JobResponse {
         is_success: bool,
     },
     CodeGen {
+        filename: String,
         is_sucess: bool,
     },
     Scaffold,

@@ -5,14 +5,15 @@ use code_builder::models::shutdown::ShutdownSignal;
 use code_builder::models::types::JobRequest;
 use serde_json;
 use std::{env, sync::Arc};
-use tokio::{io::AsyncReadExt, net::TcpListener, sync::Mutex};
+use tokio::{io::AsyncReadExt, net::TcpListener};
 
 use code_builder::models::ClientCommand;
 use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:7878").await?; // Binding to localhost on port 7878
+    let listener_address = "127.0.0.1:7878";
+    let listener = TcpListener::bind(listener_address).await?; // Binding to localhost on port 7878
 
     println!("Listening on {:?}", listener.local_addr());
 
@@ -32,13 +33,12 @@ async fn main() -> Result<()> {
 
     let shutdown = ShutdownSignal::new();
 
-    let socket = Arc::new(Mutex::new(socket));
     let _join_handle = JobWorker::spawn(
         open_ai_client,
         ai_job,
         rx_job,
         tx_result,
-        socket.clone(),
+        String::from(listener_address),
         shutdown,
     );
     loop {

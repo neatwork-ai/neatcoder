@@ -5,14 +5,11 @@ use gluon::ai::openai::{
     params::OpenAIParams,
 };
 use std::sync::Arc;
-use tokio::{
-    net::TcpStream,
-    sync::{Mutex, RwLock},
-};
+use tokio::sync::RwLock;
 
 use crate::{
     models::{job::JobType, state::AppState, types::JobRequest},
-    utils::{stream_rust, write_json, write_rust},
+    utils::{stream_rust, write_json},
 };
 
 pub async fn gen_project_scaffold(
@@ -130,7 +127,7 @@ pub async fn gen_code(
     job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
     request: JobRequest,
-    tcp_stream: Arc<Mutex<TcpStream>>,
+    listener_address: String,
 ) -> Result<Arc<(JobType, String)>> {
     let filename = match request {
         JobRequest::CodeGen { filename } => filename,
@@ -147,7 +144,7 @@ pub async fn gen_code(
     }
 
     let project_scaffold = state.scaffold.as_ref().unwrap();
-    let mut files = state.codebase.lock().await;
+    let files = state.codebase.lock().await;
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
@@ -198,7 +195,7 @@ pub async fn gen_code(
     });
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    stream_rust(client, job, &prompts, tcp_stream).await?;
+    stream_rust(client, job, &prompts, listener_address.as_str()).await?;
 
     // TODO: add a better placeholder
     Ok(Arc::new((JobType::CodeGen, String::from("success"))))

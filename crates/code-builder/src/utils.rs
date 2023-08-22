@@ -7,14 +7,17 @@ use parser::parser::{
 };
 use serde_json::Value;
 use std::sync::Arc;
-use tokio::{io::AsyncWriteExt, net::TcpStream, sync::Mutex};
+use tokio::{io::AsyncWriteExt, net::TcpListener};
 
 pub async fn stream_rust(
     client: Arc<OpenAI>,
     job: Arc<OpenAIParams>,
     prompts: &[&OpenAIMsg],
-    tcp_stream: Arc<Mutex<TcpStream>>,
+    listener_address: &str,
 ) -> Result<()> {
+    let listener = TcpListener::bind(listener_address).await?;
+    let (mut tcp_stream, _) = listener.accept().await?;
+
     let mut chat_stream = client.chat_stream(&job, prompts, &[], &[]).await?;
 
     let mut start_delimiter = false;
@@ -32,7 +35,8 @@ pub async fn stream_rust(
                     if token == "```" {
                         break;
                     }
-                    if let Err(e) = tcp_stream.lock().await.write_all(bytes.as_ref()).await {
+                    tcp_stream.writable().await?;
+                    if let Err(e) = tcp_stream.write_all(bytes.as_ref()).await {
                         eprintln!("Failed to write bytes to tcp stream, with error: {e}");
                     }
                 }
