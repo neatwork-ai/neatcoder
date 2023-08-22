@@ -17,7 +17,6 @@ pub mod interfaces;
 pub mod job;
 pub mod job_worker;
 pub mod jobs;
-pub mod schema;
 pub mod shutdown;
 pub mod state;
 pub mod types;
