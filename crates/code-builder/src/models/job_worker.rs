@@ -136,11 +136,12 @@ pub async fn handle_request(
             endpoints::init_prompt::handle(open_ai_client, audit_trail, ai_job, app_state, prompt)
                 .await;
         }
-        JobRequest::AddModel { path, schema } => {
-            let open_ai_client = open_ai_client.clone();
-            let app_state = app_state.clone();
-            endpoints::add_interface::handle();
-        }
+        // TODO:
+        // JobRequest::AddModel { path, schema } => {
+        //     let open_ai_client = open_ai_client.clone();
+        //     let app_state = app_state.clone();
+        //     endpoints::add_interface::handle();
+        // }
         _ => todo!(),
     }
 

@@ -25,10 +25,10 @@ pub mod types;
 pub enum ClientCommand {
     #[serde(rename = "initPrompt")]
     InitPrompt { prompt: String },
-    #[serde(rename = "addInterface")]
-    AddInterface { path: String, schema: String },
-    #[serde(rename = "removeInterface")]
-    RemoveInterface { path: String, schema: String },
+    #[serde(rename = "addSchema")]
+    AddSchema { path: String, schema: String },
+    #[serde(rename = "removeSchema")]
+    RemoveSchema { path: String, schema: String },
     #[serde(rename = "startJob")]
     StartJob { job_id: Uuid },
     #[serde(rename = "stopJob")]
