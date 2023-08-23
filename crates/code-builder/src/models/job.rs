@@ -38,12 +38,12 @@ pub enum JobType {
 unsafe impl Send for JobType {}
 
 impl Job {
-    pub fn new(job_name: String, job_type: JobType) -> Self {
+    pub fn new(job_name: &str, job_type: JobType) -> Self {
         let job_id = Uuid::new_v4();
 
         Self {
             job_id,
-            job_name,
+            job_name: job_name.to_string(),
             job_type,
             job_state: JobState::Unintialized,
         }

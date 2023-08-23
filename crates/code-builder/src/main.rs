@@ -33,6 +33,8 @@ async fn main() -> Result<()> {
     let (mut socket, _socket_addr) = listener.accept().await?;
     let mut buf = vec![0u8; 1024];
 
+    println!("Client binded to TCP Socket");
+
     let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
     let (tx_job, rx_job) = tokio::sync::mpsc::channel(100);
 
@@ -62,14 +64,20 @@ async fn main() -> Result<()> {
 
                 let message_str = String::from_utf8_lossy(&buf[..n]);
 
+                println!("[DEBUG] {}", message_str);
+
                 match serde_json::from_str::<ClientCommand>(&message_str) {
                     Ok(command) => {
                         match command {
-                            ClientCommand::InitWork { prompt } => {
-                                tx_job.send(JobRequest::InitWork { prompt }).await?;
+                            ClientCommand::InitPrompt { prompt } => {
+                                tx_job.send(JobRequest::InitPrompt { prompt }).await?;
                             }
-                            ClientCommand::AddModel { path, schema } => {
+                            ClientCommand::AddInterface { path, schema } => {
                                 tx_job.send(JobRequest::AddModel { path, schema }).await?;
+                            }
+                            ClientCommand::RemoveInterface { path, schema } => {
+                                // Handle ...
+                                todo!()
                             }
                             ClientCommand::StartJob { .. } => {
                                 // Handle ...
@@ -86,7 +94,7 @@ async fn main() -> Result<()> {
                         }
                     }
                     Err(e) => {
-                        eprintln!("Failed to parse command: {}", e);
+                        eprintln!("Unknown command received: {}", e);
                     }
                 }
             },

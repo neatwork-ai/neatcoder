@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::{
-    models::{job::JobType, state::AppState, types::JobRequest},
+    models::{interfaces::AsContext, job::JobType, state::AppState, types::JobRequest},
     utils::{stream_rust, write_json},
 };
 
@@ -28,7 +28,10 @@ pub async fn gen_project_scaffold(
         ),
     });
 
-    let specs = state.specs.as_ref().unwrap();
+    let specs = state
+        .specs
+        .as_ref()
+        .ok_or(anyhow!("AppState missing `specs` field"))?;
 
     let main_prompt = format!("
 You are a Rust engineer tasked with creating an API in Rust based on the following project description:\n{}\n
@@ -52,7 +55,7 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
     Ok(fs)
 }
 
-pub async fn gen_work_schedule(
+pub async fn gen_execution_plan(
     client: Arc<OpenAI>,
     job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
@@ -81,11 +84,9 @@ pub async fn gen_work_schedule(
         ),
     });
 
-    for model in state.interfaces.iter() {
-        prompts.push(OpenAIMsg {
-            role: GptRole::User,
-            content: model.clone(),
-        });
+    for interface in state.interfaces.iter() {
+        // Attaches context to the message sequence
+        interface.add_context(&mut prompts)?;
     }
 
     prompts.push(OpenAIMsg {
@@ -144,7 +145,6 @@ pub async fn gen_code(
     }
 
     let project_scaffold = state.scaffold.as_ref().unwrap();
-    let files = state.codebase.lock().await;
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
@@ -153,11 +153,9 @@ pub async fn gen_code(
         ),
     });
 
-    for model in state.interfaces.iter() {
-        prompts.push(OpenAIMsg {
-            role: GptRole::User,
-            content: model.clone(),
-        });
+    for interface in state.interfaces.iter() {
+        // Attaches context to the message sequence
+        interface.add_context(&mut prompts)?;
     }
 
     prompts.push(OpenAIMsg {
@@ -165,8 +163,8 @@ pub async fn gen_code(
         content: String::from(api_description),
     });
 
-    for file in files.keys() {
-        let code = files.get(file).unwrap();
+    for file in state.codebase.keys() {
+        let code = state.codebase.get(file).unwrap();
 
         prompts.push(OpenAIMsg {
             role: GptRole::User,
@@ -196,6 +194,12 @@ pub async fn gen_code(
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
     stream_rust(client, job, &prompts, listener_address.as_str()).await?;
+
+    // Update state --> TODO: Need to store response in the state
+    // state.raw.insert(filename.to_string(), answer.to_string());
+    // state
+    //     .codebase
+    //     .insert(filename.to_string(), code_raw.clone());
 
     // TODO: add a better placeholder
     Ok(Arc::new((JobType::CodeGen, String::from("success"))))

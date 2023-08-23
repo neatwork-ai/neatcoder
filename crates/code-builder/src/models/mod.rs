@@ -13,20 +13,27 @@ use self::job::JobType;
 use self::state::AppState;
 
 pub mod fs;
+pub mod interfaces;
 pub mod job;
 pub mod job_worker;
 pub mod jobs;
-pub mod schema;
 pub mod shutdown;
 pub mod state;
 pub mod types;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ClientCommand {
-    InitWork { prompt: String },
-    AddModel { path: String, schema: String },
+    #[serde(rename = "initPrompt")]
+    InitPrompt { prompt: String },
+    #[serde(rename = "addInterface")]
+    AddInterface { path: String, schema: String },
+    #[serde(rename = "removeInterface")]
+    RemoveInterface { path: String, schema: String },
+    #[serde(rename = "startJob")]
     StartJob { job_id: Uuid },
+    #[serde(rename = "stopJob")]
     StopJob { job_id: Uuid },
+    #[serde(rename = "retryJob")]
     RetryJob { job_id: Uuid },
 }
 

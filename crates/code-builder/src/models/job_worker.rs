@@ -19,6 +19,7 @@ use super::{
 };
 use crate::endpoints::{self};
 
+// TODO: Potentially link `JobFutures` with `Jobs` via Uuid.
 pub type JobFutures = FuturesUnordered<
     Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static + Send>>,
 >;
@@ -72,7 +73,7 @@ impl JobWorker {
         loop {
             tokio::select! {
                 Some(request) = self.rx_job.recv() => {
-                    handle_request(request, &mut self.job_futures, self.open_ai_client.clone(), self.ai_job.clone(), self.app_state.clone())?;
+                    handle_request(request, &mut self.job_futures, self.open_ai_client.clone(), self.ai_job.clone(), self.app_state.clone()).await?;
                 },
                 Some(result) = self.job_futures.next() => {
                     if let Err(e) = result {
@@ -83,13 +84,13 @@ impl JobWorker {
                     let (job_type, message) = inner.as_ref();
                     let response = match job_type {
                         JobType::Scaffold => {
-                            endpoints::init_work::handle_scaffold_job().await?;
+                            // endpoints::init_prompt::handle_scaffold_job().await?;
                             JobResponse::Scaffold
                         },
                         JobType::Ordering => {
                             let job_schedule = message.as_str().as_json()?;
 
-                            endpoints::init_work::handle_schedule_job(
+                            endpoints::init_prompt::handle_schedule_job(
                                 job_schedule.clone(),
                                 self.open_ai_client.clone(),
                                 &mut self.job_futures,
@@ -124,7 +125,7 @@ impl JobWorker {
 }
 
 // TODO: make an appropriate use of the return type
-pub fn handle_request(
+pub async fn handle_request(
     request: JobRequest,
     audit_trail: &mut FuturesUnordered<
         Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send + 'static>>,
@@ -134,15 +135,17 @@ pub fn handle_request(
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<(), Error> {
     match request {
-        JobRequest::InitWork { prompt } => {
+        JobRequest::InitPrompt { prompt } => {
             let open_ai_client = open_ai_client.clone();
             let app_state = app_state.clone();
-            endpoints::init_work::handle(open_ai_client, audit_trail, ai_job, app_state, prompt);
+            endpoints::init_prompt::handle(open_ai_client, audit_trail, ai_job, app_state, prompt)
+                .await;
         }
+        // TODO:
         // JobRequest::AddModel { path, schema } => {
         //     let open_ai_client = open_ai_client.clone();
         //     let app_state = app_state.clone();
-        //     endpoints::add_model::handle();
+        //     endpoints::add_interface::handle();
         // }
         _ => todo!(),
     }
