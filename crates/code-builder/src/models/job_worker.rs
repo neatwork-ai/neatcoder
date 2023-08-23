@@ -31,6 +31,7 @@ pub struct JobWorker {
     job_futures: JobFutures,
     rx_job: Receiver<JobRequest>,
     tx_result: Sender<JobResponse>, // TODO: Refactor this to hold a String, or a `Response` value
+    listener_address: String,
 }
 
 impl JobWorker {
@@ -39,6 +40,7 @@ impl JobWorker {
         ai_job: Arc<OpenAIParams>,
         tx_result: Sender<JobResponse>,
         rx_job: Receiver<JobRequest>,
+        listener_address: String,
     ) -> Self {
         Self {
             rx_job,
@@ -47,6 +49,7 @@ impl JobWorker {
             tx_result,
             open_ai_client,
             app_state: Arc::new(RwLock::new(AppState::empty())),
+            listener_address,
         }
     }
 
@@ -55,10 +58,11 @@ impl JobWorker {
         ai_job: Arc<OpenAIParams>,
         rx_job: Receiver<JobRequest>,
         tx_result: Sender<JobResponse>,
+        listener_address: String,
         shutdown: ShutdownSignal, // TODO: Refactor to `AtomicBool`
     ) -> JoinHandle<Result<(), Error>> {
         tokio::spawn(async move {
-            Self::new(open_ai_client, ai_job, tx_result, rx_job)
+            Self::new(open_ai_client, ai_job, tx_result, rx_job, listener_address)
                 .run(shutdown)
                 .await
         })
@@ -90,13 +94,14 @@ impl JobWorker {
                                 self.open_ai_client.clone(),
                                 &mut self.job_futures,
                                 self.ai_job.clone(),
-                                self.app_state.clone()
+                                self.app_state.clone(),
+                                self.listener_address.clone()
                             ).await?;
 
                             JobResponse::Ordering { schedule_json: job_schedule}
                         },
                         JobType::CodeGen => {
-                            JobResponse::CodeGen
+                            JobResponse::CodeGen { is_sucess: true, filename: message.clone() }
                         },
                     };
                     let tx = self.tx_result.clone();

@@ -37,7 +37,14 @@ async fn main() -> Result<()> {
 
     let shutdown = ShutdownSignal::new();
 
-    let _join_handle = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
+    let _join_handle = JobWorker::spawn(
+        open_ai_client,
+        ai_job,
+        rx_job,
+        tx_result,
+        String::from(listener_address),
+        shutdown,
+    );
     loop {
         tokio::select! {
             result = socket.read(&mut buf) => {
