@@ -9,6 +9,7 @@ pub enum JobRequest {
     AddJob { job_id: Uuid },
     StopJob { job_id: Uuid },
     RetryJob { job_id: Uuid },
+    CodeGen { filename: String },
 }
 
 #[derive(Debug, Serialize)]
@@ -33,7 +34,10 @@ pub enum JobResponse {
         job_id: Uuid,
         is_success: bool,
     },
-    CodeGen,
+    CodeGen {
+        filename: String,
+        is_sucess: bool,
+    },
     Scaffold,
     Ordering {
         schedule_json: Value,

@@ -3,10 +3,6 @@ name = "code-builder"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "gen_data_model"
-path = "src/bin/gen_data_model.rs"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -26,3 +22,4 @@ serde_yaml = "0.9"
 uuid = {version = "1.4", features = ["v4", "serde"]}
 futures = "0.3.28"
 bincode = "1.3.3"
+bytes = "1.4.0"

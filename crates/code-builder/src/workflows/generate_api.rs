@@ -8,8 +8,8 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::{
-    models::{interfaces::AsContext, job::JobType, state::AppState},
-    utils::{write_json, write_rust},
+    models::{interfaces::AsContext, job::JobType, state::AppState, types::JobRequest},
+    utils::{stream_rust, write_json},
 };
 
 pub async fn gen_project_scaffold(
@@ -127,9 +127,15 @@ pub async fn gen_code(
     client: Arc<OpenAI>,
     job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
-    filename: String,
+    request: JobRequest,
+    listener_address: String,
 ) -> Result<Arc<(JobType, String)>> {
-    let mut state = app_state.write().await;
+    let filename = match request {
+        JobRequest::CodeGen { filename } => filename,
+        _ => return Err(anyhow!("Expected GenCode request, received {:?}", request)),
+    };
+
+    let state = app_state.read().await;
     let mut prompts = Vec::new();
 
     let api_description = state.specs.as_ref().unwrap();
@@ -187,17 +193,14 @@ pub async fn gen_code(
     });
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let (answer, code_raw) = {
-        let (answer, code) = write_rust(client, job, &prompts).await?;
-        (answer.to_string(), code.raw.clone())
-    };
+    stream_rust(client, job, &prompts, listener_address.as_str()).await?;
 
-    // Update state
-    state.raw.insert(filename.to_string(), answer.to_string());
-    state
-        .codebase
-        .insert(filename.to_string(), code_raw.clone());
+    // Update state --> TODO: Need to store response in the state
+    // state.raw.insert(filename.to_string(), answer.to_string());
+    // state
+    //     .codebase
+    //     .insert(filename.to_string(), code_raw.clone());
 
-    // TODO: Optimize
-    Ok(Arc::new((JobType::CodeGen, code_raw)))
+    // TODO: add a better placeholder
+    Ok(Arc::new((JobType::CodeGen, String::from("success"))))
 }

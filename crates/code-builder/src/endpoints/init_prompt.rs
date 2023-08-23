@@ -11,6 +11,7 @@ use crate::{
         job::{Job, JobType, Task},
         job_worker::JobFutures,
         state::AppState,
+        types::JobRequest,
     },
     workflows::generate_api::{gen_code, gen_execution_plan, gen_project_scaffold},
 };
@@ -96,6 +97,7 @@ pub async fn handle_schedule_job(
     job_futures: &mut JobFutures,
     ai_job: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
+    listener_address: String,
 ) -> Result<()> {
     let files = Files::from_schedule(job_schedule)?;
     let mut app_data = app_state.write().await;
@@ -103,8 +105,16 @@ pub async fn handle_schedule_job(
     // Add code writing jobs to the job queue
     for file in files.iter() {
         let file_ = file.clone();
-        let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
-            gen_code(c, j, state, file_)
+        let listener_address = listener_address.clone();
+
+        let closure = move |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
+            gen_code(
+                c,
+                j,
+                state,
+                JobRequest::CodeGen { filename: file_ },
+                listener_address,
+            )
         };
 
         app_data
