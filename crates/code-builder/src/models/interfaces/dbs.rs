@@ -33,7 +33,7 @@ pub enum DbType {
     /// An open-source object-relational database system.
     PostgreSql,
     /// A C-language library that provides a lightweight disk-based database.
-    SQLite,
+    SqLite,
 
     // === DataWarehouse Store ===
     // Systems optimized for analysis and reporting of large datasets.
@@ -169,7 +169,7 @@ impl Display for DbType {
             DbType::MsSql => "MsSql",
             DbType::MySql => "MySql",
             DbType::PostgreSql => "PostgreSql",
-            DbType::SQLite => "SQLite",
+            DbType::SqLite => "SQLite",
             DbType::BigQuery => "BigQuery",
             DbType::Redshift => "Redshift",
             DbType::Snowflake => "Snowflake",
