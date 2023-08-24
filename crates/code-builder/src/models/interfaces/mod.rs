@@ -7,7 +7,7 @@ pub mod apis;
 pub mod dbs;
 pub mod storage;
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum Interface {
     Database(Database),
     Storage(Datastore),
@@ -15,7 +15,7 @@ pub enum Interface {
     // IaC(IaC),
 }
 
-pub type InterfaceFile = String;
+pub type SchemaFile = String;
 
 pub trait AsContext {
     fn add_context(&self, msg_sequence: &mut Vec<OpenAIMsg>) -> Result<()>;
@@ -40,13 +40,13 @@ impl Interface {
         }
     }
 
-    pub fn insert_file(&mut self, interface_name: String, interface_file: String) {
+    pub fn insert_schema(&mut self, schema_name: String, schema: String) {
         let schemas = match self {
             Interface::Database(db) => &mut db.schemas,
             Interface::Storage(ds) => &mut ds.schemas,
             Interface::Api(api) => &mut api.schemas,
         };
 
-        schemas.insert(interface_name, interface_file);
+        schemas.insert(schema_name, schema);
     }
 }

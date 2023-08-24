@@ -1,22 +1,23 @@
 use anyhow::Result;
 use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{self, Display},
 };
 
-use super::{AsContext, InterfaceFile};
+use super::{AsContext, SchemaFile};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Datastore {
     pub name: String,
     pub file_type: FileType,
     pub storage_type: StorageType,
     pub region: Option<String>,
-    pub schemas: HashMap<String, InterfaceFile>,
+    pub schemas: HashMap<String, SchemaFile>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum StorageType {
     AwsS3,
     GoogleCloudStorage,
@@ -25,7 +26,7 @@ pub enum StorageType {
     LocalStorage,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum FileType {
     // === Data Store Formats ===
     /// A simple CSV file with a few rows should allow the LLM

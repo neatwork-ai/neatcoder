@@ -1,22 +1,23 @@
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{self, Display},
 };
 
-use super::{AsContext, InterfaceFile};
+use super::{AsContext, SchemaFile};
 use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Api {
     pub name: String,
     pub api_type: ApiType,
     pub port: Option<usize>,
     pub host: Option<String>,
-    pub schemas: HashMap<String, InterfaceFile>,
+    pub schemas: HashMap<String, SchemaFile>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum ApiType {
     /// OpenAPI/Swagger Specification Files: JSON or YAML files that describe
     /// RESTful APIs, including endpoints, parameters, responses, etc.

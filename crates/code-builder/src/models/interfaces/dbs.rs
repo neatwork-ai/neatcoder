@@ -1,22 +1,23 @@
 use anyhow::Result;
 use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{self, Display},
 };
 
-use super::{AsContext, InterfaceFile};
+use super::{AsContext, SchemaFile};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Database {
     pub name: String,
     pub db_type: DbType,
     pub port: Option<usize>,
     pub host: Option<String>,
-    pub schemas: HashMap<String, InterfaceFile>,
+    pub schemas: HashMap<String, SchemaFile>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum DbType {
     // === Tabular Store Types ===
     // Traditional RDBMS systems that store data in rows and columns. Used mainly for OLTP operations.

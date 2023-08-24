@@ -2,16 +2,17 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use super::interfaces::InterfaceFile;
+use super::interfaces::SchemaFile;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum JobRequest {
     InitPrompt {
         prompt: String,
     },
-    AddInterfaceFile {
-        interface: String,
-        schema: InterfaceFile,
+    AddSchema {
+        interface_name: String,
+        schema_name: String,
+        schema: SchemaFile,
     },
     AddJob {
         job_id: Uuid,

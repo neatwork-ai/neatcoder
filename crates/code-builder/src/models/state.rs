@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use std::{collections::HashMap, sync::Arc};
 
 use super::{
-    interfaces::{Interface, InterfaceFile},
+    interfaces::{Interface, SchemaFile},
     jobs::Jobs,
 };
 
@@ -59,12 +59,18 @@ impl AppState {
         Ok(self)
     }
 
-    pub fn add_interface_file(
+    pub fn add_schema(
         &mut self,
         interface_name: String,
-        interface_file: InterfaceFile,
+        schema_name: String,
+        schema: SchemaFile,
     ) -> Result<()> {
-        if !self.interfaces.contains_key(&interface_name) {
+        let check = !self.interfaces.contains_key(&interface_name);
+
+        if check {
+            // TODO: We need proper error escallation and communication with the client
+            eprintln!("[ERROR] The interface does not exist. Please create an interface first.");
+
             return Err(anyhow!("Interface does not exist"));
         }
 
@@ -72,7 +78,7 @@ impl AppState {
         let interface = self.interfaces.get_mut(&interface_name).unwrap();
 
         // Replaces the existing interface if any
-        interface.insert_file(interface_name, interface_file);
+        interface.insert_schema(schema_name, schema);
 
         Ok(())
     }
