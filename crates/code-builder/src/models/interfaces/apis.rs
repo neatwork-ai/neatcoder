@@ -108,7 +108,7 @@ impl Display for ApiType {
             ApiType::WebSockets => "WebSockets",
             ApiType::TcpSocket => "Raw TCP Socket",
             ApiType::LibraryIDL => "Library IDL",
-            ApiType::Mqtt => "Mqtt",
+            ApiType::Mqtt => "MQTT",
         };
 
         f.write_str(tag)
