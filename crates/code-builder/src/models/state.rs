@@ -1,7 +1,10 @@
 use anyhow::{anyhow, Result};
 use std::{collections::HashMap, sync::Arc};
 
-use super::{interfaces::Interface, jobs::Jobs};
+use super::{
+    interfaces::{Interface, InterfaceFile},
+    jobs::Jobs,
+};
 
 #[derive(Debug)]
 pub struct AppState {
@@ -10,7 +13,8 @@ pub struct AppState {
     /// JSON String containing the File System Scaffold
     pub scaffold: Option<Arc<String>>,
     /// Vector of strings containing the interface config files (e.g. SQL DLLs, etc.)
-    pub interfaces: Vec<Interface>,
+    /// The HashMap represents HashMap<Interface Name, Interface>
+    pub interfaces: HashMap<String, Interface>,
     /// HashMap containing all the code files in the codebase
     /// Should be read as HashMap<FileName, Code String>
     pub codebase: HashMap<String, String>,
@@ -27,7 +31,7 @@ impl AppState {
         Self {
             specs: Some(specs),
             scaffold: None,
-            interfaces: Vec::new(),
+            interfaces: HashMap::new(),
             codebase: HashMap::new(),
             raw: HashMap::new(),
             jobs: Jobs::empty(),
@@ -38,14 +42,14 @@ impl AppState {
         Self {
             specs: None,
             scaffold: None,
-            interfaces: Vec::new(),
+            interfaces: HashMap::new(),
             codebase: HashMap::new(),
             raw: HashMap::new(),
             jobs: Jobs::empty(),
         }
     }
 
-    pub fn with_interfaces(mut self, interfaces: Vec<Interface>) -> Result<Self> {
+    pub fn with_interfaces(mut self, interfaces: HashMap<String, Interface>) -> Result<Self> {
         if !self.interfaces.is_empty() {
             return Err(anyhow!("Data model already exists"));
         }
@@ -53,5 +57,23 @@ impl AppState {
         self.interfaces = interfaces;
 
         Ok(self)
+    }
+
+    pub fn add_interface_file(
+        &mut self,
+        interface_name: String,
+        interface_file: InterfaceFile,
+    ) -> Result<()> {
+        if !self.interfaces.contains_key(&interface_name) {
+            return Err(anyhow!("Interface does not exist"));
+        }
+
+        // Safe to unwrap due to previous check
+        let interface = self.interfaces.get_mut(&interface_name).unwrap();
+
+        // Replaces the existing interface if any
+        interface.insert_file(interface_name, interface_file);
+
+        Ok(())
     }
 }

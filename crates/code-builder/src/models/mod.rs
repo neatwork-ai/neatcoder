@@ -9,6 +9,7 @@ use uuid::Uuid;
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::params::OpenAIParams;
 
+use self::interfaces::InterfaceFile;
 use self::job::JobType;
 use self::state::AppState;
 
@@ -26,7 +27,10 @@ pub enum ClientCommand {
     #[serde(rename = "initPrompt")]
     InitPrompt { prompt: String },
     #[serde(rename = "addInterface")]
-    AddInterface { path: String, schema: String },
+    AddInterfaceFile {
+        interface: String,
+        schema: InterfaceFile,
+    },
     #[serde(rename = "removeInterface")]
     RemoveInterface { path: String, schema: String },
     #[serde(rename = "startJob")]

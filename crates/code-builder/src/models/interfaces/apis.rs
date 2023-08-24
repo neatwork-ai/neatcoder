@@ -1,7 +1,10 @@
 use anyhow::Result;
-use std::fmt::{self, Display};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+};
 
-use super::AsContext;
+use super::{AsContext, InterfaceFile};
 use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 
 #[derive(Debug)]
@@ -10,13 +13,7 @@ pub struct Api {
     pub api_type: ApiType,
     pub port: Option<usize>,
     pub host: Option<String>,
-    pub stores: Vec<ApiSpec>,
-}
-
-#[derive(Debug)]
-pub struct ApiSpec {
-    pub name: String,
-    pub spec: String,
+    pub schemas: HashMap<String, InterfaceFile>,
 }
 
 #[derive(Debug)]
@@ -77,10 +74,10 @@ Have in consideration the following {} communication service:
             content: main_prompt,
         });
 
-        for store in self.stores.iter() {
+        for (schema_name, schema) in self.schemas.iter() {
             let prompt = format!("
 Consider the following schema as part of the {} database. It's called `{}` and the schema is:\n```\n{}```
-            ", self.name, store.name, store.spec);
+            ", self.name, schema_name, schema);
 
             msg_sequence.push(OpenAIMsg {
                 role: GptRole::User,

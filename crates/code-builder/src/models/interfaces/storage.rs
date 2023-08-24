@@ -1,8 +1,11 @@
 use anyhow::Result;
 use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
-use std::fmt::{self, Display};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+};
 
-use super::AsContext;
+use super::{AsContext, InterfaceFile};
 
 #[derive(Debug)]
 pub struct Datastore {
@@ -10,14 +13,7 @@ pub struct Datastore {
     pub file_type: FileType,
     pub storage_type: StorageType,
     pub region: Option<String>,
-    pub stores: Vec<Store>,
-}
-
-#[derive(Debug)]
-pub struct Store {
-    pub name: String,
-    pub path: String,
-    pub schema: String,
+    pub schemas: HashMap<String, InterfaceFile>,
 }
 
 #[derive(Debug)]
@@ -86,10 +82,10 @@ Have in consideration the following {} data storage:
             content: main_prompt,
         });
 
-        for store in self.stores.iter() {
+        for (schema_name, schema) in self.schemas.iter() {
             let prompt = format!("
 Consider the following {} schema as part of the {} data storage. It's called `{}` and the schema is:\n```\n{}```
-            ", self.file_type, self.name, store.name, store.schema);
+            ", self.file_type, self.name, schema_name, schema);
 
             msg_sequence.push(OpenAIMsg {
                 role: GptRole::User,
