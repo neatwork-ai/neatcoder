@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
                             ClientCommand::InitPrompt { prompt } => {
                                 tx_job.send(JobRequest::InitPrompt { prompt }).await?;
                             }
-                            ClientCommand::AddInterface { interface, schema } => {
+                            ClientCommand::AddInterfaceFile { interface, schema } => {
                                 tx_job.send(JobRequest::AddInterface { interface, schema }).await?;
                             }
                             ClientCommand::RemoveInterface { path, schema } => {
