@@ -1,4 +1,4 @@
-use self::{dbs::Database, storage::Datastore};
+use self::{apis::Api, dbs::Database, storage::Datastore};
 use anyhow::Result;
 use gluon::ai::openai::msg::OpenAIMsg;
 
@@ -10,7 +10,8 @@ pub mod storage;
 pub enum Interface {
     Database(Database),
     Storage(Datastore),
-    // Api(Api) TODO
+    Api(Api),
+    // IaC(IaC),
 }
 
 pub trait AsContext {
@@ -22,6 +23,7 @@ impl AsContext for Interface {
         match self {
             Interface::Database(db) => db.add_context(msg_sequence),
             Interface::Storage(ds) => ds.add_context(msg_sequence),
+            Interface::Api(api) => api.add_context(msg_sequence),
         }
     }
 }
