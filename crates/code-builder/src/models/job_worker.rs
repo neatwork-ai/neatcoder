@@ -141,7 +141,7 @@ pub async fn handle_request(
             endpoints::init_prompt::handle(open_ai_client, job_futures, ai_job, app_state, prompt)
                 .await;
         }
-        JobRequest::AddInterface { interface, schema } => {
+        JobRequest::AddInterfaceFile { interface, schema } => {
             let app_state = app_state.clone();
             endpoints::add_interface::handle(app_state, interface, schema);
         }
