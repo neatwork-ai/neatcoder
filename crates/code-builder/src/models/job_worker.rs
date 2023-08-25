@@ -84,6 +84,7 @@ impl JobWorker {
                     let (job_type, message) = inner.as_ref();
                     let response = match job_type {
                         JobType::Scaffold => {
+                            // TODO: Something is odd here..
                             // endpoints::init_prompt::handle_scaffold_job().await?;
                             JobResponse::Scaffold
                         },

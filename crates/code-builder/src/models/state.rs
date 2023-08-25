@@ -11,7 +11,7 @@ pub struct AppState {
     /// Initial prompt containing the specifications of the project
     pub specs: Option<String>,
     /// JSON String containing the File System Scaffold
-    pub scaffold: Option<Arc<String>>,
+    pub scaffold: Option<String>,
     /// Vector of strings containing the interface config files (e.g. SQL DLLs, etc.)
     /// The HashMap represents HashMap<Interface Name, Interface>
     pub interfaces: HashMap<String, Interface>,

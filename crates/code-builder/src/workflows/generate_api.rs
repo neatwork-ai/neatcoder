@@ -17,7 +17,9 @@ pub async fn gen_project_scaffold(
     params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<Arc<(JobType, String)>> {
-    let state = app_state.write().await;
+    println!("[INFO] Running `Scaffolding` Job...");
+
+    let mut state = app_state.write().await;
 
     let mut prompts = Vec::new();
 
@@ -32,6 +34,10 @@ pub async fn gen_project_scaffold(
         .specs
         .as_ref()
         .ok_or(anyhow!("AppState missing `specs` field"))?;
+
+    if state.scaffold.is_some() {
+        return Err(anyhow!("Scaffold already exists. Skipping..."));
+    }
 
     let main_prompt = format!("
 You are a Rust engineer tasked with creating an API in Rust based on the following project description:\n{}\n
@@ -50,7 +56,11 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
     let (_, scaffold_json) = write_json(client, params, &prompts).await?;
 
+    state.scaffold = Some(scaffold_json.to_string());
+
     let fs = Arc::new((JobType::Scaffold, scaffold_json.to_string()));
+
+    println!("[INFO] Completed `Scaffolding` Job");
 
     Ok(fs)
 }
@@ -60,6 +70,8 @@ pub async fn gen_execution_plan(
     params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<Arc<(JobType, String)>> {
+    println!("[INFO] Running `Planning Execution` Job...");
+
     let state = app_state.read().await;
 
     let mut prompts = Vec::new();
@@ -115,9 +127,11 @@ Use the following schema:
 
     let (answer, tasks) = write_json(client, params, &prompts).await?;
 
-    println!("{}", answer);
+    println!("[DEBUG] LLM: {}", answer);
 
     let dg = Arc::new((JobType::Ordering, tasks.to_string()));
+
+    println!("[INFO] Completed `Planning Execution` Job...");
 
     Ok(dg)
 }
