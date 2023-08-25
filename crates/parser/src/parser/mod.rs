@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use std::fmt::Debug;
 
 use crate::err::ParseError;
@@ -10,7 +11,7 @@ pub mod rust;
 pub mod sql;
 pub mod yaml;
 
-/// A supertrait defining methods to convert LLM string outputs into various Rust 
+/// A supertrait defining methods to convert LLM string outputs into various Rust
 /// native objects such as html, json, yaml, rust code, python code, etc.
 pub trait AsFormat {
     /// Converts the LLM string output into a specified Rust native object.
@@ -105,24 +106,27 @@ impl<'a> AsFormat for &'a str {
         let default_delimiter = "```";
         let mut default = false;
 
-        let start_loc = self.find(start_delimiter).unwrap_or_else(|| {
-            println!(
-                "Unable to find the primary delimiter. Attempting to use the fallback delimiter in: \n{}",
-                self
-            );
+        let start_loc = self.find(start_delimiter);
 
-            default = true;
-        
-            // Fallback logic: try finding the fallback delimiter
-            // TODO: Fail greacefully
-            self.find("```").expect(&format!(
-                "Unable to convert LLM output to {fmt}. Delimiters seem to be missing in: \n{input}",
-                input = self,
-                fmt = format
-            ))
-        });
+        let start_loc = match start_loc {
+            Some(start_loc) => Ok(start_loc),
+            None => {
+                default = true;
 
-        let start_index = start_loc + if default != true {start_delimiter.len()} else {default_delimiter.len()};
+                self.find("```").ok_or(ParseError::from(anyhow!(format!(
+                    "Unable to convert LLM output to {fmt}. Delimiters seem to be missing in: \n{input}",
+                    input = self,
+                    fmt = format
+                ))))
+            }
+        }?;
+
+        let start_index = start_loc
+            + if default != true {
+                start_delimiter.len()
+            } else {
+                default_delimiter.len()
+            };
 
         // TODO: Fail greacefully
         let end_loc = self[start_index..].find(default_delimiter).expect(&format!(
