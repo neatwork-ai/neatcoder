@@ -127,7 +127,7 @@ impl JobWorker {
 // TODO: make an appropriate use of the return type
 pub async fn handle_request(
     request: JobRequest,
-    audit_trail: &mut FuturesUnordered<
+    job_futures: &mut FuturesUnordered<
         Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send + 'static>>,
     >,
     open_ai_client: Arc<OpenAI>,
@@ -138,15 +138,21 @@ pub async fn handle_request(
         JobRequest::InitPrompt { prompt } => {
             let open_ai_client = open_ai_client.clone();
             let app_state = app_state.clone();
-            endpoints::init_prompt::handle(open_ai_client, audit_trail, ai_job, app_state, prompt)
+            endpoints::init_prompt::handle(open_ai_client, job_futures, ai_job, app_state, prompt)
                 .await;
         }
-        // TODO:
-        // JobRequest::AddModel { path, schema } => {
-        //     let open_ai_client = open_ai_client.clone();
-        //     let app_state = app_state.clone();
-        //     endpoints::add_interface::handle();
-        // }
+        JobRequest::AddSchema {
+            interface_name,
+            schema_name,
+            schema,
+        } => {
+            let app_state = app_state.clone();
+            endpoints::add_schema::handle(app_state, interface_name, schema_name, schema).await?;
+        }
+        JobRequest::AddInterface { interface } => {
+            let app_state = app_state.clone();
+            endpoints::add_interface::handle(app_state, interface).await?;
+        }
         _ => todo!(),
     }
 

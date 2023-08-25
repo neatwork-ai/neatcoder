@@ -8,7 +8,7 @@ use serde_json;
 use std::{env, sync::Arc};
 use tokio::{io::AsyncReadExt, net::TcpListener};
 
-use code_builder::models::ClientCommand;
+use code_builder::models::messages::client::ClientCommand;
 use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
 
 #[tokio::main]
@@ -35,6 +35,7 @@ async fn main() -> Result<()> {
 
     println!("Client binded to TCP Socket");
 
+    // TODO: Need to control the maximum buffer size
     let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
     let (tx_job, rx_job) = tokio::sync::mpsc::channel(100);
 
@@ -48,23 +49,46 @@ async fn main() -> Result<()> {
         String::from(listener_address),
         shutdown,
     );
+
+    // Defines the buffer length for the message delimiter
+    // In TCP, data can be streamed continuously without clear message boundaries
+    // Therefore at the beginning of each message the client will send a delimiter
+    // followed by a message length prefix
+    const DELIMITER: &[u8] = b"MSG:"; // Define a suitable delimiter
+    let mut length_buf = [0u8; 4]; // 4-byte buffer for length prefix
+
     loop {
         tokio::select! {
-            result = socket.read(&mut buf) => {
-                let n = if let Err(e) = result {
-                    println!("TODO: add proper logging {e}");
-                    continue;
-                } else {
-                    result.unwrap()
-                };
+            _ = socket.readable() => {
+                let mut temp_buf = Vec::new();
 
+                // Search for the delimiter
+                while temp_buf.ends_with(DELIMITER) == false {
+                    let mut byte = [0u8; 1];
+                    if socket.read_exact(&mut byte).await.is_err() || byte[0] == 0 {
+                        break;
+                    }
+                    temp_buf.extend_from_slice(&byte);
+                }
+
+                // Once delimiter is found, read the LENGTH prefix
+                socket.read_exact(&mut length_buf).await?;
+                let message_length = u32::from_be_bytes(length_buf);
+
+                // Ensure our buffer is big enough to hold the incoming message
+                if buf.len() < message_length as usize {
+                    buf.resize(message_length as usize, 0);
+                }
+
+                // Read the actual message
+                let n = socket.read_exact(&mut buf[0..message_length as usize]).await?;
                 if n == 0 {
                     break;
                 }
 
                 let message_str = String::from_utf8_lossy(&buf[..n]);
+                println!("[DEBUG MSG] {}", message_str);
 
-                println!("[DEBUG] {}", message_str);
 
                 match serde_json::from_str::<ClientCommand>(&message_str) {
                     Ok(command) => {
@@ -72,10 +96,15 @@ async fn main() -> Result<()> {
                             ClientCommand::InitPrompt { prompt } => {
                                 tx_job.send(JobRequest::InitPrompt { prompt }).await?;
                             }
-                            ClientCommand::AddInterface { path, schema } => {
-                                tx_job.send(JobRequest::AddModel { path, schema }).await?;
+                            ClientCommand::AddSchema { interface_name, schema_name, schema } => {
+                                tx_job.send(JobRequest::AddSchema { interface_name, schema_name, schema }).await?;
                             }
-                            ClientCommand::RemoveInterface { path, schema } => {
+                            ClientCommand::AddInterface { interface } => {
+                                // Handle ...
+                                println!("[DEBUG MSG] WE'RE HERE");
+                                tx_job.send(JobRequest::AddInterface { interface }).await?;
+                            }
+                            ClientCommand::RemoveInterface { interface_name } => {
                                 // Handle ...
                                 todo!()
                             }

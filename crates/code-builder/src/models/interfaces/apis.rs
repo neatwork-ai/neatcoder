@@ -1,25 +1,23 @@
 use anyhow::Result;
-use std::fmt::{self, Display};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+};
 
-use super::AsContext;
+use super::{AsContext, SchemaFile};
 use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Api {
     pub name: String,
     pub api_type: ApiType,
     pub port: Option<usize>,
     pub host: Option<String>,
-    pub stores: Vec<ApiSpec>,
+    pub schemas: HashMap<String, SchemaFile>,
 }
 
-#[derive(Debug)]
-pub struct ApiSpec {
-    pub name: String,
-    pub spec: String,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum ApiType {
     /// OpenAPI/Swagger Specification Files: JSON or YAML files that describe
     /// RESTful APIs, including endpoints, parameters, responses, etc.
@@ -77,10 +75,10 @@ Have in consideration the following {} communication service:
             content: main_prompt,
         });
 
-        for store in self.stores.iter() {
+        for (schema_name, schema) in self.schemas.iter() {
             let prompt = format!("
 Consider the following schema as part of the {} database. It's called `{}` and the schema is:\n```\n{}```
-            ", self.name, store.name, store.spec);
+            ", self.name, schema_name, schema);
 
             msg_sequence.push(OpenAIMsg {
                 role: GptRole::User,

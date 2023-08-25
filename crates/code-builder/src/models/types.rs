@@ -2,14 +2,33 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+use super::interfaces::{Interface, SchemaFile};
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum JobRequest {
-    InitPrompt { prompt: String },
-    AddModel { path: String, schema: String },
-    AddJob { job_id: Uuid },
-    StopJob { job_id: Uuid },
-    RetryJob { job_id: Uuid },
-    CodeGen { filename: String },
+    InitPrompt {
+        prompt: String,
+    },
+    AddInterface {
+        interface: Interface,
+    },
+    AddSchema {
+        interface_name: String,
+        schema_name: String,
+        schema: SchemaFile,
+    },
+    AddJob {
+        job_id: Uuid,
+    },
+    StopJob {
+        job_id: Uuid,
+    },
+    RetryJob {
+        job_id: Uuid,
+    },
+    CodeGen {
+        filename: String,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -18,7 +37,7 @@ pub enum JobResponse {
         result: Option<String>,
         is_success: bool,
     },
-    AddModel {
+    AddInterface {
         result: Option<String>,
         is_success: bool,
     },

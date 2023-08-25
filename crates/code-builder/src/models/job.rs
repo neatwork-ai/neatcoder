@@ -11,14 +11,6 @@ use gluon::ai::openai::params::OpenAIParams;
 use super::state::AppState;
 use super::TaskTrait;
 
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub enum JobState {
-    Unintialized,
-    InProgress,
-    Done,
-    Stopped,
-}
-
 #[derive(Debug, Serialize)]
 pub struct Job {
     pub job_id: Uuid,
@@ -33,6 +25,14 @@ pub enum JobType {
     Scaffold,
     Ordering,
     CodeGen,
+}
+
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
+pub enum JobState {
+    Unintialized,
+    InProgress,
+    Done,
+    Stopped,
 }
 
 unsafe impl Send for JobType {}

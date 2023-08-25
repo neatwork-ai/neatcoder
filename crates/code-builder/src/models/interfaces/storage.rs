@@ -1,26 +1,23 @@
 use anyhow::Result;
 use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
-use std::fmt::{self, Display};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+};
 
-use super::AsContext;
+use super::{AsContext, SchemaFile};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Datastore {
     pub name: String,
     pub file_type: FileType,
     pub storage_type: StorageType,
     pub region: Option<String>,
-    pub stores: Vec<Store>,
+    pub schemas: HashMap<String, SchemaFile>,
 }
 
-#[derive(Debug)]
-pub struct Store {
-    pub name: String,
-    pub path: String,
-    pub schema: String,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum StorageType {
     AwsS3,
     GoogleCloudStorage,
@@ -29,7 +26,7 @@ pub enum StorageType {
     LocalStorage,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum FileType {
     // === Data Store Formats ===
     /// A simple CSV file with a few rows should allow the LLM
@@ -86,10 +83,10 @@ Have in consideration the following {} data storage:
             content: main_prompt,
         });
 
-        for store in self.stores.iter() {
+        for (schema_name, schema) in self.schemas.iter() {
             let prompt = format!("
 Consider the following {} schema as part of the {} data storage. It's called `{}` and the schema is:\n```\n{}```
-            ", self.file_type, self.name, store.name, store.schema);
+            ", self.file_type, self.name, schema_name, schema);
 
             msg_sequence.push(OpenAIMsg {
                 role: GptRole::User,

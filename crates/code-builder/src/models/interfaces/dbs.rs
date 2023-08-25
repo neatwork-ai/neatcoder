@@ -1,25 +1,24 @@
 use anyhow::Result;
 use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
-use std::fmt::{self, Display};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+};
 
-use super::AsContext;
+use super::{AsContext, SchemaFile};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Database {
     pub name: String,
     pub db_type: DbType,
     pub port: Option<usize>,
     pub host: Option<String>,
-    pub stores: Vec<DbStore>,
+    pub schemas: HashMap<String, SchemaFile>,
 }
 
-#[derive(Debug)]
-pub struct DbStore {
-    pub name: String,
-    pub schema: String,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum DbType {
     // === Tabular Store Types ===
     // Traditional RDBMS systems that store data in rows and columns. Used mainly for OLTP operations.
@@ -35,7 +34,7 @@ pub enum DbType {
     /// An open-source object-relational database system.
     PostgreSql,
     /// A C-language library that provides a lightweight disk-based database.
-    SQLite,
+    SqLite,
 
     // === DataWarehouse Store ===
     // Systems optimized for analysis and reporting of large datasets.
@@ -148,10 +147,10 @@ Have in consideration the following {} Database:
             content: main_prompt,
         });
 
-        for store in self.stores.iter() {
+        for (schema_name, schema) in self.schemas.iter() {
             let prompt = format!("
 Consider the following schema as part of the {} database. It's called `{}` and the schema is:\n```\n{}```
-            ", self.name, store.name, store.schema);
+            ", self.name, schema_name, schema);
 
             msg_sequence.push(OpenAIMsg {
                 role: GptRole::User,
@@ -171,7 +170,7 @@ impl Display for DbType {
             DbType::MsSql => "MsSql",
             DbType::MySql => "MySql",
             DbType::PostgreSql => "PostgreSql",
-            DbType::SQLite => "SQLite",
+            DbType::SqLite => "SQLite",
             DbType::BigQuery => "BigQuery",
             DbType::Redshift => "Redshift",
             DbType::Snowflake => "Snowflake",

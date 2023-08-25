@@ -84,7 +84,7 @@ pub async fn gen_execution_plan(
         ),
     });
 
-    for interface in state.interfaces.iter() {
+    for (_, interface) in state.interfaces.iter() {
         // Attaches context to the message sequence
         interface.add_context(&mut prompts)?;
     }
@@ -153,7 +153,7 @@ pub async fn gen_code(
         ),
     });
 
-    for interface in state.interfaces.iter() {
+    for (_, interface) in state.interfaces.iter() {
         // Attaches context to the message sequence
         interface.add_context(&mut prompts)?;
     }
