@@ -14,7 +14,7 @@ use crate::{
 
 pub async fn gen_project_scaffold(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIParams>,
+    params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<Arc<(JobType, String)>> {
     let state = app_state.write().await;
@@ -48,7 +48,7 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let (_, scaffold_json) = write_json(client, job, &prompts).await?;
+    let (_, scaffold_json) = write_json(client, params, &prompts).await?;
 
     let fs = Arc::new((JobType::Scaffold, scaffold_json.to_string()));
 
@@ -57,7 +57,7 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
 pub async fn gen_execution_plan(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIParams>,
+    params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<Arc<(JobType, String)>> {
     let state = app_state.read().await;
@@ -65,8 +65,7 @@ pub async fn gen_execution_plan(
     let mut prompts = Vec::new();
 
     if state.interfaces.is_empty() {
-        // TODO: Consider relaxing this and instead gracefully handle the task without the data model
-        return Err(anyhow!("No data model available.."));
+        println!("[INFO] No Interfaces detected. Proceeding...");
     }
 
     let api_description = &state.specs.as_ref().unwrap();
@@ -114,7 +113,7 @@ Use the following schema:
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let (answer, tasks) = write_json(client, job, &prompts).await?;
+    let (answer, tasks) = write_json(client, params, &prompts).await?;
 
     println!("{}", answer);
 
@@ -125,7 +124,7 @@ Use the following schema:
 
 pub async fn gen_code(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIParams>,
+    params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
     request: JobRequest,
     listener_address: String,
@@ -193,7 +192,7 @@ pub async fn gen_code(
     });
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    stream_rust(client, job, &prompts, listener_address.as_str()).await?;
+    stream_rust(client, params, &prompts, listener_address.as_str()).await?;
 
     // Update state --> TODO: Need to store response in the state
     // state.raw.insert(filename.to_string(), answer.to_string());

@@ -11,14 +11,14 @@ use tokio::{io::AsyncWriteExt, net::TcpListener};
 
 pub async fn stream_rust(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIParams>,
+    params: Arc<OpenAIParams>,
     prompts: &[&OpenAIMsg],
     listener_address: &str,
 ) -> Result<()> {
     let listener = TcpListener::bind(listener_address).await?;
     let (mut tcp_stream, _) = listener.accept().await?;
 
-    let mut chat_stream = client.chat_stream(&job, prompts, &[], &[]).await?;
+    let mut chat_stream = client.chat_stream(&params, prompts, &[], &[]).await?;
 
     let mut start_delimiter = false;
     while let Some(item) = chat_stream.next().await {
@@ -49,13 +49,13 @@ pub async fn stream_rust(
 
 pub async fn write_rust(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIParams>,
+    params: Arc<OpenAIParams>,
     prompts: &Vec<&OpenAIMsg>,
 ) -> Result<(String, Rust)> {
     let mut retries = 3;
 
     loop {
-        let answer = client.chat(job.clone(), prompts, &[], &[]).await?;
+        let answer = client.chat(params.clone(), prompts, &[], &[]).await?;
 
         match answer.as_str().strip_rust() {
             Ok(result) => {
@@ -77,24 +77,26 @@ pub async fn write_rust(
 
 pub async fn write_json(
     client: Arc<OpenAI>,
-    job: Arc<OpenAIParams>,
+    params: Arc<OpenAIParams>,
     prompts: &Vec<&OpenAIMsg>,
 ) -> Result<(String, Value)> {
     let mut retries = 3;
 
     loop {
-        let answer = client.chat(job.clone(), prompts, &[], &[]).await?;
+        println!("[INFO] Prompting the LLM...");
+        let answer = client.chat(params.clone(), prompts, &[], &[]).await?;
 
         match answer.as_str().strip_json() {
             Ok(result) => {
+                println!("[INFO] Received LLM answer...");
                 break Ok((answer, result));
             }
             Err(e) => {
-                println!("Error while parsing rust code: \n{}", e);
+                println!("Failed to parse json: \n{}", e);
                 retries -= 1;
 
                 if retries <= 0 {
-                    return Err(anyhow!("Failed to parse rust code."));
+                    return Err(anyhow!("Failed to parse json."));
                 }
 
                 println!("Retrying...");

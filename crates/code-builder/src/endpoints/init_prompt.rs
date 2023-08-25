@@ -50,10 +50,15 @@ pub async fn scaffold_project(
 
     // TODO: Return error if `specs` field already exists..
     app_data.specs = Some(init_prompt);
+    println!("[INFO] Registered Project Specifications.");
+
+    let job_name = "Scaffolding Project";
 
     app_data
         .jobs
-        .add_todo(Job::new("Scaffolding Project", JobType::Scaffold));
+        .add_todo(Job::new(job_name, JobType::Scaffold));
+
+    println!("[INFO] Added TODO to Job Queue:`{}``", job_name);
 
     let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
         gen_project_scaffold(c, j, state)

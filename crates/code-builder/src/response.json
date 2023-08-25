@@ -1,9 +1,0 @@
-{
-    "addSchemaFile": {
-        "interface": "MyDBTest",
-        "schema": {
-            "path": "/Users/nuno/Documents/Programs/neatwork/test/.neat/dbs/MyDBTest/users.sql",
-            "content": "CREATE TABLE Users (\n    -- An integer that serves as the primary key. It auto increments, meaning each new user gets a unique ID that's one greater than the previous user's ID.\n    UserID INT PRIMARY KEY AUTO_INCREMENT,\n    -- A variable-length string that can be up to 50 characters long. This column cannot contain NULL values.\n    UserName VARCHAR(50) NOT NULL,\n    -- A variable-length string that can be up to 255 characters long. This column cannot contain NULL values and each email must be unique.\n    Email VARCHAR(255) NOT NULL UNIQUE,\n    -- A variable-length string that can be up to 255 characters long. This column cannot contain NULL values.\n    Password VARCHAR(255) NOT NULL,\n    -- An enumerated type that can contain either 'Free' or 'Premium'. If no value is provided, it defaults to 'Free'.\n    SubscriptionType ENUM('Free', 'Premium') NOT NULL DEFAULT 'Free',\n    -- These are datetime columns to track when a subscription starts.\n    SubscriptionStartDate DATETIME,\n    -- These are datetime columns to track when a subscription ends.\n    SubscriptionEndDate DATETIME\n);\n"
-        }
-    }
-}

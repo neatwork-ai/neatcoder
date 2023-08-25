@@ -101,7 +101,6 @@ async fn main() -> Result<()> {
                             }
                             ClientCommand::AddInterface { interface } => {
                                 // Handle ...
-                                println!("[DEBUG MSG] WE'RE HERE");
                                 tx_job.send(JobRequest::AddInterface { interface }).await?;
                             }
                             ClientCommand::RemoveInterface { interface_name } => {
