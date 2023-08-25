@@ -8,7 +8,8 @@ use std::{
 
 use super::{AsContext, SchemaFile};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Database {
     pub name: String,
     pub db_type: DbType,
@@ -17,7 +18,7 @@ pub struct Database {
     pub schemas: HashMap<String, SchemaFile>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum DbType {
     // === Tabular Store Types ===
     // Traditional RDBMS systems that store data in rows and columns. Used mainly for OLTP operations.

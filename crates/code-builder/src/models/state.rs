@@ -65,9 +65,7 @@ impl AppState {
         schema_name: String,
         schema: SchemaFile,
     ) -> Result<()> {
-        let check = !self.interfaces.contains_key(&interface_name);
-
-        if check {
+        if !self.interfaces.contains_key(&interface_name) {
             // TODO: We need proper error escallation and communication with the client
             eprintln!("[ERROR] The interface does not exist. Please create an interface first.");
 
@@ -79,6 +77,22 @@ impl AppState {
 
         // Replaces the existing interface if any
         interface.insert_schema(schema_name, schema);
+
+        Ok(())
+    }
+
+    pub fn add_interface(&mut self, interface: Interface) -> Result<()> {
+        let interface_name = interface.name();
+
+        if self.interfaces.contains_key(interface_name) {
+            // TODO: We need proper error escallation and communication with the client
+            eprintln!("[ERROR] The interface already exists. Skipping.");
+
+            return Err(anyhow!("Interface already exists"));
+        }
+
+        self.interfaces
+            .insert(interface_name.to_string(), interface);
 
         Ok(())
     }

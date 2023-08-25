@@ -8,7 +8,7 @@ use std::{
 
 use super::{AsContext, SchemaFile};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Datastore {
     pub name: String,
     pub file_type: FileType,
@@ -17,7 +17,7 @@ pub struct Datastore {
     pub schemas: HashMap<String, SchemaFile>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum StorageType {
     AwsS3,
     GoogleCloudStorage,
@@ -26,7 +26,7 @@ pub enum StorageType {
     LocalStorage,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum FileType {
     // === Data Store Formats ===
     /// A simple CSV file with a few rows should allow the LLM

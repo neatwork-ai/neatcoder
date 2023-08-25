@@ -8,7 +8,7 @@ use std::{
 use super::{AsContext, SchemaFile};
 use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Api {
     pub name: String,
     pub api_type: ApiType,
@@ -17,7 +17,7 @@ pub struct Api {
     pub schemas: HashMap<String, SchemaFile>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum ApiType {
     /// OpenAPI/Swagger Specification Files: JSON or YAML files that describe
     /// RESTful APIs, including endpoints, parameters, responses, etc.

@@ -7,12 +7,18 @@ pub mod apis;
 pub mod dbs;
 pub mod storage;
 
-#[derive(Debug, Deserialize, Serialize)]
+// TODO
+// [DEBUG MSG] {"addInterface":{"interface":{"database":{"name":"DUCKO","dbType":{"name":"DUCKO","dbType":"DuckDb"}}}}}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub enum Interface {
+    #[serde(rename = "database")]
     Database(Database),
+    #[serde(rename = "storage")]
     Storage(Datastore),
+    #[serde(rename = "api")]
     Api(Api),
-    // IaC(IaC),
 }
 
 pub type SchemaFile = String;

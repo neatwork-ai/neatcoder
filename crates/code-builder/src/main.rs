@@ -89,6 +89,7 @@ async fn main() -> Result<()> {
                 let message_str = String::from_utf8_lossy(&buf[..n]);
                 println!("[DEBUG MSG] {}", message_str);
 
+
                 match serde_json::from_str::<ClientCommand>(&message_str) {
                     Ok(command) => {
                         match command {
@@ -100,7 +101,8 @@ async fn main() -> Result<()> {
                             }
                             ClientCommand::AddInterface { interface } => {
                                 // Handle ...
-                                todo!()
+                                println!("[DEBUG MSG] WE'RE HERE");
+                                tx_job.send(JobRequest::AddInterface { interface }).await?;
                             }
                             ClientCommand::RemoveInterface { interface_name } => {
                                 // Handle ...
