@@ -36,7 +36,11 @@ async fn main() -> Result<()> {
     println!("Client binded to TCP Socket");
 
     // TODO: Need to control the maximum buffer size
+
+    // Channels for sending and receiving the results
     let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
+
+    // Channels for sending and receiving the jobs
     let (tx_job, rx_job) = tokio::sync::mpsc::channel(100);
 
     let shutdown = ShutdownSignal::new();

@@ -72,6 +72,8 @@ impl JobWorker {
     pub async fn run(&mut self, shutdown: ShutdownSignal) -> Result<(), Error> {
         loop {
             tokio::select! {
+                // Handles requests from the client, reads/writes to `AppState`
+                // accordingly and creates Job Futures if necessary.
                 Some(request) = self.rx_job.recv() => {
                     handle_request(request, &mut self.job_futures, self.open_ai_client.clone(), self.ai_job.clone(), self.app_state.clone()).await?;
                 },
