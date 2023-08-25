@@ -147,11 +147,11 @@ pub async fn handle_request(
             schema,
         } => {
             let app_state = app_state.clone();
-            endpoints::add_schema::handle(app_state, interface_name, schema_name, schema).await;
+            endpoints::add_schema::handle(app_state, interface_name, schema_name, schema).await?;
         }
         JobRequest::AddInterface { interface } => {
             let app_state = app_state.clone();
-            endpoints::add_interface::handle(app_state, interface).await;
+            endpoints::add_interface::handle(app_state, interface).await?;
         }
         _ => todo!(),
     }

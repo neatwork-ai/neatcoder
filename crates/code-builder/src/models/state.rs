@@ -18,10 +18,6 @@ pub struct AppState {
     /// HashMap containing all the code files in the codebase
     /// Should be read as HashMap<FileName, Code String>
     pub codebase: HashMap<String, String>,
-    // TODO: This should be refactored out, potentially logged or stored in a
-    // Database, instead of being part of the AppState
-    /// HashMap containing all the prompts to ChatGPT
-    pub raw: HashMap<String, String>,
     /// Keeps track of all the jobs performed or to be performed by the worker
     pub jobs: Jobs,
 }
@@ -33,7 +29,6 @@ impl AppState {
             scaffold: None,
             interfaces: HashMap::new(),
             codebase: HashMap::new(),
-            raw: HashMap::new(),
             jobs: Jobs::empty(),
         }
     }
@@ -44,7 +39,6 @@ impl AppState {
             scaffold: None,
             interfaces: HashMap::new(),
             codebase: HashMap::new(),
-            raw: HashMap::new(),
             jobs: Jobs::empty(),
         }
     }
