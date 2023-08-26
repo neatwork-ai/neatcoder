@@ -86,20 +86,16 @@ impl JobWorker {
                     let (job_type, message) = inner.as_ref();
                     let response = match job_type {
                         JobType::Scaffold => {
-                            // TODO: Something is odd here..
-                            // endpoints::init_prompt::handle_scaffold_job().await?;
                             JobResponse::Scaffold
                         },
                         JobType::Ordering => {
                             let job_schedule = message.as_str().as_json()?;
 
-                            endpoints::init_prompt::handle_schedule_job(
+                            // TODO: Tasks should be added to the job queue but
+                            // not immediately to the job futures
+                            endpoints::init_prompt::orchestrate_code_gen(
                                 job_schedule.clone(),
-                                self.open_ai_client.clone(),
-                                &mut self.job_futures,
-                                self.ai_job.clone(),
                                 self.app_state.clone(),
-                                self.listener_address.clone()
                             ).await?;
 
                             JobResponse::Ordering { schedule_json: job_schedule}

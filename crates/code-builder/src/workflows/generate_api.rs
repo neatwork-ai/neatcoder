@@ -148,6 +148,8 @@ pub async fn gen_code(
         _ => return Err(anyhow!("Expected GenCode request, received {:?}", request)),
     };
 
+    println!("[INFO] Running `CodeGen` Job: {}", filename);
+
     let state = app_state.read().await;
     let mut prompts = Vec::new();
 
@@ -207,12 +209,6 @@ pub async fn gen_code(
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
     stream_rust(client, params, &prompts, listener_address.as_str()).await?;
-
-    // Update state --> TODO: Need to store response in the state
-    // state.raw.insert(filename.to_string(), answer.to_string());
-    // state
-    //     .codebase
-    //     .insert(filename.to_string(), code_raw.clone());
 
     // TODO: add a better placeholder
     Ok(Arc::new((JobType::CodeGen, String::from("success"))))

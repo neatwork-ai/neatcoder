@@ -15,6 +15,7 @@ pub async fn stream_rust(
     prompts: &[&OpenAIMsg],
     listener_address: &str,
 ) -> Result<()> {
+    println!("[INFO] Initiating Stream");
     let listener = TcpListener::bind(listener_address).await?;
     let (mut tcp_stream, _) = listener.accept().await?;
 

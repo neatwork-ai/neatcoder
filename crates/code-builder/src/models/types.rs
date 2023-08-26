@@ -34,7 +34,7 @@ pub enum JobRequest {
 #[derive(Debug, Serialize)]
 pub enum JobResponse {
     InitWork {
-        result: Option<String>,
+        job_queue: Option<String>,
         is_success: bool,
     },
     AddInterface {

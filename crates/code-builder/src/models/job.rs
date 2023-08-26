@@ -9,14 +9,17 @@ use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::params::OpenAIParams;
 
 use super::state::AppState;
+use super::types::JobRequest;
 use super::TaskTrait;
 
 #[derive(Debug, Serialize)]
 pub struct Job {
     pub job_id: Uuid,
     pub job_name: String,
+    // Deprecate in favour of JobRequest
     pub job_type: JobType,
     pub job_state: JobState,
+    pub job_payload: Option<JobRequest>,
 }
 
 // Marker enum
@@ -38,7 +41,7 @@ pub enum JobState {
 unsafe impl Send for JobType {}
 
 impl Job {
-    pub fn new(job_name: &str, job_type: JobType) -> Self {
+    pub fn new(job_name: &str, job_type: JobType, job_payload: Option<JobRequest>) -> Self {
         let job_id = Uuid::new_v4();
 
         Self {
@@ -46,6 +49,7 @@ impl Job {
             job_name: job_name.to_string(),
             job_type,
             job_state: JobState::Unintialized,
+            job_payload,
         }
     }
 }

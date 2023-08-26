@@ -46,7 +46,7 @@ impl Files {
             if file.ends_with(".rs") {
                 true
             } else {
-                println!("Filtered out: {}", file);
+                println!("[WARN] Filtered out: {}", file);
                 false
             }
         });
