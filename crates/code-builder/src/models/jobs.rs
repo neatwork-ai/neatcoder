@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
 use uuid::Uuid;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Jobs {
     todo: Todo,
     done: Done,
@@ -19,6 +19,10 @@ impl Jobs {
 
     pub fn add_todo(&mut self, job: Job) {
         self.todo.push_back(job);
+    }
+
+    pub fn add_done(&mut self, job: Job) {
+        self.done.push_back(job);
     }
 
     pub fn mark_done_by_id(&mut self, job_id: &Uuid) {
@@ -43,7 +47,7 @@ impl Jobs {
 pub type Todo = Pipeline;
 pub type Done = Pipeline;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Pipeline {
     jobs: HashMap<Uuid, Job>,
     order: VecDeque<Uuid>,

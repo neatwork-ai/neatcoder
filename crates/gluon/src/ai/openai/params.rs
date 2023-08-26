@@ -1,10 +1,11 @@
 use crate::utils::bounded_float::{Bounded, Scale01, Scale100s, Scale22};
 use anyhow::{anyhow, Result};
+use serde::Serialize;
 use std::collections::HashMap;
 
 use super::model::OpenAIModels;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct OpenAIParams {
     pub model: OpenAIModels,
     // TODO: THIS SHOULD BE Scale02

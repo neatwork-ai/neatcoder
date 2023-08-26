@@ -4,21 +4,55 @@ use gluon::ai::openai::{
     msg::{GptRole, OpenAIMsg},
     params::OpenAIParams,
 };
+use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::{
-    models::{interfaces::AsContext, job::JobType, state::AppState, types::JobRequest},
-    utils::{stream_rust, write_json},
+    models::{interfaces::AsContext, state::AppState},
+    utils::{write_json, CodeStream},
 };
 
-pub async fn gen_project_scaffold(
+pub async fn generate_api_specs(
+    client: &OpenAI,
+    job: &OpenAIParams,
+    data_model: &Vec<String>,
+) -> Result<String> {
+    let mut prompts = Vec::new();
+
+    prompts.push(OpenAIMsg {
+        role: GptRole::System,
+        content: String::from(
+            "You are a software engineer who is specialised in building APIs in Rust.",
+        ),
+    });
+
+    for model in data_model.iter() {
+        prompts.push(OpenAIMsg {
+            role: GptRole::User,
+            content: model.clone(),
+        });
+    }
+
+    prompts.push(OpenAIMsg {
+        role: GptRole::User,
+        content: String::from(
+            "Based on the data model described above, create an idea for an API service.",
+        ),
+    });
+
+    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
+
+    let answer = client.chat(job, &prompts, &[], &[]).await?;
+
+    Ok(String::from(answer))
+}
+
+pub async fn scaffold_project(
     client: Arc<OpenAI>,
     params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
-) -> Result<Arc<(JobType, String)>> {
-    println!("[INFO] Running `Scaffolding` Job...");
-
+) -> Result<Value> {
     let mut state = app_state.write().await;
 
     let mut prompts = Vec::new();
@@ -58,20 +92,14 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
     state.scaffold = Some(scaffold_json.to_string());
 
-    let fs = Arc::new((JobType::Scaffold, scaffold_json.to_string()));
-
-    println!("[INFO] Completed `Scaffolding` Job");
-
-    Ok(fs)
+    Ok(scaffold_json)
 }
 
-pub async fn gen_execution_plan(
+pub async fn build_execution_plan(
     client: Arc<OpenAI>,
     params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
-) -> Result<Arc<(JobType, String)>> {
-    println!("[INFO] Running `Planning Execution` Job...");
-
+) -> Result<Value> {
     let state = app_state.read().await;
 
     let mut prompts = Vec::new();
@@ -129,25 +157,16 @@ Use the following schema:
 
     println!("[DEBUG] LLM: {}", answer);
 
-    let dg = Arc::new((JobType::Ordering, tasks.to_string()));
-
-    println!("[INFO] Completed `Planning Execution` Job...");
-
-    Ok(dg)
+    Ok(tasks)
 }
 
 pub async fn gen_code(
     client: Arc<OpenAI>,
     params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
-    request: JobRequest,
-    listener_address: String,
-) -> Result<Arc<(JobType, String)>> {
-    let filename = match request {
-        JobRequest::CodeGen { filename } => filename,
-        _ => return Err(anyhow!("Expected GenCode request, received {:?}", request)),
-    };
-
+    filename: String,
+) -> Result<CodeStream> {
+    // TODO: add task to DONE..
     println!("[INFO] Running `CodeGen` Job: {}", filename);
 
     let state = app_state.read().await;
@@ -206,10 +225,52 @@ pub async fn gen_code(
         role: GptRole::User,
         content: main_prompt,
     });
-    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    stream_rust(client, params, &prompts, listener_address.as_str()).await?;
+    let stream = CodeStream::new(filename, client, params, prompts);
 
-    // TODO: add a better placeholder
-    Ok(Arc::new((JobType::CodeGen, String::from("success"))))
+    Ok(stream)
+}
+
+pub async fn generate_db_schema(client: &OpenAI, job: &OpenAIParams) -> Result<(String, String)> {
+    let sys_msg = OpenAIMsg {
+        role: GptRole::System,
+        content: String::from("You are a entrepreneur with product management background."),
+    };
+
+    let user_msg = OpenAIMsg {
+        role: GptRole::User,
+        content: String::from("Generate a random idea for a company. The first word in your response should be the company name."),
+    };
+
+    let answer = client.chat(job, &[&sys_msg, &user_msg], &[], &[]).await?;
+
+    let company_name = get_first_word(&answer);
+
+    let sys_msg_2 = OpenAIMsg {
+        role: GptRole::System,
+        content: String::from("You are a data engineer hired to work on this project."),
+    };
+
+    let user_msg_2 = OpenAIMsg {
+        role: GptRole::User,
+        content: String::from(
+            "Based on the above project description, produce a database schema in form of SQL DDL.",
+        ),
+    };
+
+    let answer = client
+        .chat(
+            job,
+            &[&sys_msg, &user_msg, &sys_msg_2, &user_msg_2],
+            &[],
+            &[],
+        )
+        .await?;
+
+    Ok((String::from(company_name), String::from(answer)))
+}
+
+fn get_first_word(input: &str) -> &str {
+    let mut words = input.split_whitespace();
+    words.next().unwrap_or("")
 }

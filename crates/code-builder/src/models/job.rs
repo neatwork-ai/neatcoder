@@ -8,29 +8,20 @@ use uuid::Uuid;
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::params::OpenAIParams;
 
+use super::messages::manager::ManagerRequest;
+use super::messages::worker::WorkerResponse;
 use super::state::AppState;
-use super::types::JobRequest;
 use super::TaskTrait;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Job {
     pub job_id: Uuid,
     pub job_name: String,
-    // Deprecate in favour of JobRequest
-    pub job_type: JobType,
+    pub request: Option<ManagerRequest>,
     pub job_state: JobState,
-    pub job_payload: Option<JobRequest>,
 }
 
-// Marker enum
-#[derive(Debug, Deserialize, Serialize)]
-pub enum JobType {
-    Scaffold,
-    Ordering,
-    CodeGen,
-}
-
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
 pub enum JobState {
     Unintialized,
     InProgress,
@@ -38,18 +29,18 @@ pub enum JobState {
     Stopped,
 }
 
-unsafe impl Send for JobType {}
+// TODO: Reconsider if needed
+// unsafe impl Send for ManagerRequest {}
 
 impl Job {
-    pub fn new(job_name: &str, job_type: JobType, job_payload: Option<JobRequest>) -> Self {
+    pub fn new(job_name: &str, request: Option<ManagerRequest>) -> Self {
         let job_id = Uuid::new_v4();
 
         Self {
             job_id,
             job_name: job_name.to_string(),
-            job_type,
+            request,
             job_state: JobState::Unintialized,
-            job_payload,
         }
     }
 }
@@ -66,7 +57,7 @@ impl Task {
         client: Arc<OpenAI>,
         ai_job: Arc<OpenAIParams>,
         app_state: Arc<RwLock<AppState>>,
-    ) -> Result<Arc<(JobType, String)>> {
+    ) -> Result<WorkerResponse> {
         let Self(job) = self; // destruct
 
         // Execute the job and await the result

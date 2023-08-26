@@ -1,15 +1,17 @@
 use anyhow::{anyhow, Result};
 use bincode;
-use code_builder::models::job_worker::JobWorker;
-use code_builder::models::shutdown::ShutdownSignal;
-use code_builder::models::types::JobRequest;
 use dotenv::dotenv;
 use serde_json;
 use std::{env, sync::Arc};
 use tokio::{io::AsyncReadExt, net::TcpListener};
 
-use code_builder::models::messages::client::ClientCommand;
 use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
+
+use code_builder::models::{
+    job_worker::JobWorker,
+    messages::{client::ClientMsg, manager::ManagerRequest},
+    shutdown::ShutdownSignal,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -94,32 +96,41 @@ async fn main() -> Result<()> {
                 println!("[DEBUG MSG] {}", message_str);
 
 
-                match serde_json::from_str::<ClientCommand>(&message_str) {
+                match serde_json::from_str::<ClientMsg>(&message_str) {
                     Ok(command) => {
                         match command {
-                            ClientCommand::InitPrompt { prompt } => {
-                                tx_job.send(JobRequest::InitPrompt { prompt }).await?;
+                            ClientMsg::InitPrompt { prompt } => {
+                                tx_job.send(ManagerRequest::ScaffoldProject { prompt }).await?;
+
+                                // TODO: Technically the exectution should be sequential and
+                                // not asynchronous
+                                tx_job.send(ManagerRequest::BuildExecutionPlan {}).await?;
                             }
-                            ClientCommand::AddSchema { interface_name, schema_name, schema } => {
-                                tx_job.send(JobRequest::AddSchema { interface_name, schema_name, schema }).await?;
+                            ClientMsg::AddSchema { interface_name, schema_name, schema } => {
+                                // TODO
+                                // manager::add_schema::handle()
+
+                                // TODO
+                                // tx_job.send(JobRequest::AddSchema { interface_name, schema_name, schema }).await?;
                             }
-                            ClientCommand::AddInterface { interface } => {
+                            ClientMsg::AddInterface { interface } => {
+                                // TODO
                                 // Handle ...
-                                tx_job.send(JobRequest::AddInterface { interface }).await?;
+                                // tx_job.send(JobRequest::AddInterface { interface }).await?;
                             }
-                            ClientCommand::RemoveInterface { interface_name } => {
+                            ClientMsg::RemoveInterface { interface_name } => {
                                 // Handle ...
                                 todo!()
                             }
-                            ClientCommand::StartJob { .. } => {
+                            ClientMsg::StartJob { .. } => {
                                 // Handle ...
                                 todo!()
                             }
-                            ClientCommand::StopJob { .. } => {
+                            ClientMsg::StopJob { .. } => {
                                 // Handle ...
                                 todo!()
                             }
-                            ClientCommand::RetryJob { .. } => {
+                            ClientMsg::RetryJob { .. } => {
                                 // Handle ...
                                 todo!()
                             }

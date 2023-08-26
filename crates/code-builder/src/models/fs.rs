@@ -30,7 +30,7 @@ impl DerefMut for Files {
 }
 
 impl Files {
-    pub fn from_schedule(job_schedule: Value) -> Result<Self> {
+    pub fn from_schedule(job_schedule: &Value) -> Result<Self> {
         let mut files: Files = match from_value::<Files>(job_schedule["order"].clone()) {
             Ok(files) => files,
             Err(e) => {

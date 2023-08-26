@@ -5,7 +5,7 @@ use crate::models::interfaces::{Interface, SchemaFile};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum ClientCommand {
+pub enum ClientMsg {
     InitPrompt {
         prompt: String,
     },
