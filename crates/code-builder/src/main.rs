@@ -3,13 +3,19 @@ use bincode;
 use dotenv::dotenv;
 use serde_json;
 use std::{env, sync::Arc};
-use tokio::{io::AsyncReadExt, net::TcpListener};
+use tokio::{
+    io::AsyncReadExt,
+    net::{TcpListener, TcpStream},
+};
 
 use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
 
 use code_builder::models::{
     job_worker::JobWorker,
-    messages::{inner::ManagerRequest, outer::ClientMsg},
+    messages::{
+        inner::{ManagerRequest, WorkerResponse},
+        outer::{ClientMsg, ServerMsg},
+    },
     shutdown::ShutdownSignal,
 };
 
@@ -137,15 +143,29 @@ async fn main() -> Result<()> {
             message = rx_result.recv() => {
                 println!("Received a new job response: {:?}", message);
                 if let Some(msg) = message {
-                    socket.writable().await?;
-                    let buffer: Vec<u8> = bincode::serialize(&msg)?;
-                    match socket.try_write(&buffer) {
-                        Ok(n) => {
-                            println!("Write new content to buffer, with length: {n}");
-                            continue
-                        },
-                        Err(e) => println!("Failed to write message to buffer, with error: {e}"),
+                    // Build Server-side message
+
+                    match msg {
+                        WorkerResponse::Scaffold { scaffold: _ } => {
+                            let server_msg = ServerMsg::InitPromptAck { success: true };
+                            tcp_write(&socket, server_msg).await?;
+                        }
+                        WorkerResponse::BuildExecutionPlan { jobs } => {
+                            let server_msg = ServerMsg::UpdateJobQueue { jobs };
+                            tcp_write(&socket, server_msg).await?;
+
+                        }
+                        WorkerResponse::AddSchema { schema_name } => {
+                            let server_msg = ServerMsg::AddSchemaAck { schema_name, success: true };
+                            tcp_write(&socket, server_msg).await?;
+                        }
+                        WorkerResponse::AddInterface { interface_name } => {
+                            let server_msg = ServerMsg::AddInterfaceAck { interface_name, success: true };
+                            tcp_write(&socket, server_msg).await?;
+                        }
+                        WorkerResponse::CodeGen { stream } => {}
                     }
+
                 }
                 else {
                     println!("Channel closed. Shutting down...");
@@ -153,6 +173,17 @@ async fn main() -> Result<()> {
                 }
             }
         }
+    }
+
+    Ok(())
+}
+
+pub async fn tcp_write(socket: &TcpStream, msg: ServerMsg) -> Result<()> {
+    socket.writable().await?;
+    let buffer: Vec<u8> = bincode::serialize(&msg)?;
+    match socket.try_write(&buffer) {
+        Ok(n) => println!("Write new content to buffer, with length: {n}"),
+        Err(e) => println!("Failed to write message to buffer, with error: {e}"),
     }
 
     Ok(())

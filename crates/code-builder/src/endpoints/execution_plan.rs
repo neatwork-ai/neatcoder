@@ -70,7 +70,9 @@ pub async fn run_build_execution_plan(
 
     println!("[INFO] Completed `Planning Execution` Job...");
 
-    Ok(WorkerResponse::BuildExecutionPlan { execution_plan })
+    Ok(WorkerResponse::BuildExecutionPlan {
+        jobs: app_data.jobs.clone(),
+    })
 }
 
 pub async fn build_execution_plan(

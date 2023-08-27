@@ -1,9 +1,9 @@
 use super::job::Job;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Jobs {
     todo: Todo,
     done: Done,
@@ -47,7 +47,7 @@ impl Jobs {
 pub type Todo = Pipeline;
 pub type Done = Pipeline;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Pipeline {
     jobs: HashMap<Uuid, Job>,
     order: VecDeque<Uuid>,

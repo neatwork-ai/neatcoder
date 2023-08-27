@@ -16,6 +16,7 @@ pub enum ClientMsg {
         interface: Interface,
     },
     RemoveInterface {
+        #[serde(rename = "interfaceName")]
         interface_name: String,
     },
     AddSchema {
@@ -40,10 +41,36 @@ pub enum ClientMsg {
     },
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ServerMsg {
-    UpdateJobQueue { jobs: Jobs },
-    CreateFile { filename: String },
-    BeginStream { filename: String },
-    StreamToken { token: String },
+    // Server Side Acknowledge Message
+    InitPromptAck {
+        success: bool,
+    },
+    AddSchemaAck {
+        #[serde(rename = "schemaName")]
+        schema_name: String,
+        success: bool,
+    },
+    AddInterfaceAck {
+        #[serde(rename = "interfaceName")]
+        interface_name: String,
+        success: bool,
+    },
+
+    // Server Side Commands
+    UpdateJobQueue {
+        jobs: Jobs,
+    },
+    CreateFile {
+        filename: String,
+    },
+    BeginStream {
+        filename: String,
+    },
+    StreamToken {
+        token: String,
+    },
     EndStream {},
 }

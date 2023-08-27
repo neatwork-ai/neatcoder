@@ -2,14 +2,17 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
-    models::interfaces::{Interface, SchemaFile},
+    models::{
+        interfaces::{Interface, SchemaFile},
+        jobs::Jobs,
+    },
     utils::CodeStream,
 };
 
 #[derive(Debug, Serialize)]
 pub enum WorkerResponse {
     Scaffold { scaffold: Value },
-    BuildExecutionPlan { execution_plan: Value },
+    BuildExecutionPlan { jobs: Jobs },
     CodeGen { stream: CodeStream },
     AddSchema { schema_name: String },
     AddInterface { interface_name: String },

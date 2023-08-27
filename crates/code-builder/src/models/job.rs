@@ -12,7 +12,7 @@ use super::messages::inner::{ManagerRequest, WorkerResponse};
 use super::state::AppState;
 use super::TaskTrait;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Job {
     pub job_id: Uuid,
     pub job_name: String,
