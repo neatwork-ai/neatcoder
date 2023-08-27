@@ -18,10 +18,10 @@ use crate::{
 pub async fn handle(
     open_ai_client: Arc<OpenAI>,
     job_futures: &mut JobFutures,
-    ai_job: Arc<OpenAIParams>,
+    params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
-    init_prompt: String,
-) {
+    filename: String,
+) -> Result<()> {
     todo!();
 }
 

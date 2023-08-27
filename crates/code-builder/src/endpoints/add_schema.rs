@@ -13,7 +13,7 @@ use crate::models::{
 pub async fn handle(
     open_ai_client: Arc<OpenAI>,
     job_futures: &mut JobFutures,
-    ai_job: Arc<OpenAIParams>,
+    params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
     interface_name: String,
     schema_name: String,
@@ -27,7 +27,7 @@ pub async fn handle(
 
     job_futures.push(
         task.0
-            .call_box(open_ai_client.clone(), ai_job.clone(), app_state.clone()),
+            .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
     );
 
     println!("[INFO] Pushed task to exeuction queue: `AddSchema`");

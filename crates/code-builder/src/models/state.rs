@@ -90,4 +90,17 @@ impl AppState {
 
         Ok(())
     }
+
+    pub fn remove_interface(&mut self, interface_name: &str) -> Result<()> {
+        if !self.interfaces.contains_key(interface_name) {
+            // TODO: We need proper error escallation and communication with the client
+            eprintln!("[ERROR] The interface does not exist. Skipping.");
+
+            return Err(anyhow!("Interface does not exist"));
+        }
+
+        self.interfaces.remove(interface_name);
+
+        Ok(())
+    }
 }

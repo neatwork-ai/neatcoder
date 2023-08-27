@@ -105,21 +105,13 @@ async fn main() -> Result<()> {
                                 tx_job.send(ManagerRequest::BuildExecutionPlan {}).await?;
                             }
                             ClientMsg::AddSchema { interface_name, schema_name, schema } => {
-                                // TODO
-                                // manager::add_schema::handle()
                                 tx_job.send(ManagerRequest::AddSchema { interface_name, schema_name, schema}).await?;
-
-                                // TODO
-                                // tx_job.send(JobRequest::AddSchema { interface_name, schema_name, schema }).await?;
                             }
                             ClientMsg::AddInterface { interface } => {
-                                // TODO
-                                // Handle ...
-                                // tx_job.send(JobRequest::AddInterface { interface }).await?;
+                                tx_job.send(ManagerRequest::AddInterface { interface }).await?;
                             }
                             ClientMsg::RemoveInterface { interface_name } => {
-                                // Handle ...
-                                todo!()
+                                tx_job.send(ManagerRequest::RemoveInterface { interface_name }).await?;
                             }
                             ClientMsg::StartJob { .. } => {
                                 // Handle ...
@@ -143,8 +135,6 @@ async fn main() -> Result<()> {
             message = rx_result.recv() => {
                 println!("Received a new job response: {:?}", message);
                 if let Some(msg) = message {
-                    // Build Server-side message
-
                     match msg {
                         WorkerResponse::Scaffold { scaffold: _ } => {
                             let server_msg = ServerMsg::InitPromptAck { success: true };
@@ -163,7 +153,20 @@ async fn main() -> Result<()> {
                             let server_msg = ServerMsg::AddInterfaceAck { interface_name, success: true };
                             tcp_write(&socket, server_msg).await?;
                         }
-                        WorkerResponse::CodeGen { stream } => {}
+                        WorkerResponse::RemoveInterface { interface_name } => {
+                            let server_msg = ServerMsg::RemoveInterfaceAck { interface_name, success: true };
+                            tcp_write(&socket, server_msg).await?;
+                        }
+                        WorkerResponse::CodeGen { stream } => {
+
+                            let begin_msg = ServerMsg::BeginStream { filename: stream.filename.clone() };
+                            tcp_write(&socket, begin_msg).await?;
+
+                            stream.stream_rust(&mut socket).await?;
+
+                            let end_msg = ServerMsg::EndStream {};
+                            tcp_write(&socket, end_msg).await?;
+                        }
                     }
 
                 }

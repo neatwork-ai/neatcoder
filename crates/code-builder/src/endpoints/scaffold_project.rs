@@ -7,12 +7,13 @@ use gluon::ai::openai::{
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use crate::{
     models::{
         job::{Job, Task},
         job_worker::JobFutures,
-        messages::inner::WorkerResponse,
+        messages::inner::{RequestType, WorkerResponse},
         state::AppState,
     },
     utils::write_json,
@@ -21,7 +22,7 @@ use crate::{
 pub async fn handle(
     open_ai_client: Arc<OpenAI>,
     job_futures: &mut JobFutures,
-    ai_job: Arc<OpenAIParams>,
+    params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
     init_prompt: String,
 ) {
@@ -30,11 +31,11 @@ pub async fn handle(
     // TODO: Return error if `specs` field already exists..
     app_data.specs = Some(init_prompt);
     println!("[INFO] Registered Project Specifications.");
-
     let job_name = "Scaffolding";
 
-    // TODO: Consider if None is the right option...
-    app_data.jobs.add_done(Job::new(job_name, None));
+    app_data
+        .jobs
+        .new_in_progress(job_name, RequestType::ScaffoldProject);
 
     println!("[INFO] Added task `{}` as TODO", job_name);
 
@@ -46,7 +47,7 @@ pub async fn handle(
 
     job_futures.push(
         task.0
-            .call_box(open_ai_client.clone(), ai_job.clone(), app_state.clone()),
+            .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
     );
 
     println!("[INFO] Pushed task to the exeuction queue: `{}`", job_name);
@@ -59,7 +60,10 @@ pub async fn run_scaffold_project(
 ) -> Result<WorkerResponse> {
     println!("[INFO] Running `Scaffolding` Job...");
 
-    let scaffold = scaffold_project(client, params, app_state).await?;
+    let scaffold = scaffold_project(client, params, app_state.clone()).await?;
+
+    let mut app_data = app_state.write().await;
+    app_data.jobs.finish_job_by_order();
 
     println!("[INFO] Completed `Scaffolding` Job");
 

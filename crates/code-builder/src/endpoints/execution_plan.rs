@@ -12,9 +12,9 @@ use crate::{
     models::{
         fs::Files,
         interfaces::AsContext,
-        job::{Job, Task},
+        job::Task,
         job_worker::JobFutures,
-        messages::inner::{ManagerRequest, WorkerResponse},
+        messages::inner::{ManagerRequest, RequestType, WorkerResponse},
         state::AppState,
     },
     utils::write_json,
@@ -23,14 +23,15 @@ use crate::{
 pub async fn handle(
     open_ai_client: Arc<OpenAI>,
     job_futures: &mut JobFutures,
-    ai_job: Arc<OpenAIParams>,
+    params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) {
     let mut app_data = app_state.write().await;
-
     let job_name = "Build Execution Plan";
 
-    app_data.jobs.add_done(Job::new(job_name, None));
+    app_data
+        .jobs
+        .new_in_progress(job_name, RequestType::BuildExecutionPlan);
 
     let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
         run_build_execution_plan(c, j, state)
@@ -40,7 +41,7 @@ pub async fn handle(
 
     job_futures.push(
         task.0
-            .call_box(open_ai_client.clone(), ai_job.clone(), app_state.clone()),
+            .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
     );
 
     println!("[INFO] Pushed task to exeuction queue: `{}`", job_name);
@@ -62,11 +63,13 @@ pub async fn run_build_execution_plan(
     for file in files.iter() {
         let file_ = file.clone();
 
-        app_data.jobs.add_todo(Job::new(
+        app_data.jobs.new_todo(
             "TODO: This is a placeholder",
-            Some(ManagerRequest::CodeGen { filename: file_ }),
-        ));
+            ManagerRequest::CodeGen { filename: file_ },
+        );
     }
+
+    app_data.jobs.finish_job_by_order();
 
     println!("[INFO] Completed `Planning Execution` Job...");
 

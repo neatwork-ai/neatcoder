@@ -58,6 +58,11 @@ pub enum ServerMsg {
         interface_name: String,
         success: bool,
     },
+    RemoveInterfaceAck {
+        #[serde(rename = "interfaceName")]
+        interface_name: String,
+        success: bool,
+    },
 
     // Server Side Commands
     UpdateJobQueue {
@@ -68,9 +73,6 @@ pub enum ServerMsg {
     },
     BeginStream {
         filename: String,
-    },
-    StreamToken {
-        token: String,
     },
     EndStream {},
 }

@@ -150,7 +150,36 @@ pub async fn handle_request(
             )
             .await?;
         }
-        _ => todo!(),
+        ManagerRequest::RemoveInterface { interface_name } => {
+            endpoints::remove_interface::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                interface_name,
+            )
+            .await?;
+        }
+        ManagerRequest::StartJob { job_uid } => {
+            endpoints::start_job::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                job_uid,
+            )
+            .await?;
+        }
+        ManagerRequest::CodeGen { filename } => {
+            endpoints::stream_code::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                filename,
+            )
+            .await?;
+        }
     }
 
     Ok(())
