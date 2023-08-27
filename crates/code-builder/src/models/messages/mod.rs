@@ -1,4 +1,2 @@
-pub mod client;
-pub mod manager;
-pub mod server;
-pub mod worker;
+pub mod inner;
+pub mod outer;

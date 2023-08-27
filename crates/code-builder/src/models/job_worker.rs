@@ -10,12 +10,13 @@ use tokio::{
     task::JoinHandle,
 };
 
+use crate::endpoints;
+
 use super::{
-    messages::{manager::ManagerRequest, server::ServerMsg, worker::WorkerResponse},
+    messages::inner::{ManagerRequest, WorkerResponse},
     shutdown::ShutdownSignal,
     state::AppState,
 };
-use crate::endpoints::manager as manager_endpoints;
 
 // TODO: Potentially link `JobFutures` with `Jobs` via Uuid.
 pub type JobFutures =
@@ -29,7 +30,6 @@ pub struct JobWorker {
     job_futures: JobFutures,
     rx_request: Receiver<ManagerRequest>,
     tx_response: Sender<WorkerResponse>, // TODO: Refactor this to hold a String, or a `Response` value
-    listener_address: String,
 }
 
 impl JobWorker {
@@ -38,7 +38,6 @@ impl JobWorker {
         ai_params: Arc<OpenAIParams>,
         rx_request: Receiver<ManagerRequest>,
         tx_response: Sender<WorkerResponse>,
-        listener_address: String,
     ) -> Self {
         Self {
             rx_request,
@@ -47,7 +46,6 @@ impl JobWorker {
             tx_response,
             open_ai_client,
             app_state: Arc::new(RwLock::new(AppState::empty())),
-            listener_address,
         }
     }
 
@@ -56,19 +54,12 @@ impl JobWorker {
         ai_params: Arc<OpenAIParams>,
         rx_request: Receiver<ManagerRequest>,
         tx_response: Sender<WorkerResponse>,
-        listener_address: String,
         shutdown: ShutdownSignal, // TODO: Refactor to `AtomicBool`
     ) -> JoinHandle<Result<(), Error>> {
         tokio::spawn(async move {
-            Self::new(
-                open_ai_client,
-                ai_params,
-                rx_request,
-                tx_response,
-                listener_address,
-            )
-            .run(shutdown)
-            .await
+            Self::new(open_ai_client, ai_params, rx_request, tx_response)
+                .run(shutdown)
+                .await
         })
     }
 
@@ -85,7 +76,7 @@ impl JobWorker {
                         println!("TODO: handle errors with logging: {e}");
                         continue;
                     }
-                    handle_response(result, self.tx_response.clone(), self.app_state.clone());
+                    handle_response(result, self.tx_response.clone()).await?;
                 },
                 shutdown_handle = shutdown.wait_for_signal().await => {
                     if let Ok(signal) = shutdown_handle {
@@ -115,41 +106,50 @@ pub async fn handle_request(
 ) -> Result<(), Error> {
     match request {
         ManagerRequest::ScaffoldProject { prompt } => {
-            manager_endpoints::init_prompt::scaffold_project(
+            endpoints::scaffold_project::handle(
                 open_ai_client.clone(),
                 job_futures,
-                ai_params,
+                ai_params.clone(),
                 app_state.clone(),
                 prompt,
             )
             .await;
         }
         ManagerRequest::BuildExecutionPlan {} => {
-            manager_endpoints::init_prompt::build_execution_plan(
+            endpoints::execution_plan::handle(
                 open_ai_client.clone(),
                 job_futures,
-                ai_params,
+                ai_params.clone(),
                 app_state.clone(),
             )
             .await;
         }
-        // TODO
-        // ManagerRequest::CodeGen { filename: String } => {
-
-        // }
-        // TODO: Reconsider
-        // ManagerRequest::AddSchema {
-        //     interface_name,
-        //     schema_name,
-        //     schema,
-        // } => {
-        //     let app_state = app_state.clone();
-        //     endpoints::add_schema::handle(app_state, interface_name, schema_name, schema).await?;
-        // }
-        // ManagerRequest::AddInterface { interface } => {
-        //     let app_state = app_state.clone();
-        //     endpoints::add_interface::handle(app_state, interface).await?;
-        // }
+        ManagerRequest::AddSchema {
+            interface_name,
+            schema_name,
+            schema,
+        } => {
+            endpoints::add_schema::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                interface_name,
+                schema_name,
+                schema,
+            )
+            .await?;
+        }
+        ManagerRequest::AddInterface { interface } => {
+            endpoints::add_interface::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                interface,
+            )
+            .await?;
+        }
         _ => todo!(),
     }
 
@@ -159,7 +159,6 @@ pub async fn handle_request(
 pub async fn handle_response(
     result: Result<WorkerResponse, Error>,
     tx_response: Sender<WorkerResponse>,
-    app_state: Arc<RwLock<AppState>>,
 ) -> Result<(), Error> {
     let worker_response = result.unwrap();
     tx_response

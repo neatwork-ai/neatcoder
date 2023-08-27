@@ -8,8 +8,7 @@ use uuid::Uuid;
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::params::OpenAIParams;
 
-use super::messages::manager::ManagerRequest;
-use super::messages::worker::WorkerResponse;
+use super::messages::inner::{ManagerRequest, WorkerResponse};
 use super::state::AppState;
 use super::TaskTrait;
 

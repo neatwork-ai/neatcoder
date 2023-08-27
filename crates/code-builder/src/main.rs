@@ -9,7 +9,7 @@ use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParam
 
 use code_builder::models::{
     job_worker::JobWorker,
-    messages::{client::ClientMsg, manager::ManagerRequest},
+    messages::{inner::ManagerRequest, outer::ClientMsg},
     shutdown::ShutdownSignal,
 };
 
@@ -33,11 +33,10 @@ async fn main() -> Result<()> {
     println!("Listening on {:?}", listener.local_addr());
 
     let (mut socket, _socket_addr) = listener.accept().await?;
+    // TODO: Need to control the maximum buffer size
     let mut buf = vec![0u8; 1024];
 
     println!("Client binded to TCP Socket");
-
-    // TODO: Need to control the maximum buffer size
 
     // Channels for sending and receiving the results
     let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
@@ -47,14 +46,7 @@ async fn main() -> Result<()> {
 
     let shutdown = ShutdownSignal::new();
 
-    let _join_handle = JobWorker::spawn(
-        open_ai_client,
-        ai_job,
-        rx_job,
-        tx_result,
-        String::from(listener_address),
-        shutdown,
-    );
+    let _join_handle = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
 
     // Defines the buffer length for the message delimiter
     // In TCP, data can be streamed continuously without clear message boundaries
@@ -109,6 +101,7 @@ async fn main() -> Result<()> {
                             ClientMsg::AddSchema { interface_name, schema_name, schema } => {
                                 // TODO
                                 // manager::add_schema::handle()
+                                tx_job.send(ManagerRequest::AddSchema { interface_name, schema_name, schema}).await?;
 
                                 // TODO
                                 // tx_job.send(JobRequest::AddSchema { interface_name, schema_name, schema }).await?;

@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::params::OpenAIParams;
 
-use self::messages::worker::WorkerResponse;
+use self::messages::inner::WorkerResponse;
 use self::state::AppState;
 
 pub mod fs;

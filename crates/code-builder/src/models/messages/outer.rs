@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::models::interfaces::{Interface, SchemaFile};
+use crate::models::{
+    interfaces::{Interface, SchemaFile},
+    jobs::Jobs,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,4 +38,12 @@ pub enum ClientMsg {
         #[serde(rename = "jobId")]
         job_id: Uuid,
     },
+}
+
+pub enum ServerMsg {
+    UpdateJobQueue { jobs: Jobs },
+    CreateFile { filename: String },
+    BeginStream { filename: String },
+    StreamToken { token: String },
+    EndStream {},
 }
