@@ -107,6 +107,9 @@ async fn main() -> Result<()> {
                             ClientMsg::AddSchema { interface_name, schema_name, schema } => {
                                 tx_job.send(ManagerRequest::AddSchema { interface_name, schema_name, schema}).await?;
                             }
+                            ClientMsg::RemoveSchema { interface_name, schema_name } => {
+                                tx_job.send(ManagerRequest::RemoveSchema { interface_name, schema_name }).await?;
+                            }
                             ClientMsg::AddInterface { interface } => {
                                 tx_job.send(ManagerRequest::AddInterface { interface }).await?;
                             }
@@ -137,25 +140,24 @@ async fn main() -> Result<()> {
                 if let Some(msg) = message {
                     match msg {
                         WorkerResponse::Scaffold { scaffold: _ } => {
-                            let server_msg = ServerMsg::InitPromptAck { success: true };
-                            tcp_write(&socket, server_msg).await?;
+                            // TODO: Consider adding acknowledge command
                         }
                         WorkerResponse::BuildExecutionPlan { jobs } => {
                             let server_msg = ServerMsg::UpdateJobQueue { jobs };
                             tcp_write(&socket, server_msg).await?;
 
                         }
-                        WorkerResponse::AddSchema { schema_name } => {
-                            let server_msg = ServerMsg::AddSchemaAck { schema_name, success: true };
-                            tcp_write(&socket, server_msg).await?;
+                        WorkerResponse::AddSchema { schema_name: _ } => {
+                            // TODO: Consider adding acknowledge command
                         }
-                        WorkerResponse::AddInterface { interface_name } => {
-                            let server_msg = ServerMsg::AddInterfaceAck { interface_name, success: true };
-                            tcp_write(&socket, server_msg).await?;
+                        WorkerResponse::RemoveSchema { schema_name: _ } => {
+                            // TODO: Consider adding acknowledge command
                         }
-                        WorkerResponse::RemoveInterface { interface_name } => {
-                            let server_msg = ServerMsg::RemoveInterfaceAck { interface_name, success: true };
-                            tcp_write(&socket, server_msg).await?;
+                        WorkerResponse::AddInterface { interface_name: _ } => {
+                            // TODO: Consider adding acknowledge command
+                        }
+                        WorkerResponse::RemoveInterface { interface_name: _ } => {
+                            // TODO: Consider adding acknowledge command
                         }
                         WorkerResponse::CodeGen { stream } => {
 

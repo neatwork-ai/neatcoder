@@ -117,6 +117,23 @@ impl AppState {
         Ok(())
     }
 
+    pub fn remove_schema(&mut self, interface_name: &str, schema_name: &str) -> Result<()> {
+        if !self.interfaces.contains_key(interface_name) {
+            // TODO: We need proper error escallation and communication with the client
+            eprintln!("[ERROR] The interface does not exist.");
+
+            return Err(anyhow!("Interface does not exist"));
+        }
+
+        // Safe to unwrap due to previous check
+        let interface = self.interfaces.get_mut(interface_name).unwrap();
+
+        // Replaces the existing interface if any
+        interface.remove_schema(interface_name, schema_name);
+
+        Ok(())
+    }
+
     pub fn add_interface(&mut self, interface: Interface) -> Result<()> {
         let interface_name = interface.name();
 

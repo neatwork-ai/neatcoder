@@ -157,6 +157,20 @@ pub async fn handle_request(
             )
             .await?;
         }
+        ManagerRequest::RemoveSchema {
+            interface_name,
+            schema_name,
+        } => {
+            endpoints::remove_schema::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                interface_name,
+                schema_name,
+            )
+            .await?;
+        }
         ManagerRequest::AddInterface { interface } => {
             endpoints::add_interface::handle(
                 open_ai_client.clone(),

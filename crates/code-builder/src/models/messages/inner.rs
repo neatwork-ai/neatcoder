@@ -14,6 +14,7 @@ pub enum WorkerResponse {
     BuildExecutionPlan { jobs: Jobs },
     CodeGen { stream: CodeStream },
     AddSchema { schema_name: String },
+    RemoveSchema { schema_name: String },
     AddInterface { interface_name: String },
     RemoveInterface { interface_name: String },
 }
@@ -27,11 +28,14 @@ pub enum ManagerRequest {
     CodeGen {
         filename: String,
     },
-
     AddSchema {
         interface_name: String,
         schema_name: String,
         schema: SchemaFile,
+    },
+    RemoveSchema {
+        interface_name: String,
+        schema_name: String,
     },
     AddInterface {
         interface: Interface,
@@ -50,6 +54,7 @@ pub enum RequestType {
     BuildExecutionPlan,
     CodeGen,
     AddSchema,
+    RemoveSchema,
     AddInterface,
     RemoveInterface,
     StartJob,
@@ -62,6 +67,7 @@ impl RequestType {
             ManagerRequest::BuildExecutionPlan { .. } => RequestType::BuildExecutionPlan,
             ManagerRequest::CodeGen { .. } => RequestType::CodeGen,
             ManagerRequest::AddSchema { .. } => RequestType::AddSchema,
+            ManagerRequest::RemoveSchema { .. } => RequestType::RemoveSchema,
             ManagerRequest::AddInterface { .. } => RequestType::AddInterface,
             ManagerRequest::RemoveInterface { .. } => RequestType::RemoveInterface,
             ManagerRequest::StartJob { .. } => RequestType::StartJob,
