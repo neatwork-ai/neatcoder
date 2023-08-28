@@ -1,15 +1,23 @@
 use anyhow::{anyhow, Result};
 use bincode;
-use code_builder::models::job_worker::JobWorker;
-use code_builder::models::shutdown::ShutdownSignal;
-use code_builder::models::types::JobRequest;
 use dotenv::dotenv;
 use serde_json;
 use std::{env, sync::Arc};
-use tokio::{io::AsyncReadExt, net::TcpListener};
+use tokio::{
+    io::AsyncReadExt,
+    net::{TcpListener, TcpStream},
+};
 
-use code_builder::models::messages::client::ClientCommand;
 use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
+
+use code_builder::models::{
+    job_worker::JobWorker,
+    messages::{
+        inner::{ManagerRequest, WorkerResponse},
+        outer::{ClientMsg, ServerMsg},
+    },
+    shutdown::ShutdownSignal,
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -31,11 +39,10 @@ async fn main() -> Result<()> {
     println!("Listening on {:?}", listener.local_addr());
 
     let (mut socket, _socket_addr) = listener.accept().await?;
+    // TODO: Need to control the maximum buffer size
     let mut buf = vec![0u8; 1024];
 
     println!("Client binded to TCP Socket");
-
-    // TODO: Need to control the maximum buffer size
 
     // Channels for sending and receiving the results
     let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
@@ -45,14 +52,7 @@ async fn main() -> Result<()> {
 
     let shutdown = ShutdownSignal::new();
 
-    let _join_handle = JobWorker::spawn(
-        open_ai_client,
-        ai_job,
-        rx_job,
-        tx_result,
-        String::from(listener_address),
-        shutdown,
-    );
+    let _join_handle = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
 
     // Defines the buffer length for the message delimiter
     // In TCP, data can be streamed continuously without clear message boundaries
@@ -94,32 +94,34 @@ async fn main() -> Result<()> {
                 println!("[DEBUG MSG] {}", message_str);
 
 
-                match serde_json::from_str::<ClientCommand>(&message_str) {
+                match serde_json::from_str::<ClientMsg>(&message_str) {
                     Ok(command) => {
                         match command {
-                            ClientCommand::InitPrompt { prompt } => {
-                                tx_job.send(JobRequest::InitPrompt { prompt }).await?;
+                            ClientMsg::InitPrompt { prompt } => {
+                                tx_job.send(ManagerRequest::ScaffoldProject { prompt }).await?;
+
+                                // TODO: Technically the exectution should be sequential and
+                                // not asynchronous
+                                tx_job.send(ManagerRequest::BuildExecutionPlan {}).await?;
                             }
-                            ClientCommand::AddSchema { interface_name, schema_name, schema } => {
-                                tx_job.send(JobRequest::AddSchema { interface_name, schema_name, schema }).await?;
+                            ClientMsg::AddSchema { interface_name, schema_name, schema } => {
+                                tx_job.send(ManagerRequest::AddSchema { interface_name, schema_name, schema}).await?;
                             }
-                            ClientCommand::AddInterface { interface } => {
-                                // Handle ...
-                                tx_job.send(JobRequest::AddInterface { interface }).await?;
+                            ClientMsg::AddInterface { interface } => {
+                                tx_job.send(ManagerRequest::AddInterface { interface }).await?;
                             }
-                            ClientCommand::RemoveInterface { interface_name } => {
-                                // Handle ...
-                                todo!()
+                            ClientMsg::RemoveInterface { interface_name } => {
+                                tx_job.send(ManagerRequest::RemoveInterface { interface_name }).await?;
                             }
-                            ClientCommand::StartJob { .. } => {
-                                // Handle ...
-                                todo!()
-                            }
-                            ClientCommand::StopJob { .. } => {
+                            ClientMsg::StartJob { .. } => {
                                 // Handle ...
                                 todo!()
                             }
-                            ClientCommand::RetryJob { .. } => {
+                            ClientMsg::StopJob { .. } => {
+                                // Handle ...
+                                todo!()
+                            }
+                            ClientMsg::RetryJob { .. } => {
                                 // Handle ...
                                 todo!()
                             }
@@ -133,15 +135,40 @@ async fn main() -> Result<()> {
             message = rx_result.recv() => {
                 println!("Received a new job response: {:?}", message);
                 if let Some(msg) = message {
-                    socket.writable().await?;
-                    let buffer: Vec<u8> = bincode::serialize(&msg)?;
-                    match socket.try_write(&buffer) {
-                        Ok(n) => {
-                            println!("Write new content to buffer, with length: {n}");
-                            continue
-                        },
-                        Err(e) => println!("Failed to write message to buffer, with error: {e}"),
+                    match msg {
+                        WorkerResponse::Scaffold { scaffold: _ } => {
+                            let server_msg = ServerMsg::InitPromptAck { success: true };
+                            tcp_write(&socket, server_msg).await?;
+                        }
+                        WorkerResponse::BuildExecutionPlan { jobs } => {
+                            let server_msg = ServerMsg::UpdateJobQueue { jobs };
+                            tcp_write(&socket, server_msg).await?;
+
+                        }
+                        WorkerResponse::AddSchema { schema_name } => {
+                            let server_msg = ServerMsg::AddSchemaAck { schema_name, success: true };
+                            tcp_write(&socket, server_msg).await?;
+                        }
+                        WorkerResponse::AddInterface { interface_name } => {
+                            let server_msg = ServerMsg::AddInterfaceAck { interface_name, success: true };
+                            tcp_write(&socket, server_msg).await?;
+                        }
+                        WorkerResponse::RemoveInterface { interface_name } => {
+                            let server_msg = ServerMsg::RemoveInterfaceAck { interface_name, success: true };
+                            tcp_write(&socket, server_msg).await?;
+                        }
+                        WorkerResponse::CodeGen { stream } => {
+
+                            let begin_msg = ServerMsg::BeginStream { filename: stream.filename.clone() };
+                            tcp_write(&socket, begin_msg).await?;
+
+                            stream.stream_rust(&mut socket).await?;
+
+                            let end_msg = ServerMsg::EndStream {};
+                            tcp_write(&socket, end_msg).await?;
+                        }
                     }
+
                 }
                 else {
                     println!("Channel closed. Shutting down...");
@@ -149,6 +176,17 @@ async fn main() -> Result<()> {
                 }
             }
         }
+    }
+
+    Ok(())
+}
+
+pub async fn tcp_write(socket: &TcpStream, msg: ServerMsg) -> Result<()> {
+    socket.writable().await?;
+    let buffer: Vec<u8> = bincode::serialize(&msg)?;
+    match socket.try_write(&buffer) {
+        Ok(n) => println!("Write new content to buffer, with length: {n}"),
+        Err(e) => println!("Failed to write message to buffer, with error: {e}"),
     }
 
     Ok(())

@@ -30,7 +30,7 @@ impl DerefMut for Files {
 }
 
 impl Files {
-    pub fn from_schedule(job_schedule: Value) -> Result<Self> {
+    pub fn from_schedule(job_schedule: &Value) -> Result<Self> {
         let mut files: Files = match from_value::<Files>(job_schedule["order"].clone()) {
             Ok(files) => files,
             Err(e) => {
@@ -46,7 +46,7 @@ impl Files {
             if file.ends_with(".rs") {
                 true
             } else {
-                println!("Filtered out: {}", file);
+                println!("[WARN] Filtered out: {}", file);
                 false
             }
         });

@@ -1,7 +1,7 @@
 use anyhow::Error;
+use async_recursion::async_recursion;
 use futures::{stream::FuturesUnordered, Future, StreamExt};
 use gluon::ai::openai::{client::OpenAI, params::OpenAIParams};
-use parser::parser::json::AsJson;
 use std::{pin::Pin, sync::Arc};
 use tokio::{
     sync::{
@@ -11,59 +11,54 @@ use tokio::{
     task::JoinHandle,
 };
 
+use crate::endpoints;
+
 use super::{
-    job::JobType,
+    messages::inner::{ManagerRequest, WorkerResponse},
     shutdown::ShutdownSignal,
     state::AppState,
-    types::{JobRequest, JobResponse},
 };
-use crate::endpoints::{self};
 
 // TODO: Potentially link `JobFutures` with `Jobs` via Uuid.
-pub type JobFutures = FuturesUnordered<
-    Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + 'static + Send>>,
->;
+pub type JobFutures =
+    FuturesUnordered<Pin<Box<dyn Future<Output = Result<WorkerResponse, Error>> + 'static + Send>>>;
 
 #[derive(Debug)]
 pub struct JobWorker {
     open_ai_client: Arc<OpenAI>,
-    ai_job: Arc<OpenAIParams>,
+    ai_params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
     job_futures: JobFutures,
-    rx_job: Receiver<JobRequest>,
-    tx_result: Sender<JobResponse>, // TODO: Refactor this to hold a String, or a `Response` value
-    listener_address: String,
+    rx_request: Receiver<ManagerRequest>,
+    tx_response: Sender<WorkerResponse>, // TODO: Refactor this to hold a String, or a `Response` value
 }
 
 impl JobWorker {
     pub fn new(
         open_ai_client: Arc<OpenAI>,
-        ai_job: Arc<OpenAIParams>,
-        tx_result: Sender<JobResponse>,
-        rx_job: Receiver<JobRequest>,
-        listener_address: String,
+        ai_params: Arc<OpenAIParams>,
+        rx_request: Receiver<ManagerRequest>,
+        tx_response: Sender<WorkerResponse>,
     ) -> Self {
         Self {
-            rx_job,
-            ai_job,
+            rx_request,
+            ai_params,
             job_futures: FuturesUnordered::new(),
-            tx_result,
+            tx_response,
             open_ai_client,
             app_state: Arc::new(RwLock::new(AppState::empty())),
-            listener_address,
         }
     }
 
     pub fn spawn(
         open_ai_client: Arc<OpenAI>,
-        ai_job: Arc<OpenAIParams>,
-        rx_job: Receiver<JobRequest>,
-        tx_result: Sender<JobResponse>,
-        listener_address: String,
+        ai_params: Arc<OpenAIParams>,
+        rx_request: Receiver<ManagerRequest>,
+        tx_response: Sender<WorkerResponse>,
         shutdown: ShutdownSignal, // TODO: Refactor to `AtomicBool`
     ) -> JoinHandle<Result<(), Error>> {
         tokio::spawn(async move {
-            Self::new(open_ai_client, ai_job, tx_result, rx_job, listener_address)
+            Self::new(open_ai_client, ai_params, rx_request, tx_response)
                 .run(shutdown)
                 .await
         })
@@ -74,42 +69,15 @@ impl JobWorker {
             tokio::select! {
                 // Handles requests from the client, reads/writes to `AppState`
                 // accordingly and creates Job Futures if necessary.
-                Some(request) = self.rx_job.recv() => {
-                    handle_request(request, &mut self.job_futures, self.open_ai_client.clone(), self.ai_job.clone(), self.app_state.clone()).await?;
+                Some(request) = self.rx_request.recv() => {
+                    handle_request(request, &mut self.job_futures, self.open_ai_client.clone(), self.ai_params.clone(), self.app_state.clone()).await?;
                 },
                 Some(result) = self.job_futures.next() => {
                     if let Err(e) = result {
                         println!("TODO: handle errors with logging: {e}");
                         continue;
                     }
-                    let inner = result.unwrap();
-                    let (job_type, message) = inner.as_ref();
-                    let response = match job_type {
-                        JobType::Scaffold => {
-                            // TODO: Something is odd here..
-                            // endpoints::init_prompt::handle_scaffold_job().await?;
-                            JobResponse::Scaffold
-                        },
-                        JobType::Ordering => {
-                            let job_schedule = message.as_str().as_json()?;
-
-                            endpoints::init_prompt::handle_schedule_job(
-                                job_schedule.clone(),
-                                self.open_ai_client.clone(),
-                                &mut self.job_futures,
-                                self.ai_job.clone(),
-                                self.app_state.clone(),
-                                self.listener_address.clone()
-                            ).await?;
-
-                            JobResponse::Ordering { schedule_json: job_schedule}
-                        },
-                        JobType::CodeGen => {
-                            JobResponse::CodeGen { is_sucess: true, filename: message.clone() }
-                        },
-                    };
-                    let tx = self.tx_result.clone();
-                    tx.send(response).await.expect("Failed to send response back");
+                    handle_response(result, self.tx_response.clone()).await?;
                 },
                 shutdown_handle = shutdown.wait_for_signal().await => {
                     if let Ok(signal) = shutdown_handle {
@@ -127,37 +95,106 @@ impl JobWorker {
     }
 }
 
-// TODO: make an appropriate use of the return type
+#[async_recursion]
 pub async fn handle_request(
-    request: JobRequest,
+    request: ManagerRequest,
     job_futures: &mut FuturesUnordered<
-        Pin<Box<dyn Future<Output = Result<Arc<(JobType, String)>, Error>> + Send + 'static>>,
+        Pin<Box<dyn Future<Output = Result<WorkerResponse, Error>> + Send + 'static>>,
     >,
     open_ai_client: Arc<OpenAI>,
-    ai_job: Arc<OpenAIParams>,
+    ai_params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<(), Error> {
     match request {
-        JobRequest::InitPrompt { prompt } => {
-            let open_ai_client = open_ai_client.clone();
-            let app_state = app_state.clone();
-            endpoints::init_prompt::handle(open_ai_client, job_futures, ai_job, app_state, prompt)
-                .await;
+        ManagerRequest::ScaffoldProject { prompt } => {
+            endpoints::scaffold_project::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                prompt,
+            )
+            .await;
         }
-        JobRequest::AddSchema {
+        ManagerRequest::BuildExecutionPlan {} => {
+            endpoints::execution_plan::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+            )
+            .await;
+        }
+        ManagerRequest::AddSchema {
             interface_name,
             schema_name,
             schema,
         } => {
-            let app_state = app_state.clone();
-            endpoints::add_schema::handle(app_state, interface_name, schema_name, schema).await?;
+            endpoints::add_schema::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                interface_name,
+                schema_name,
+                schema,
+            )
+            .await?;
         }
-        JobRequest::AddInterface { interface } => {
-            let app_state = app_state.clone();
-            endpoints::add_interface::handle(app_state, interface).await?;
+        ManagerRequest::AddInterface { interface } => {
+            endpoints::add_interface::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                interface,
+            )
+            .await?;
         }
-        _ => todo!(),
+        ManagerRequest::RemoveInterface { interface_name } => {
+            endpoints::remove_interface::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                interface_name,
+            )
+            .await?;
+        }
+        ManagerRequest::StartJob { job_uid } => {
+            endpoints::start_job::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                job_uid,
+            )
+            .await?;
+        }
+        ManagerRequest::CodeGen { filename } => {
+            endpoints::stream_code::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                filename,
+            )
+            .await?;
+        }
     }
+
+    Ok(())
+}
+
+pub async fn handle_response(
+    result: Result<WorkerResponse, Error>,
+    tx_response: Sender<WorkerResponse>,
+) -> Result<(), Error> {
+    let worker_response = result.unwrap();
+    tx_response
+        .send(worker_response)
+        .await
+        .expect("Failed to send response back");
 
     Ok(())
 }

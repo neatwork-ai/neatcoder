@@ -17,6 +17,7 @@ pub struct AppState {
     pub interfaces: HashMap<String, Interface>,
     /// HashMap containing all the code files in the codebase
     /// Should be read as HashMap<FileName, Code String>
+    // TODO: This is static and does not reflect codebase changes...
     pub codebase: HashMap<String, String>,
     /// Keeps track of all the jobs performed or to be performed by the worker
     pub jobs: Jobs,
@@ -87,6 +88,19 @@ impl AppState {
 
         self.interfaces
             .insert(interface_name.to_string(), interface);
+
+        Ok(())
+    }
+
+    pub fn remove_interface(&mut self, interface_name: &str) -> Result<()> {
+        if !self.interfaces.contains_key(interface_name) {
+            // TODO: We need proper error escallation and communication with the client
+            eprintln!("[ERROR] The interface does not exist. Skipping.");
+
+            return Err(anyhow!("Interface does not exist"));
+        }
+
+        self.interfaces.remove(interface_name);
 
         Ok(())
     }
