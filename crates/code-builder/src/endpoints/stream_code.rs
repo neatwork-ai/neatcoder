@@ -13,11 +13,11 @@ use crate::models::{
 };
 
 pub async fn handle(
-    open_ai_client: Arc<OpenAI>,
-    job_futures: &mut JobFutures,
-    params: Arc<OpenAIParams>,
-    app_state: Arc<RwLock<AppState>>,
-    filename: String,
+    _open_ai_client: Arc<OpenAI>,
+    _job_futures: &mut JobFutures,
+    _params: Arc<OpenAIParams>,
+    _app_state: Arc<RwLock<AppState>>,
+    _filename: String,
 ) -> Result<()> {
     todo!();
 }
