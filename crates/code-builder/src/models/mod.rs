@@ -10,14 +10,13 @@ use gluon::ai::openai::params::OpenAIParams;
 use self::messages::inner::WorkerResponse;
 use self::state::AppState;
 
-pub mod fs;
+pub mod code_stream;
 pub mod interfaces;
-pub mod job;
-pub mod job_worker;
 pub mod jobs;
 pub mod messages;
 pub mod shutdown;
 pub mod state;
+pub mod worker;
 
 pub trait TaskTrait: Send + 'static {
     fn call_box(

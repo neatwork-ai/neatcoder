@@ -19,7 +19,6 @@ use super::{
     state::AppState,
 };
 
-// TODO: Potentially link `JobFutures` with `Jobs` via Uuid.
 pub type JobFutures =
     FuturesUnordered<Pin<Box<dyn Future<Output = Result<WorkerResponse, Error>> + 'static + Send>>>;
 
@@ -30,7 +29,7 @@ pub struct JobWorker {
     app_state: Arc<RwLock<AppState>>,
     job_futures: JobFutures,
     rx_request: Receiver<ManagerRequest>,
-    tx_response: Sender<WorkerResponse>, // TODO: Refactor this to hold a String, or a `Response` value
+    tx_response: Sender<WorkerResponse>,
 }
 
 impl JobWorker {

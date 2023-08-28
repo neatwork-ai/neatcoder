@@ -7,12 +7,9 @@ use gluon::ai::openai::{
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::{
-    models::{
-        interfaces::AsContext, job_worker::JobFutures, messages::inner::WorkerResponse,
-        state::AppState,
-    },
-    utils::CodeStream,
+use crate::models::{
+    code_stream::CodeStream, interfaces::AsContext, messages::inner::WorkerResponse,
+    state::AppState, worker::JobFutures,
 };
 
 pub async fn handle(

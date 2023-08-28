@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use super::{
     interfaces::{Interface, SchemaFile},
-    jobs::Jobs,
+    jobs::jobs::Jobs,
 };
 
 // NOTE: We will need to perform the following improvements to the data model:

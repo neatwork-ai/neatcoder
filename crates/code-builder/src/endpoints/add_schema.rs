@@ -4,8 +4,8 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::models::{
-    interfaces::SchemaFile, job::Task, job_worker::JobFutures, messages::inner::WorkerResponse,
-    state::AppState,
+    interfaces::SchemaFile, jobs::job::Task, messages::inner::WorkerResponse, state::AppState,
+    worker::JobFutures,
 };
 
 // TODO: It seems odd that for simple write operations on the AppState we have

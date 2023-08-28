@@ -1,7 +1,6 @@
-use super::{
-    job::Job,
-    messages::inner::{ManagerRequest, RequestType},
-};
+use crate::models::messages::inner::{ManagerRequest, RequestType};
+
+use super::job::Job;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};

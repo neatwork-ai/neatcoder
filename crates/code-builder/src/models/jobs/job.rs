@@ -8,9 +8,9 @@ use uuid::Uuid;
 use gluon::ai::openai::client::OpenAI;
 use gluon::ai::openai::params::OpenAIParams;
 
-use super::messages::inner::{ManagerRequest, RequestType, WorkerResponse};
-use super::state::AppState;
-use super::TaskTrait;
+use crate::models::messages::inner::{ManagerRequest, RequestType, WorkerResponse};
+use crate::models::state::AppState;
+use crate::models::TaskTrait;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Job {
@@ -87,6 +87,7 @@ impl Job {
     }
 }
 
+// TODO: TASK
 pub struct Task(pub(crate) Box<dyn TaskTrait>);
 
 impl Task {

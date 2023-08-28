@@ -11,12 +11,12 @@ use tokio::{
 use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
 
 use code_builder::models::{
-    job_worker::JobWorker,
     messages::{
         inner::{ManagerRequest, WorkerResponse},
         outer::{ClientMsg, ServerMsg},
     },
     shutdown::ShutdownSignal,
+    worker::JobWorker,
 };
 
 #[tokio::main]
