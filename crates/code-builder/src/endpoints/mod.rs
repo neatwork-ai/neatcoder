@@ -1,6 +1,7 @@
 pub mod add_interface;
 pub mod add_schema;
 pub mod execution_plan;
+pub mod init_state;
 pub mod remove_interface;
 pub mod remove_schema;
 pub mod scaffold_project;

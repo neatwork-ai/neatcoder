@@ -4,11 +4,15 @@ use uuid::Uuid;
 use crate::models::{
     interfaces::{Interface, SchemaFile},
     jobs::jobs::Jobs,
+    state::AppState,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ClientMsg {
+    InitState {
+        state: AppState,
+    },
     InitPrompt {
         prompt: String,
     },

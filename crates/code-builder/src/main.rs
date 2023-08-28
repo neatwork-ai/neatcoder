@@ -97,6 +97,9 @@ async fn main() -> Result<()> {
                 match serde_json::from_str::<ClientMsg>(&message_str) {
                     Ok(command) => {
                         match command {
+                            ClientMsg::InitState { state } => {
+                                tx_job.send(ManagerRequest::InitState { state }).await?;
+                            }
                             ClientMsg::InitPrompt { prompt } => {
                                 tx_job.send(ManagerRequest::ScaffoldProject { prompt }).await?;
 
@@ -131,6 +134,9 @@ async fn main() -> Result<()> {
                 println!("Received a new job response: {:?}", message);
                 if let Some(msg) = message {
                     match msg {
+                        WorkerResponse::InitState => {
+                            // TODO: Consider adding acknowledge command
+                        }
                         WorkerResponse::Scaffold { scaffold: _ } => {
                             // TODO: Consider adding acknowledge command
                         }

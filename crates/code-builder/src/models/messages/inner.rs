@@ -6,10 +6,12 @@ use crate::models::{
     code_stream::CodeStream,
     interfaces::{Interface, SchemaFile},
     jobs::jobs::Jobs,
+    state::AppState,
 };
 
 #[derive(Debug, Serialize)]
 pub enum WorkerResponse {
+    InitState,
     Scaffold { scaffold: Value },
     BuildExecutionPlan { jobs: Jobs },
     CodeGen { stream: CodeStream },
@@ -21,6 +23,9 @@ pub enum WorkerResponse {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ManagerRequest {
+    InitState {
+        state: AppState,
+    },
     ScaffoldProject {
         prompt: String,
     },
@@ -50,6 +55,7 @@ pub enum ManagerRequest {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum RequestType {
+    InitState,
     ScaffoldProject,
     BuildExecutionPlan,
     CodeGen,
@@ -63,6 +69,7 @@ pub enum RequestType {
 impl RequestType {
     pub fn from(manager_request: &ManagerRequest) -> Self {
         match manager_request {
+            ManagerRequest::InitState { .. } => RequestType::InitState,
             ManagerRequest::ScaffoldProject { .. } => RequestType::ScaffoldProject,
             ManagerRequest::BuildExecutionPlan { .. } => RequestType::BuildExecutionPlan,
             ManagerRequest::CodeGen { .. } => RequestType::CodeGen,

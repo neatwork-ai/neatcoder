@@ -122,6 +122,16 @@ pub async fn handle_request(
     app_state: Arc<RwLock<AppState>>,
 ) -> Result<(), Error> {
     match request {
+        ManagerRequest::InitState { state } => {
+            endpoints::init_state::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                state,
+            )
+            .await?;
+        }
         ManagerRequest::ScaffoldProject { prompt } => {
             endpoints::scaffold_project::handle(
                 open_ai_client.clone(),
