@@ -19,6 +19,9 @@ pub enum WorkerResponse {
     RemoveSchema { schema_name: String },
     AddInterface { interface_name: String },
     RemoveInterface { interface_name: String },
+    UpdateScaffold,
+    AddSourceFile { filename: String },
+    RemoveSourceFile { filename: String },
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -48,6 +51,16 @@ pub enum ManagerRequest {
     RemoveInterface {
         interface_name: String,
     },
+    UpdateScaffold {
+        scaffold: String,
+    },
+    AddSourceFile {
+        filename: String,
+        file: String,
+    },
+    RemoveSourceFile {
+        filename: String,
+    },
     StartJob {
         job_uid: Uuid,
     },
@@ -63,6 +76,9 @@ pub enum RequestType {
     RemoveSchema,
     AddInterface,
     RemoveInterface,
+    UpdateScaffold,
+    AddSourceFile,
+    RemoveSourceFile,
     StartJob,
 }
 
@@ -77,6 +93,9 @@ impl RequestType {
             ManagerRequest::RemoveSchema { .. } => RequestType::RemoveSchema,
             ManagerRequest::AddInterface { .. } => RequestType::AddInterface,
             ManagerRequest::RemoveInterface { .. } => RequestType::RemoveInterface,
+            ManagerRequest::UpdateScaffold { .. } => RequestType::UpdateScaffold,
+            ManagerRequest::AddSourceFile { .. } => RequestType::AddSourceFile,
+            ManagerRequest::RemoveSourceFile { .. } => RequestType::RemoveSourceFile,
             ManagerRequest::StartJob { .. } => RequestType::StartJob,
         }
     }

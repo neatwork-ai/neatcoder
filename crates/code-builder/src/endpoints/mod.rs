@@ -7,3 +7,6 @@ pub mod remove_schema;
 pub mod scaffold_project;
 pub mod start_job;
 pub mod stream_code;
+pub mod add_src_file;
+pub mod remove_src_file;
+pub mod update_scaffold;

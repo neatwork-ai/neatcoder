@@ -37,6 +37,16 @@ pub enum ClientMsg {
         #[serde(rename = "schemaName")]
         schema_name: String,
     },
+    UpdateScaffold {
+        scaffold: String,
+    },
+    AddSourceFile {
+        filename: String,
+        file: String,
+    },
+    RemoveSourceFile {
+        filename: String,
+    },
     StartJob {
         #[serde(rename = "jobId")]
         job_id: Uuid,

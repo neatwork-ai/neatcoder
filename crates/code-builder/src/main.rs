@@ -119,6 +119,15 @@ async fn main() -> Result<()> {
                             ClientMsg::RemoveInterface { interface_name } => {
                                 tx_job.send(ManagerRequest::RemoveInterface { interface_name }).await?;
                             }
+                            ClientMsg::AddSourceFile { filename, file } => {
+                                tx_job.send(ManagerRequest::AddSourceFile { filename, file }).await?;
+                            }
+                            ClientMsg::RemoveSourceFile { filename } => {
+                                tx_job.send(ManagerRequest::RemoveSourceFile { filename }).await?;
+                            }
+                            ClientMsg::UpdateScaffold { scaffold } => {
+                                tx_job.send(ManagerRequest::UpdateScaffold { scaffold }).await?;
+                            }
                             ClientMsg::StartJob { .. } => {
                                 // Handle ...
                                 todo!()
@@ -155,6 +164,15 @@ async fn main() -> Result<()> {
                             // TODO: Consider adding acknowledge command
                         }
                         WorkerResponse::RemoveInterface { interface_name: _ } => {
+                            // TODO: Consider adding acknowledge command
+                        }
+                        WorkerResponse::UpdateScaffold => {
+                            // TODO: Consider adding acknowledge command
+                        }
+                        WorkerResponse::AddSourceFile { filename: _ } => {
+                            // TODO: Consider adding acknowledge command
+                        }
+                        WorkerResponse::RemoveSourceFile { filename: _ } => {
                             // TODO: Consider adding acknowledge command
                         }
                         WorkerResponse::CodeGen { stream } => {

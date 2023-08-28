@@ -201,6 +201,37 @@ pub async fn handle_request(
             )
             .await?;
         }
+        ManagerRequest::UpdateScaffold { scaffold } => {
+            endpoints::update_scaffold::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                scaffold,
+            )
+            .await?;
+        }
+        ManagerRequest::AddSourceFile { filename, file } => {
+            endpoints::add_src_file::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                filename,
+                file,
+            )
+            .await?;
+        }
+        ManagerRequest::RemoveSourceFile { filename } => {
+            endpoints::remove_src_file::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+                filename,
+            )
+            .await?;
+        }
         ManagerRequest::StartJob { job_uid } => {
             endpoints::start_job::handle(
                 open_ai_client.clone(),
