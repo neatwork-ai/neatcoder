@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
                             ClientMsg::InitPrompt { prompt } => {
                                 tx_job.send(ManagerRequest::ScaffoldProject { prompt }).await?;
 
-                                // TODO: Technically the exectution should be sequential and
+                                // TODO: Technically the execution should be sequential and
                                 // not asynchronous
                                 tx_job.send(ManagerRequest::BuildExecutionPlan {}).await?;
                             }
@@ -117,14 +117,6 @@ async fn main() -> Result<()> {
                                 tx_job.send(ManagerRequest::RemoveInterface { interface_name }).await?;
                             }
                             ClientMsg::StartJob { .. } => {
-                                // Handle ...
-                                todo!()
-                            }
-                            ClientMsg::StopJob { .. } => {
-                                // Handle ...
-                                todo!()
-                            }
-                            ClientMsg::RetryJob { .. } => {
                                 // Handle ...
                                 todo!()
                             }

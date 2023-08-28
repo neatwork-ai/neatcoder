@@ -37,14 +37,6 @@ pub enum ClientMsg {
         #[serde(rename = "jobId")]
         job_id: Uuid,
     },
-    StopJob {
-        #[serde(rename = "jobId")]
-        job_id: Uuid,
-    },
-    RetryJob {
-        #[serde(rename = "jobId")]
-        job_id: Uuid,
-    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
