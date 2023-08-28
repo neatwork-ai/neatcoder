@@ -7,14 +7,13 @@ use gluon::ai::openai::{
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use uuid::Uuid;
 
 use crate::{
     models::{
-        job::{Job, Task},
-        job_worker::JobFutures,
+        jobs::job::Task,
         messages::inner::{RequestType, WorkerResponse},
         state::AppState,
+        worker::JobFutures,
     },
     utils::write_json,
 };

@@ -1,7 +1,6 @@
-use super::{
-    job::Job,
-    messages::inner::{ManagerRequest, RequestType},
-};
+use crate::models::messages::inner::{ManagerRequest, RequestType};
+
+use super::job::Job;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -56,7 +55,7 @@ impl Jobs {
         Ok(manager_request)
     }
 
-    pub fn start_job_by_order(&mut self, job_name: &str) -> Result<ManagerRequest> {
+    pub fn start_job_by_order(&mut self) -> Result<ManagerRequest> {
         let mut job = self
             .todo
             .pop_front()
@@ -82,7 +81,7 @@ impl Jobs {
         Ok(())
     }
 
-    pub fn stop_job_by_order(&mut self, job_name: &str) -> Result<()> {
+    pub fn stop_job_by_order(&mut self) -> Result<()> {
         let mut job = self
             .in_progress
             .pop_front()

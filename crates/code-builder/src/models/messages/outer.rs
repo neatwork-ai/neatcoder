@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::models::{
     interfaces::{Interface, SchemaFile},
-    jobs::Jobs,
+    jobs::jobs::Jobs,
 };
 
 #[derive(Debug, Serialize, Deserialize)]

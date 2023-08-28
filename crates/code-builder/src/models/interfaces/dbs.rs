@@ -8,6 +8,15 @@ use std::{
 
 use super::{AsContext, SchemaFile};
 
+/// Struct documenting a Database/DataWarehouse interface. This refers to Database
+/// storage solutions or to more classic Data Warehousing solutions such as
+/// Snowflake and the likes.
+/// The core difference between `Database` and `Storage` variants is that
+/// whilst both are storage solutions, the `Database` variant encapsulates
+/// storage under a Management system that typically guarantees ACID
+/// transactions as well as CAP Theorem guarantees. Usually these solutions
+/// provide a declarative framework for accessing and managing data.
+// TODO: We can increase the configurations here such as SSL stuff, etc.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Database {
@@ -18,6 +27,7 @@ pub struct Database {
     pub schemas: HashMap<String, SchemaFile>,
 }
 
+/// Enum documenting the type of Database/DataWarehouse interface.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum DbType {
     // === Tabular Store Types ===

@@ -5,9 +5,9 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::models::{
-    job_worker::{self, JobFutures},
     messages::inner::ManagerRequest,
     state::AppState,
+    worker::{self, JobFutures},
 };
 
 pub async fn handle(
@@ -27,7 +27,7 @@ pub async fn handle(
         return Err(anyhow!("`StartJob` cannot start a task of its own type"));
     }
 
-    job_worker::handle_request(request, job_futures, open_ai_client, params, app_state).await?;
+    worker::handle_request(request, job_futures, open_ai_client, params, app_state).await?;
 
     Ok(())
 }

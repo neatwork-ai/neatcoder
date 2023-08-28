@@ -7,20 +7,17 @@ use gluon::ai::openai::{
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::{
-    models::{
-        interfaces::AsContext, job_worker::JobFutures, messages::inner::WorkerResponse,
-        state::AppState,
-    },
-    utils::CodeStream,
+use crate::models::{
+    code_stream::CodeStream, interfaces::AsContext, messages::inner::WorkerResponse,
+    state::AppState, worker::JobFutures,
 };
 
 pub async fn handle(
-    open_ai_client: Arc<OpenAI>,
-    job_futures: &mut JobFutures,
-    params: Arc<OpenAIParams>,
-    app_state: Arc<RwLock<AppState>>,
-    filename: String,
+    _open_ai_client: Arc<OpenAI>,
+    _job_futures: &mut JobFutures,
+    _params: Arc<OpenAIParams>,
+    _app_state: Arc<RwLock<AppState>>,
+    _filename: String,
 ) -> Result<()> {
     todo!();
 }

@@ -2,12 +2,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{
-    models::{
-        interfaces::{Interface, SchemaFile},
-        jobs::Jobs,
-    },
-    utils::CodeStream,
+use crate::models::{
+    code_stream::CodeStream,
+    interfaces::{Interface, SchemaFile},
+    jobs::jobs::Jobs,
 };
 
 #[derive(Debug, Serialize)]

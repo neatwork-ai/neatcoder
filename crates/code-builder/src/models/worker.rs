@@ -19,18 +19,34 @@ use super::{
     state::AppState,
 };
 
-// TODO: Potentially link `JobFutures` with `Jobs` via Uuid.
+/// Type alias for a collection of futures representing jobs.
 pub type JobFutures =
     FuturesUnordered<Pin<Box<dyn Future<Output = Result<WorkerResponse, Error>> + 'static + Send>>>;
 
+/// Definition of the JobWorker struct, responsible for managing and executing jobs.
+/// When the server gets spawned it will spawn a `JobWorker` threads which will be
+/// listening to requests from the main thread which in turn will be prompted by
+/// the client messages.
+///
+/// The JobWorker listens to incoming requests in order to produce futures to add
+/// to the `job_futures` as well as resolves the futures on the fly as they're added
+/// to the `job_futures` set.
 #[derive(Debug)]
 pub struct JobWorker {
+    /// OpenAI Client
+    // TODO: Eventually generalise to other LLMs, in particular HuggingFace compatible LLMs
     open_ai_client: Arc<OpenAI>,
+    /// Parameters for the LLM
     ai_params: Arc<OpenAIParams>,
+    /// Shared Application State
     app_state: Arc<RwLock<AppState>>,
+    /// Collection of active job futures. Whenever a future gets added to this set
+    /// it will be picked up the worker thread and resolved.
     job_futures: JobFutures,
+    // Channel receiver for incoming requests from the main thread.
     rx_request: Receiver<ManagerRequest>,
-    tx_response: Sender<WorkerResponse>, // TODO: Refactor this to hold a String, or a `Response` value
+    // Channel sender for the outgoin responsed to the main thread.
+    tx_response: Sender<WorkerResponse>,
 }
 
 impl JobWorker {

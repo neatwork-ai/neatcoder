@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::models::{
-    job::Task, job_worker::JobFutures, messages::inner::WorkerResponse, state::AppState,
+    jobs::job::Task, messages::inner::WorkerResponse, state::AppState, worker::JobFutures,
 };
 use gluon::ai::openai::{client::OpenAI, params::OpenAIParams};
 

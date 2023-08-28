@@ -9,7 +9,6 @@ use std::{
 pub mod endpoints;
 pub mod models;
 pub mod utils;
-pub mod workflows;
 
 pub fn get_sql_statements(path: &Path) -> Result<Vec<SqlStatement>> {
     let mut sql_stmts = Vec::new();

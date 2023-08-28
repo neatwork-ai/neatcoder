@@ -1,4 +1,5 @@
 use anyhow::Result;
+use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -6,8 +7,11 @@ use std::{
 };
 
 use super::{AsContext, SchemaFile};
-use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 
+/// Struct documenting an API interface. API here refers to interfaces of
+/// executables themselves or execution environments, and therefore it
+/// groups RPC APIs, WebSockets, library interfaces, IDLs, etc.
+// TODO: We can increase the configurations here such as SSL stuff, etc.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Api {
     pub name: String,
@@ -17,6 +21,7 @@ pub struct Api {
     pub schemas: HashMap<String, SchemaFile>,
 }
 
+/// Enum documenting the type of APIs.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum ApiType {
     /// OpenAPI/Swagger Specification Files: JSON or YAML files that describe
