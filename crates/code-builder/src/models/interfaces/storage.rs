@@ -8,6 +8,11 @@ use std::{
 
 use super::{AsContext, SchemaFile};
 
+/// Struct documenting a Data storage interface. This refers to more raw storage
+/// solutions that usually provide a direct interface to a file or object-store
+/// system. This leads to a decoupling of the storage system and the file types
+/// themselves. For example, using storage services like AWS S3 we ould build a
+/// data-lake that utilizes `parquet` files or `ndjson` files.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Datastore {
     pub name: String,
@@ -17,6 +22,7 @@ pub struct Datastore {
     pub schemas: HashMap<String, SchemaFile>,
 }
 
+/// Enum documenting the type of data storages.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum StorageType {
     AwsS3,
@@ -26,6 +32,7 @@ pub enum StorageType {
     LocalStorage,
 }
 
+/// Enum documenting the most popular file types for data storage.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum FileType {
     // === Data Store Formats ===

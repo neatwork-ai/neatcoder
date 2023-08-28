@@ -1,16 +1,57 @@
 use anyhow::{anyhow, Result};
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use super::{
     interfaces::{Interface, SchemaFile},
     jobs::Jobs,
 };
 
+// NOTE: We will need to perform the following improvements to the data model:
+//
+// 1. The extension itself will be interactive, and will not rely solely on an
+// initial prompt but rather a sequence of prompts, or even a tree of prompts.
+// there are different models we can use to model this. We can think of modeling
+// as a chat app like Slack, in which each message can have a Thread or we can
+// generalise it further to something more intricate.
+//
+// 2. This struct is storing static application data such as `scaffold`, `codebase`.
+// we will need to find a way to make the application state dynamic such that it reflects the
+// current state of the codebase at any given time. We should also consider if
+// have the field `codebase` makes sense here, because we can also access the codebase
+// via the Language Server on the client side.
+//
+/// Acts as a shared application data (i.e. shared state). It contains
+/// information related to the initial prompt, the scaffold of the project, its
+/// interfaces, and current jobs in the TODO pipeline among others (see `Jobs`).
 #[derive(Debug)]
 pub struct AppState {
     /// Initial prompt containing the specifications of the project
     pub specs: Option<String>,
     /// JSON String containing the File System Scaffold
+    /// Example:
+    /// ```json
+    /// {
+    ///     "src": {
+    ///       "config.rs": "Module for handling configuration variables",
+    ///       "db.rs": "Module for establishing and managing database connections",
+    ///       "handlers": {
+    ///         "company.rs": "Module for handling company-related API endpoints",
+    ///         "customer.rs": "Module for handling customer-related API endpoints",
+    ///         "order.rs": "Module for handling order-related API endpoints",
+    ///         "product.rs": "Module for handling product-related API endpoints"
+    ///       },
+    ///       "main.rs": "Main entry point of the API server",
+    ///       "models": {
+    ///         "company.rs": "Module defining the Company struct and its database operations",
+    ///         "customer.rs": "Module defining the Customer struct and its database operations",
+    ///         "order.rs": "Module defining the Order struct and its database operations",
+    ///         "product.rs": "Module defining the Product struct and its database operations"
+    ///       },
+    ///       "routes.rs": "Module for defining API routes and their corresponding handlers",
+    ///       "utils.rs": "Module for utility functions and helper methods"
+    ///     }
+    ///   }
+    /// ```
     pub scaffold: Option<String>,
     /// Vector of strings containing the interface config files (e.g. SQL DLLs, etc.)
     /// The HashMap represents HashMap<Interface Name, Interface>
