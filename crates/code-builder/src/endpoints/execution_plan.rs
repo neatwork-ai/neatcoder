@@ -69,7 +69,7 @@ pub async fn run_build_execution_plan(
         );
     }
 
-    app_data.jobs.finish_job_by_order();
+    app_data.jobs.finish_job_by_order()?;
 
     println!("[INFO] Completed `Planning Execution` Job...");
 

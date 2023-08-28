@@ -63,7 +63,7 @@ pub async fn run_scaffold_project(
     let scaffold = scaffold_project(client, params, app_state.clone()).await?;
 
     let mut app_data = app_state.write().await;
-    app_data.jobs.finish_job_by_order();
+    app_data.jobs.finish_job_by_order()?;
 
     println!("[INFO] Completed `Scaffolding` Job");
 

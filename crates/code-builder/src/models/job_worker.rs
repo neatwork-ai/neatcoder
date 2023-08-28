@@ -1,4 +1,5 @@
 use anyhow::Error;
+use async_recursion::async_recursion;
 use futures::{stream::FuturesUnordered, Future, StreamExt};
 use gluon::ai::openai::{client::OpenAI, params::OpenAIParams};
 use std::{pin::Pin, sync::Arc};
@@ -94,7 +95,7 @@ impl JobWorker {
     }
 }
 
-// TODO: make an appropriate use of the return type
+#[async_recursion]
 pub async fn handle_request(
     request: ManagerRequest,
     job_futures: &mut FuturesUnordered<
