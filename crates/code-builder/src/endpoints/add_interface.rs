@@ -39,8 +39,10 @@ pub async fn run_add_interface(
     app_state: Arc<RwLock<AppState>>,
     interface: Interface,
 ) -> Result<WorkerResponse> {
+    println!("[INFO] Resolving Task: `AddInterface`");
     let interface_name = interface.name().to_string();
     add_interface(app_state, interface).await?;
+    println!("[INFO] Resolved Task: `AddInterface`");
 
     Ok(WorkerResponse::AddInterface { interface_name })
 }
