@@ -1,14 +1,17 @@
+mod prelude;
+
 use anyhow::{anyhow, Result};
 use bincode;
-use dotenv::dotenv;
 use serde_json;
-use std::{env, sync::Arc, time::Duration};
+use std::{env, io, sync::Arc, time::Duration};
 use tokio::{
     io::AsyncReadExt,
     net::{TcpListener, TcpStream},
 };
 
-use gluon::ai::openai::{client::OpenAI, model::OpenAIModels, params::OpenAIParams};
+use gluon::ai::openai::{
+    client::OpenAI, model::OpenAIModels, params::OpenAIParams,
+};
 
 use code_builder::models::{
     messages::{
@@ -19,12 +22,17 @@ use code_builder::models::{
     worker::JobWorker,
 };
 
+use prelude::*;
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    dotenv().ok();
+    dotenv::dotenv().ok();
+    env_logger::builder().format_timestamp_millis().init();
 
-    let api_key = env::var("OPENAI_API_KEY")
-        .map_err(|_| anyhow!("OPENAI_API_KEY environment variable not found"))?;
+    info!("Reading OpenAI API key");
+    let api_key = env::var("OPENAI_API_KEY").map_err(|_| {
+        anyhow!("OPENAI_API_KEY environment variable not found")
+    })?;
 
     let open_ai_client = Arc::new(OpenAI::new(api_key));
 
@@ -34,15 +42,15 @@ async fn main() -> Result<()> {
             .top_p(0.9)?,
     );
 
-    let listener_address = "127.0.0.1:1895";
-    let listener = TcpListener::bind(listener_address).await?; // Binding to localhost on port 7878
-    println!("Listening on {:?}", listener.local_addr());
+    let listener_address = "127.0.0.1:1895"; // TODO: conf
+    let listener = TcpListener::bind(listener_address).await?;
+    info!("TPC server listening on {:?}", listener.local_addr());
 
     let (mut socket, _socket_addr) = listener.accept().await?;
+    debug!("Client bound to TCP Socket");
+
     // TODO: Need to control the maximum buffer size
     let mut buf = vec![0u8; 1024];
-
-    println!("Client binded to TCP Socket");
 
     // Channels for sending and receiving the jobs
     let (tx_request, rx_request) = tokio::sync::mpsc::channel(100);
@@ -52,7 +60,13 @@ async fn main() -> Result<()> {
 
     let shutdown = ShutdownSignal::new();
 
-    let _join_handle = JobWorker::spawn(open_ai_client, ai_job, rx_request, tx_response, shutdown);
+    let _join_handle = JobWorker::spawn(
+        open_ai_client,
+        ai_job,
+        rx_request,
+        tx_response,
+        shutdown,
+    );
 
     // Defines the buffer length for the message delimiter
     // In TCP, data can be streamed continuously without clear message boundaries
@@ -61,18 +75,32 @@ async fn main() -> Result<()> {
     const DELIMITER: &[u8] = b"MSG:"; // Define a suitable delimiter
     let mut length_buf = [0u8; 4]; // 4-byte buffer for length prefix
 
-    loop {
+    'tpc: loop {
         tokio::select! {
             _ = socket.readable() => {
+                // TODO: we only need last `DELIMITER.len()` bytes
                 let mut temp_buf = Vec::new();
 
                 // Search for the delimiter
                 while temp_buf.ends_with(DELIMITER) == false {
                     let mut byte = [0u8; 1];
-                    if socket.read_exact(&mut byte).await.is_err() || byte[0] == 0 {
-                        break;
+
+                    match socket.try_read(&mut byte) {
+                        // socket.readable was a false positive
+                        Ok(0) => continue 'tpc,
+                        // again, socket.readable was a false positive
+                        Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                            continue 'tpc;
+                        }
+                        Err(e) => {
+                            error!("Got an error while searching for delimiter: {e}");
+                            break 'tpc;
+                        },
+                        Ok(_) => {
+                            // remember the byte
+                            temp_buf.extend_from_slice(&byte);
+                        },
                     }
-                    temp_buf.extend_from_slice(&byte);
                 }
                 // Once delimiter is found, read the LENGTH prefix
                 socket.read_exact(&mut length_buf).await?;
@@ -89,7 +117,7 @@ async fn main() -> Result<()> {
                     break;
                 }
                 let message_str = String::from_utf8_lossy(&buf[..n]);
-                println!("[DEBUG MSG] {}", message_str);
+                debug!("Json: {}", message_str);
 
                 match serde_json::from_str::<ClientMsg>(&message_str) {
                     Ok(command) => {
@@ -137,10 +165,10 @@ async fn main() -> Result<()> {
                 }
             },
             _ = tokio::time::sleep(Duration::from_secs(1)) => {
-                println!("[DEBUG] Sleep completed");
+                debug!("ZZZzzzz");
             }
             message = rx_response.recv() => {
-                println!("Received a new job response: {:?}", message);
+                debug!("Received a new job response: {:?}", message);
                 if let Some(msg) = message {
                     match msg {
                         WorkerResponse::InitState => {
@@ -206,7 +234,9 @@ pub async fn tcp_write(socket: &TcpStream, msg: ServerMsg) -> Result<()> {
     let buffer: Vec<u8> = bincode::serialize(&msg)?;
     match socket.try_write(&buffer) {
         Ok(n) => println!("Write new content to buffer, with length: {n}"),
-        Err(e) => println!("Failed to write message to buffer, with error: {e}"),
+        Err(e) => {
+            println!("Failed to write message to buffer, with error: {e}")
+        }
     }
 
     Ok(())
