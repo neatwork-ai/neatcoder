@@ -96,9 +96,7 @@ async fn main() -> Result<()> {
                     }
                 }
                 // Once delimiter is found, read the LENGTH prefix
-                debug!("Before socket read exact");
                 socket.read_exact(&mut length_buf).await?;
-                debug!("After socket read exact");
                 let message_length = u32::from_be_bytes(length_buf);
 
                 // Ensure our buffer is big enough to hold the incoming message
@@ -107,14 +105,12 @@ async fn main() -> Result<()> {
                 }
 
                 // Read the actual message
-                debug!("Before read the message exact");
                 let n = socket.read_exact(&mut buf[0..message_length as usize]).await?;
-                debug!("After read the message exact {n}");
                 if n == 0 {
                     break;
                 }
                 let message_str = String::from_utf8_lossy(&buf[..n]);
-                println!("[DEBUG MSG] {}", message_str);
+                debug!("Json: {}", message_str);
 
                 match serde_json::from_str::<ClientMsg>(&message_str) {
                     Ok(command) => {
