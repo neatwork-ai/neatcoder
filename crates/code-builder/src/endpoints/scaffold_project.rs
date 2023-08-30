@@ -49,7 +49,7 @@ pub async fn handle(
             .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
     );
 
-    println!("[INFO] Pushed task to the exeuction queue: `{}`", job_name);
+    println!("[INFO] Pushed task to the execution queue: `{}`", job_name);
 }
 
 pub async fn run_scaffold_project(

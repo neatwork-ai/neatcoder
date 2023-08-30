@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use futures::StreamExt;
 use gluon::ai::openai::{client::OpenAI, msg::OpenAIMsg, params::OpenAIParams};
 use parser::parser::{
     json::AsJson,
@@ -43,6 +44,8 @@ pub async fn write_json(
     let mut retries = 3;
 
     loop {
+        write_dammit(client.clone(), params.clone(), &prompts).await?;
+
         println!("[INFO] Prompting the LLM...");
         let answer = client.chat(params.clone(), prompts, &[], &[]).await?;
 
@@ -63,4 +66,39 @@ pub async fn write_json(
             }
         }
     }
+}
+
+async fn write_dammit(
+    client: Arc<OpenAI>,
+    params: Arc<OpenAIParams>,
+    prompts: &Vec<&OpenAIMsg>,
+) -> Result<()> {
+    println!("[INFO] Initiating Stream");
+
+    // let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
+
+    let mut chat_stream = client.chat_stream(&params, &prompts, &[], &[]).await?;
+
+    let mut start_delimiter = false;
+    while let Some(item) = chat_stream.next().await {
+        match item {
+            Ok(bytes) => {
+                let token =
+                    std::str::from_utf8(&bytes).expect("Failed to generate utf8 from bytes");
+                if !start_delimiter && ["```json", "```"].contains(&token) {
+                    start_delimiter = true;
+                    continue;
+                } else if !start_delimiter {
+                    println!("{:?}", token);
+                    continue;
+                } else {
+                    if token == "```" {
+                        break;
+                    }
+                }
+            }
+            Err(e) => eprintln!("Failed to receive token, with error: {e}"),
+        }
+    }
+    Ok(())
 }

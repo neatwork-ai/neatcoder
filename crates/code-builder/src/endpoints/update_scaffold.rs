@@ -27,7 +27,7 @@ pub async fn handle(
             .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
     );
 
-    println!("[INFO] Pushed task to exeuction queue: `UpdateScaffold`");
+    println!("[INFO] Pushed task to execution queue: `UpdateScaffold`");
 
     Ok(())
 }

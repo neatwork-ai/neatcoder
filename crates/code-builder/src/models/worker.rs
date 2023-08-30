@@ -93,6 +93,7 @@ impl JobWorker {
                         println!("TODO: handle errors with logging: {e}");
                         continue;
                     }
+                    println!("[INFO] Handling Results");
                     handle_response(result, self.tx_response.clone()).await?;
                 },
                 shutdown_handle = shutdown.wait_for_signal().await => {
@@ -262,10 +263,14 @@ pub async fn handle_response(
     tx_response: Sender<WorkerResponse>,
 ) -> Result<(), Error> {
     let worker_response = result.unwrap();
+
+    println!("[INFO] Sending Response to Main Thread..");
     tx_response
         .send(worker_response)
         .await
         .expect("Failed to send response back");
+
+    println!("[INFO] Response sent to Main Thread..");
 
     Ok(())
 }

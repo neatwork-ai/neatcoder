@@ -28,7 +28,7 @@ pub async fn handle(
             .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
     );
 
-    println!("[INFO] Pushed task to exeuction queue: `AddSourceFile`");
+    println!("[INFO] Pushed task to execution queue: `AddSourceFile`");
 
     Ok(())
 }

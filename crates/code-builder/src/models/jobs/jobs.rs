@@ -109,7 +109,7 @@ impl Jobs {
 
     pub fn finish_job_by_order(&mut self) -> Result<()> {
         let mut job = self
-            .todo
+            .in_progress
             .pop_front()
             .expect("Could not find any job in the todo list");
 

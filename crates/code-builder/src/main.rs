@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use bincode;
 use dotenv::dotenv;
 use serde_json;
-use std::{env, sync::Arc};
+use std::{env, sync::Arc, time::Duration};
 use tokio::{
     io::AsyncReadExt,
     net::{TcpListener, TcpStream},
@@ -44,15 +44,15 @@ async fn main() -> Result<()> {
 
     println!("Client binded to TCP Socket");
 
-    // Channels for sending and receiving the results
-    let (tx_result, mut rx_result) = tokio::sync::mpsc::channel(100);
-
     // Channels for sending and receiving the jobs
-    let (tx_job, rx_job) = tokio::sync::mpsc::channel(100);
+    let (tx_request, rx_request) = tokio::sync::mpsc::channel(100);
+
+    // Channels for sending and receiving the results
+    let (tx_response, mut rx_response) = tokio::sync::mpsc::channel(100);
 
     let shutdown = ShutdownSignal::new();
 
-    let _join_handle = JobWorker::spawn(open_ai_client, ai_job, rx_job, tx_result, shutdown);
+    let _join_handle = JobWorker::spawn(open_ai_client, ai_job, rx_request, tx_response, shutdown);
 
     // Defines the buffer length for the message delimiter
     // In TCP, data can be streamed continuously without clear message boundaries
@@ -74,7 +74,6 @@ async fn main() -> Result<()> {
                     }
                     temp_buf.extend_from_slice(&byte);
                 }
-
                 // Once delimiter is found, read the LENGTH prefix
                 socket.read_exact(&mut length_buf).await?;
                 let message_length = u32::from_be_bytes(length_buf);
@@ -89,44 +88,42 @@ async fn main() -> Result<()> {
                 if n == 0 {
                     break;
                 }
-
                 let message_str = String::from_utf8_lossy(&buf[..n]);
                 println!("[DEBUG MSG] {}", message_str);
-
 
                 match serde_json::from_str::<ClientMsg>(&message_str) {
                     Ok(command) => {
                         match command {
                             ClientMsg::InitState { state } => {
-                                tx_job.send(ManagerRequest::InitState { state }).await?;
+                                tx_request.send(ManagerRequest::InitState { state }).await?;
                             }
                             ClientMsg::InitPrompt { prompt } => {
-                                tx_job.send(ManagerRequest::ScaffoldProject { prompt }).await?;
+                                tx_request.send(ManagerRequest::ScaffoldProject { prompt }).await?;
 
                                 // TODO: Technically the execution should be sequential and
                                 // not asynchronous
-                                tx_job.send(ManagerRequest::BuildExecutionPlan {}).await?;
+                                tx_request.send(ManagerRequest::BuildExecutionPlan {}).await?;
                             }
                             ClientMsg::AddSchema { interface_name, schema_name, schema } => {
-                                tx_job.send(ManagerRequest::AddSchema { interface_name, schema_name, schema}).await?;
+                                tx_request.send(ManagerRequest::AddSchema { interface_name, schema_name, schema}).await?;
                             }
                             ClientMsg::RemoveSchema { interface_name, schema_name } => {
-                                tx_job.send(ManagerRequest::RemoveSchema { interface_name, schema_name }).await?;
+                                tx_request.send(ManagerRequest::RemoveSchema { interface_name, schema_name }).await?;
                             }
                             ClientMsg::AddInterface { interface } => {
-                                tx_job.send(ManagerRequest::AddInterface { interface }).await?;
+                                tx_request.send(ManagerRequest::AddInterface { interface }).await?;
                             }
                             ClientMsg::RemoveInterface { interface_name } => {
-                                tx_job.send(ManagerRequest::RemoveInterface { interface_name }).await?;
+                                tx_request.send(ManagerRequest::RemoveInterface { interface_name }).await?;
                             }
                             ClientMsg::AddSourceFile { filename, file } => {
-                                tx_job.send(ManagerRequest::AddSourceFile { filename, file }).await?;
+                                tx_request.send(ManagerRequest::AddSourceFile { filename, file }).await?;
                             }
                             ClientMsg::RemoveSourceFile { filename } => {
-                                tx_job.send(ManagerRequest::RemoveSourceFile { filename }).await?;
+                                tx_request.send(ManagerRequest::RemoveSourceFile { filename }).await?;
                             }
                             ClientMsg::UpdateScaffold { scaffold } => {
-                                tx_job.send(ManagerRequest::UpdateScaffold { scaffold }).await?;
+                                tx_request.send(ManagerRequest::UpdateScaffold { scaffold }).await?;
                             }
                             ClientMsg::StartJob { .. } => {
                                 // Handle ...
@@ -139,7 +136,10 @@ async fn main() -> Result<()> {
                     }
                 }
             },
-            message = rx_result.recv() => {
+            _ = tokio::time::sleep(Duration::from_secs(1)) => {
+                println!("[DEBUG] Sleep completed");
+            }
+            message = rx_response.recv() => {
                 println!("Received a new job response: {:?}", message);
                 if let Some(msg) = message {
                     match msg {
@@ -150,8 +150,10 @@ async fn main() -> Result<()> {
                             // TODO: Consider adding acknowledge command
                         }
                         WorkerResponse::BuildExecutionPlan { jobs } => {
+                            println!("[INFO] Sending `UpdateJobQueue` to client");
                             let server_msg = ServerMsg::UpdateJobQueue { jobs };
                             tcp_write(&socket, server_msg).await?;
+                            println!("[INFO] Sent `UpdateJobQueue` to client");
 
                         }
                         WorkerResponse::AddSchema { schema_name: _ } => {
