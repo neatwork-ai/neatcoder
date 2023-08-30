@@ -78,6 +78,7 @@ async fn main() -> Result<()> {
     'tpc: loop {
         tokio::select! {
             _ = socket.readable() => {
+                // TODO: we only need last `DELIMITER.len()` bytes
                 let mut temp_buf = Vec::new();
 
                 // Search for the delimiter
@@ -85,12 +86,18 @@ async fn main() -> Result<()> {
                     let mut byte = [0u8; 1];
 
                     match socket.try_read(&mut byte) {
-                        Ok(0) => continue 'tpc, // TODO
+                        // socket.readable was a false positive
+                        Ok(0) => continue 'tpc,
+                        // again, socket.readable was a false positive
                         Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                             continue 'tpc;
                         }
-                        Err(_e) => break 'tpc, // TODO
+                        Err(e) => {
+                            error!("Got an error while searching for delimiter: {e}");
+                            break 'tpc;
+                        },
                         Ok(_) => {
+                            // remember the byte
                             temp_buf.extend_from_slice(&byte);
                         },
                     }
