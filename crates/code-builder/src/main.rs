@@ -1,15 +1,11 @@
 mod conf;
 mod prelude;
 
-use anyhow::{anyhow, Result};
-use bincode;
-use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
+use byteorder::{BigEndian, ByteOrder};
 use serde_json;
 use std::{
-    env,
-    io::{self, Cursor},
+    io::{self},
     sync::Arc,
-    time::Duration,
 };
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -25,7 +21,6 @@ use code_builder::models::{
         inner::{ManagerRequest, WorkerResponse},
         outer::{ClientMsg, ServerMsg},
     },
-    shutdown::ShutdownSignal,
     worker::JobWorker,
 };
 
@@ -63,15 +58,8 @@ async fn main() -> Result<()> {
     // Channels for sending and receiving the results
     let (tx_response, mut rx_response) = tokio::sync::mpsc::channel(100);
 
-    let shutdown = ShutdownSignal::new();
-
-    let _join_handle = JobWorker::spawn(
-        open_ai_client,
-        ai_job,
-        rx_request,
-        tx_response,
-        shutdown,
-    );
+    let _join_handle =
+        JobWorker::spawn(open_ai_client, ai_job, rx_request, tx_response);
 
     // Defines the buffer length for the message delimiter
     // In TCP, data can be streamed continuously without clear message boundaries
