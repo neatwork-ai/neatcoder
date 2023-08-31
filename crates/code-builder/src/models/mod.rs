@@ -14,7 +14,6 @@ pub mod code_stream;
 pub mod interfaces;
 pub mod jobs;
 pub mod messages;
-pub mod shutdown;
 pub mod state;
 pub mod worker;
 
@@ -29,7 +28,9 @@ pub trait TaskTrait: Send + 'static {
 
 impl<F, Fut> TaskTrait for F
 where
-    F: FnOnce(Arc<OpenAI>, Arc<OpenAIParams>, Arc<RwLock<AppState>>) -> Fut + Send + 'static,
+    F: FnOnce(Arc<OpenAI>, Arc<OpenAIParams>, Arc<RwLock<AppState>>) -> Fut
+        + Send
+        + 'static,
     Fut: Future<Output = Result<WorkerResponse>> + Send + 'static,
 {
     fn call_box(
@@ -37,7 +38,8 @@ where
         client: Arc<OpenAI>,
         job: Arc<OpenAIParams>,
         app_state: Arc<RwLock<AppState>>,
-    ) -> Pin<Box<dyn Future<Output = Result<WorkerResponse, Error>> + Send>> {
+    ) -> Pin<Box<dyn Future<Output = Result<WorkerResponse, Error>> + Send>>
+    {
         Box::pin((*self)(client, job, app_state))
     }
 }
