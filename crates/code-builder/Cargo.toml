@@ -26,3 +26,4 @@ serde_yaml = "0.9"
 sqlparser = "0.36"
 tokio = { version = "1.29", features = ["full"] }
 uuid = { version = "1.4", features = ["v4", "serde"] }
+byteorder = "1.4"

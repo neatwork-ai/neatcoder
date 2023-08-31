@@ -2,10 +2,16 @@ mod prelude;
 
 use anyhow::{anyhow, Result};
 use bincode;
+use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use serde_json;
-use std::{env, io, sync::Arc, time::Duration};
+use std::{
+    env,
+    io::{self, Cursor},
+    sync::Arc,
+    time::Duration,
+};
 use tokio::{
-    io::AsyncReadExt,
+    io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
 };
 
@@ -164,9 +170,6 @@ async fn main() -> Result<()> {
                     }
                 }
             },
-            _ = tokio::time::sleep(Duration::from_secs(1)) => {
-                debug!("ZZZzzzz");
-            }
             message = rx_response.recv() => {
                 debug!("Received a new job response: {:?}", message);
                 if let Some(msg) = message {
@@ -180,7 +183,8 @@ async fn main() -> Result<()> {
                         WorkerResponse::BuildExecutionPlan { jobs } => {
                             println!("[INFO] Sending `UpdateJobQueue` to client");
                             let server_msg = ServerMsg::UpdateJobQueue { jobs };
-                            tcp_write(&socket, server_msg).await?;
+                            tcp_write(&mut socket, server_msg).await?;
+
                             println!("[INFO] Sent `UpdateJobQueue` to client");
 
                         }
@@ -208,12 +212,12 @@ async fn main() -> Result<()> {
                         WorkerResponse::CodeGen { stream } => {
 
                             let begin_msg = ServerMsg::BeginStream { filename: stream.filename.clone() };
-                            tcp_write(&socket, begin_msg).await?;
+                            tcp_write(&mut socket, begin_msg).await?;
 
                             stream.stream_rust(&mut socket).await?;
 
                             let end_msg = ServerMsg::EndStream {};
-                            tcp_write(&socket, end_msg).await?;
+                            tcp_write(&mut socket, end_msg).await?;
                         }
                     }
 
@@ -229,15 +233,28 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-pub async fn tcp_write(socket: &TcpStream, msg: ServerMsg) -> Result<()> {
+pub async fn tcp_write(socket: &mut TcpStream, msg: ServerMsg) -> Result<()> {
     socket.writable().await?;
-    let buffer: Vec<u8> = bincode::serialize(&msg)?;
-    match socket.try_write(&buffer) {
-        Ok(n) => println!("Write new content to buffer, with length: {n}"),
-        Err(e) => {
-            println!("Failed to write message to buffer, with error: {e}")
-        }
-    }
+
+    // Define the delimiter
+    const DELIMITER: &[u8] = b"MSG:";
+
+    // Serialize the message using serde
+    let msg_string = serde_json::to_string(&msg)?;
+    let msg_buffer = msg_string.as_bytes().to_vec();
+
+    // Calculate the length and convert it to a buffer of 4 bytes
+    let mut length_buffer = [0u8; 4];
+    BigEndian::write_u32(&mut length_buffer, msg_buffer.len() as u32);
+
+    // Combine DELIMITER, length_buffer, and message_buffer
+    let mut complete_buffer = Vec::new();
+    complete_buffer.extend_from_slice(DELIMITER);
+    complete_buffer.extend_from_slice(&length_buffer);
+    complete_buffer.extend_from_slice(&msg_buffer);
+
+    // Write the complete buffer to the socket
+    socket.write_all(&complete_buffer).await?;
 
     Ok(())
 }

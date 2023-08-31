@@ -38,16 +38,18 @@ pub async fn handle(
 
     println!("[INFO] Added task `{}` as TODO", job_name);
 
-    let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
-        run_scaffold_project(c, j, state)
-    };
+    let closure =
+        |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
+            run_scaffold_project(c, j, state)
+        };
 
     let task = Task(Box::new(closure));
 
-    job_futures.push(
-        task.0
-            .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
-    );
+    job_futures.push(task.0.call_box(
+        open_ai_client.clone(),
+        params.clone(),
+        app_state.clone(),
+    ));
 
     println!("[INFO] Pushed task to the execution queue: `{}`", job_name);
 }
@@ -111,7 +113,8 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
     let (_, scaffold_json) = write_json(client, params, &prompts).await?;
 
-    state.scaffold = Some(scaffold_json.to_string());
+    // TODO: Add back
+    // state.scaffold = Some(scaffold_json.to_string());
 
     Ok(scaffold_json)
 }
