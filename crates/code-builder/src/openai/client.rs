@@ -1,4 +1,4 @@
-use std::{fmt, ops::Deref, time::Duration};
+use std::{fmt, ops::Deref};
 
 use anyhow::{anyhow, Result};
 use bytes::Bytes;
@@ -115,49 +115,23 @@ impl OpenAI {
         // fill in your own data as needed
         let req_body = self.request_body(job, msgs, funcs, stop_seq, true)?;
 
-        let mut retries = 3; // Number of retries
-        loop {
-            println!("[DEBUG] Sending request to OpenAI...");
-
-            let res = tokio::time::timeout(
-                Duration::from_secs(5),
-                client
-                    .post("https://api.openai.com/v1/chat/completions")
-                    .header(
-                        "Authorization",
-                        format!(
-                            "Bearer {}",
-                            self.api_key
-                                .as_ref()
-                                .expect("No API Keys provided")
-                        ),
-                    )
-                    .header("Content-Type", "application/json")
-                    .json(&req_body)
-                    .send(),
+        let response = client
+            .post("https://api.openai.com/v1/chat/completions")
+            .header(
+                "Authorization",
+                format!(
+                    "Bearer {}",
+                    self.api_key.as_ref().expect("No API Keys provided")
+                ),
             )
+            .header("Content-Type", "application/json")
+            .json(&req_body)
+            .send()
             .await?;
 
-            match res {
-                Ok(response) => {
-                    println!("[DEBUG] Got response.....");
-                    let stream = response.bytes_stream();
+        let stream = response.bytes_stream();
 
-                    return Ok(stream);
-                }
-                Err(e) => {
-                    retries -= 1;
-                    if retries == 0 {
-                        return Err(anyhow!(
-                            "Failed after maximum retries: {:?}",
-                            e
-                        ));
-                    }
-
-                    println!("[DEBUG] Request failed, retrying...");
-                }
-            }
-        }
+        return Ok(stream);
     }
 
     fn request_body(
