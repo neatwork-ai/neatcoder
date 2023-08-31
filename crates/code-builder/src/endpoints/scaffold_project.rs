@@ -1,82 +1,33 @@
+use crate::prelude::*;
+use crate::{models::state::AppState, utils::write_json};
 use anyhow::{anyhow, Result};
-use gluon::ai::openai::{
-    client::OpenAI,
-    msg::{GptRole, OpenAIMsg},
-    params::OpenAIParams,
-};
+use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 use serde_json::Value;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-
-use crate::{
-    models::{
-        jobs::job::Task,
-        messages::inner::{RequestType, WorkerResponse},
-        state::AppState,
-        worker::JobFutures,
-    },
-    utils::write_json,
-};
 
 pub async fn handle(
-    open_ai_client: Arc<OpenAI>,
-    job_futures: &mut JobFutures,
-    params: Arc<OpenAIParams>,
-    app_state: Arc<RwLock<AppState>>,
+    conf: &Conf,
+    dot_neat: &mut AppState,
     init_prompt: String,
-) {
-    let mut app_data = app_state.write().await;
-
-    // TODO: Return error if `specs` field already exists..
-    app_data.specs = Some(init_prompt);
-    println!("[INFO] Registered Project Specifications.");
-    let job_name = "Scaffolding";
-
-    app_data
-        .jobs
-        .new_in_progress(job_name, RequestType::ScaffoldProject);
-
-    println!("[INFO] Added task `{}` as TODO", job_name);
-
-    let closure =
-        |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
-            run_scaffold_project(c, j, state)
-        };
-
-    let task = Task(Box::new(closure));
-
-    job_futures.push(task.0.call_box(
-        open_ai_client.clone(),
-        params.clone(),
-        app_state.clone(),
-    ));
-
-    println!("[INFO] Pushed task to the execution queue: `{}`", job_name);
-}
-
-pub async fn run_scaffold_project(
-    client: Arc<OpenAI>,
-    params: Arc<OpenAIParams>,
-    app_state: Arc<RwLock<AppState>>,
-) -> Result<WorkerResponse> {
-    println!("[INFO] Running `Scaffolding` Job...");
-
-    let scaffold = scaffold_project(client, params, app_state.clone()).await?;
-
-    let mut app_data = app_state.write().await;
-    app_data.jobs.finish_job_by_order()?;
-
-    println!("[INFO] Completed `Scaffolding` Job");
-
-    Ok(WorkerResponse::Scaffold { scaffold })
-}
-
-pub async fn scaffold_project(
-    client: Arc<OpenAI>,
-    params: Arc<OpenAIParams>,
-    app_state: Arc<RwLock<AppState>>,
 ) -> Result<Value> {
-    let mut state = app_state.write().await;
+    if dot_neat.specs.is_some() || dot_neat.scaffold.is_some() {
+        // TBD: what if the user wishes to re-scaffold the project?
+        // They can set the .neat to empty and re-run the command
+        return Err(anyhow!("Project already scaffolded"));
+    }
+
+    info!("Scaffolding project with specs: {init_prompt}");
+
+    let main_prompt = format!("
+You are a Rust engineer tasked with creating an API in Rust based on the following project description:\n{init_prompt}\n
+The API should retrieve the relevant data from a MySQL database.
+
+Based on the information provided write the project's folder structure, starting from `src`.
+
+Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json");
+
+    // we store the spec in case the OpenAI request fails - we will be able to
+    // offer retry
+    dot_neat.specs = Some(init_prompt);
 
     let mut prompts = Vec::new();
 
@@ -87,23 +38,6 @@ pub async fn scaffold_project(
         ),
     });
 
-    let specs = state
-        .specs
-        .as_ref()
-        .ok_or(anyhow!("AppState missing `specs` field"))?;
-
-    if state.scaffold.is_some() {
-        return Err(anyhow!("Scaffold already exists. Skipping..."));
-    }
-
-    let main_prompt = format!("
-You are a Rust engineer tasked with creating an API in Rust based on the following project description:\n{}\n
-The API should retrieve the relevant data from a MySQL database.
-
-Based on the information provided write the project's folder structure, starting from `src`.
-
-Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json", specs);
-
     prompts.push(OpenAIMsg {
         role: GptRole::User,
         content: main_prompt,
@@ -111,10 +45,9 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let (_, scaffold_json) = write_json(client, params, &prompts).await?;
+    let (_, scaffold_json) = write_json(conf, &prompts).await?;
 
-    // TODO: Add back
-    // state.scaffold = Some(scaffold_json.to_string());
+    dot_neat.scaffold = Some(scaffold_json.clone());
 
     Ok(scaffold_json)
 }

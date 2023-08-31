@@ -10,8 +10,11 @@ use crate::models::{
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ClientMsg {
-    InitState {
-        state: AppState,
+    // TODO: rename on client
+    /// Sets the copy of the .neat file on the server.
+    /// Useful when recovering from consistency errors.
+    SetDotNeat {
+        new_dot_neat: AppState,
     },
     InitPrompt {
         prompt: String,

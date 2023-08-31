@@ -1,7 +1,9 @@
 mod conf;
+mod endpoints;
+mod models;
 mod prelude;
 mod tcp_socket;
-
+mod utils;
 use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 
@@ -9,7 +11,7 @@ use gluon::ai::openai::{
     client::OpenAI, model::OpenAIModels, params::OpenAIParams,
 };
 
-use code_builder::models::{
+use models::{
     messages::{
         inner::{ManagerRequest, WorkerResponse},
         outer::{ClientMsg, ServerMsg},
@@ -25,7 +27,7 @@ async fn main() -> Result<()> {
     env_logger::builder().format_timestamp_millis().init();
 
     info!("Building configuration");
-    let conf = conf::Conf::from_env()?;
+    let conf = Conf::from_env()?;
 
     let open_ai_client = Arc::new(OpenAI::new(conf.openai_api_key.clone()));
 
@@ -45,20 +47,20 @@ async fn main() -> Result<()> {
     // TODO: Need to control the maximum buffer size
     let mut buf = vec![0u8; 1024];
 
-    // Channels for sending and receiving the jobs
-    let (tx_request, rx_request) = tokio::sync::mpsc::channel(100);
-
-    // Channels for sending and receiving the results
-    let (tx_response, mut rx_response) = tokio::sync::mpsc::channel(100);
-
-    let _join_handle =
-        JobWorker::spawn(open_ai_client, ai_job, rx_request, tx_response);
-
     // Defines the buffer length for the message delimiter
     // In TCP, data can be streamed continuously without clear message
     // boundaries Therefore at the beginning of each message the client will
     // send a delimiter followed by a message length prefix
     let mut length_buf = [0u8; 4]; // 4-byte buffer for length prefix
+
+    // Channels for sending and receiving the results
+    let (response_over_tcp, mut tcp_response) = tokio::sync::mpsc::channel(100);
+
+    let g = GlobalState {
+        conf,
+        dot_neat: Default::default(),
+        response_over_tcp,
+    };
 
     loop {
         tokio::select! {
@@ -73,9 +75,9 @@ async fn main() -> Result<()> {
                 };
 
                 debug!("Incoming TPC: {body:?}");
-                route_request(&tx_request, body).await?; // TODO: handle error
+                route_request(&g,  body).await?; // TODO: handle error
             },
-            next_tcp_response = rx_response.recv() => {
+            next_tcp_response = tcp_response.recv() => {
                 let Some(resp) = next_tcp_response else {
                     error!("TCP Server recv channel closed");
                     // TBD: restart the worker or exit and restart the binary?
@@ -83,7 +85,7 @@ async fn main() -> Result<()> {
                 };
 
                 debug!("Received a new job response: {resp:?}");
-                route_response(&mut socket, resp).await?; // TODO: handle error
+                route_response(&mut socket,resp).await?; // TODO: handle error
             }
         }
     }
@@ -91,73 +93,88 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn route_request(
-    tx_request: &tokio::sync::mpsc::Sender<ManagerRequest>,
-    body: ClientMsg,
-) -> Result<()> {
+async fn route_request(g: &GlobalState, body: ClientMsg) -> Result<()> {
     match body {
-        ClientMsg::InitState { state } => {
-            tx_request.send(ManagerRequest::InitState { state }).await?;
+        ClientMsg::SetDotNeat { new_dot_neat } => {
+            // updating server's .neat copy is a blocking operation, ie. because
+            // we await here no other message will be accepted by the tpc server
+            let mut dot_neat = g.dot_neat.write().await;
+
+            endpoints::set_dot_neat::handle(&mut dot_neat, new_dot_neat).await;
         }
         ClientMsg::InitPrompt { prompt } => {
-            tx_request
-                .send(ManagerRequest::ScaffoldProject { prompt })
-                .await?;
+            // updating server's .neat copy is a blocking operation
+            let mut dot_neat = g.dot_neat.write().await;
 
-            // TODO: Technically the execution should be sequential and
-            // not asynchronous
-            tx_request
-                .send(ManagerRequest::BuildExecutionPlan {})
-                .await?;
+            endpoints::scaffold_project::handle(&g.conf, &mut dot_neat, prompt)
+                .await;
+
+            endpoints::execution_plan::handle(
+                open_ai_client.clone(),
+                job_futures,
+                ai_params.clone(),
+                app_state.clone(),
+            )
+            .await;
+
+            // tx_request
+            //     .send(ManagerRequest::ScaffoldProject { prompt })
+            //     .await?;
+
+            // // TODO: Technically the execution should be sequential and
+            // // not asynchronous
+            // tx_request
+            //     .send(ManagerRequest::BuildExecutionPlan {})
+            //     .await?;
         }
         ClientMsg::AddSchema {
             interface_name,
             schema_name,
             schema,
         } => {
-            tx_request
-                .send(ManagerRequest::AddSchema {
-                    interface_name,
-                    schema_name,
-                    schema,
-                })
-                .await?;
+            // tx_request
+            //     .send(ManagerRequest::AddSchema {
+            //         interface_name,
+            //         schema_name,
+            //         schema,
+            //     })
+            //     .await?;
         }
         ClientMsg::RemoveSchema {
             interface_name,
             schema_name,
         } => {
-            tx_request
-                .send(ManagerRequest::RemoveSchema {
-                    interface_name,
-                    schema_name,
-                })
-                .await?;
+            // tx_request
+            //     .send(ManagerRequest::RemoveSchema {
+            //         interface_name,
+            //         schema_name,
+            //     })
+            //     .await?;
         }
         ClientMsg::AddInterface { interface } => {
-            tx_request
-                .send(ManagerRequest::AddInterface { interface })
-                .await?;
+            // tx_request
+            //     .send(ManagerRequest::AddInterface { interface })
+            //     .await?;
         }
         ClientMsg::RemoveInterface { interface_name } => {
-            tx_request
-                .send(ManagerRequest::RemoveInterface { interface_name })
-                .await?;
+            // tx_request
+            //     .send(ManagerRequest::RemoveInterface { interface_name })
+            //     .await?;
         }
         ClientMsg::AddSourceFile { filename, file } => {
-            tx_request
-                .send(ManagerRequest::AddSourceFile { filename, file })
-                .await?;
+            // tx_request
+            //     .send(ManagerRequest::AddSourceFile { filename, file })
+            //     .await?;
         }
         ClientMsg::RemoveSourceFile { filename } => {
-            tx_request
-                .send(ManagerRequest::RemoveSourceFile { filename })
-                .await?;
+            // tx_request
+            //     .send(ManagerRequest::RemoveSourceFile { filename })
+            //     .await?;
         }
         ClientMsg::UpdateScaffold { scaffold } => {
-            tx_request
-                .send(ManagerRequest::UpdateScaffold { scaffold })
-                .await?;
+            // tx_request
+            //     .send(ManagerRequest::UpdateScaffold { scaffold })
+            //     .await?;
         }
         ClientMsg::StartJob { .. } => {
             // Handle ...

@@ -1,3 +1,6 @@
+use gluon::ai::openai::{
+    client::OpenAI, model::OpenAIModels, params::OpenAIParams,
+};
 use serde::Deserialize;
 
 use crate::prelude::*;
@@ -29,5 +32,15 @@ impl Conf {
             .build()?;
 
         Ok(cfg.try_deserialize()?)
+    }
+
+    pub fn openai_client(&self) -> OpenAI {
+        OpenAI::new(self.openai_api_key.clone())
+    }
+
+    pub fn openai_params(&self) -> Result<OpenAIParams> {
+        OpenAIParams::empty(OpenAIModels::Gpt35Turbo)
+            .temperature(self.llm_temperature)
+            .top_p(self.llm_top_p)
     }
 }

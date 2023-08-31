@@ -1,10 +1,8 @@
-use anyhow::{anyhow, Result};
+use crate::prelude::*;
 use futures::StreamExt;
 use gluon::ai::openai::{client::OpenAI, msg::OpenAIMsg, params::OpenAIParams};
-use parser::parser::{
-    json::AsJson,
-    rust::{AsRust, Rust},
-};
+use parser::parser::json::AsJson;
+use parser::parser::rust::{AsRust, Rust};
 use serde_json::Value;
 use std::sync::Arc;
 
@@ -16,7 +14,7 @@ pub async fn write_rust(
     let mut retries = 3;
 
     loop {
-        let answer = client.chat(params.clone(), prompts, &[], &[]).await?;
+        let answer = client.chat(&params, prompts, &[], &[]).await?;
 
         match answer.as_str().strip_rust() {
             Ok(result) => {
@@ -37,17 +35,19 @@ pub async fn write_rust(
 }
 
 pub async fn write_json(
-    client: Arc<OpenAI>,
-    params: Arc<OpenAIParams>,
+    conf: &Conf,
     prompts: &Vec<&OpenAIMsg>,
 ) -> Result<(String, Value)> {
+    let client = conf.openai_client();
+    let params = conf.openai_params()?;
+
     let mut retries = 3;
 
     loop {
         // write_dammit(client.clone(), params.clone(), &prompts).await?;
 
         println!("[INFO] Prompting the LLM...");
-        let answer = client.chat(params.clone(), prompts, &[], &[]).await?;
+        let answer = client.chat(&params, prompts, &[], &[]).await?;
 
         match answer.as_str().strip_json() {
             Ok(result) => {

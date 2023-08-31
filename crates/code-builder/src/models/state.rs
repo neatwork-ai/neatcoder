@@ -1,11 +1,18 @@
-use anyhow::{anyhow, Result};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-
 use super::{
     interfaces::{Interface, SchemaFile},
     jobs::jobs::Jobs,
+    messages::inner::WorkerResponse,
 };
+use crate::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::{mpsc, RwLock};
+
+pub struct GlobalState {
+    pub dot_neat: Arc<RwLock<AppState>>,
+    pub conf: Conf,
+    pub response_over_tcp: mpsc::Sender<WorkerResponse>,
+}
 
 // NOTE: We will need to perform the following improvements to the data model:
 //
@@ -15,16 +22,17 @@ use super::{
 // as a chat app like Slack, in which each message can have a Thread or we can
 // generalise it further to something more intricate.
 //
-// 2. This struct is storing static application data such as `scaffold`, `codebase`.
-// we will need to find a way to make the application state dynamic such that it reflects the
-// current state of the codebase at any given time. We should also consider if
-// have the field `codebase` makes sense here, because we can also access the codebase
-// via the Language Server on the client side.
+// 2. This struct is storing static application data such as `scaffold`,
+//    `codebase`.
+// we will need to find a way to make the application state dynamic such that it
+// reflects the current state of the codebase at any given time. We should also
+// consider if have the field `codebase` makes sense here, because we can also
+// access the codebase via the Language Server on the client side.
 //
 /// Acts as a shared application data (i.e. shared state). It contains
 /// information related to the initial prompt, the scaffold of the project, its
 /// interfaces, and current jobs in the TODO pipeline among others (see `Jobs`).
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct AppState {
     /// Initial prompt containing the specifications of the project
     pub specs: Option<String>,
@@ -53,9 +61,9 @@ pub struct AppState {
     ///     }
     ///   }
     /// ```
-    pub scaffold: Option<String>,
-    /// Vector of strings containing the interface config files (e.g. SQL DLLs, etc.)
-    /// The HashMap represents HashMap<Interface Name, Interface>
+    pub scaffold: Option<serde_json::Value>,
+    /// Vector of strings containing the interface config files (e.g. SQL DLLs,
+    /// etc.) The HashMap represents HashMap<Interface Name, Interface>
     pub interfaces: HashMap<String, Interface>,
     /// HashMap containing all the code files in the codebase
     /// Should be read as HashMap<FileName, Code String>
@@ -72,21 +80,14 @@ impl AppState {
             scaffold: None,
             interfaces: HashMap::new(),
             codebase: HashMap::new(),
-            jobs: Jobs::empty(),
+            jobs: Jobs::default(),
         }
     }
 
-    pub fn empty() -> Self {
-        Self {
-            specs: None,
-            scaffold: None,
-            interfaces: HashMap::new(),
-            codebase: HashMap::new(),
-            jobs: Jobs::empty(),
-        }
-    }
-
-    pub fn with_interfaces(mut self, interfaces: HashMap<String, Interface>) -> Result<Self> {
+    pub fn with_interfaces(
+        mut self,
+        interfaces: HashMap<String, Interface>,
+    ) -> Result<Self> {
         if !self.interfaces.is_empty() {
             return Err(anyhow!("Data model already exists"));
         }
@@ -103,7 +104,8 @@ impl AppState {
         schema: SchemaFile,
     ) -> Result<()> {
         if !self.interfaces.contains_key(&interface_name) {
-            // TODO: We need proper error escallation and communication with the client
+            // TODO: We need proper error escallation and communication with the
+            // client
             eprintln!("[ERROR] The interface does not exist. Please create an interface first.");
 
             return Err(anyhow!("Interface does not exist"));
@@ -118,9 +120,14 @@ impl AppState {
         Ok(())
     }
 
-    pub fn remove_schema(&mut self, interface_name: &str, schema_name: &str) -> Result<()> {
+    pub fn remove_schema(
+        &mut self,
+        interface_name: &str,
+        schema_name: &str,
+    ) -> Result<()> {
         if !self.interfaces.contains_key(interface_name) {
-            // TODO: We need proper error escallation and communication with the client
+            // TODO: We need proper error escallation and communication with the
+            // client
             eprintln!("[ERROR] The interface does not exist.");
 
             return Err(anyhow!("Interface does not exist"));
@@ -139,7 +146,8 @@ impl AppState {
         let interface_name = interface.name();
 
         if self.interfaces.contains_key(interface_name) {
-            // TODO: We need proper error escallation and communication with the client
+            // TODO: We need proper error escallation and communication with the
+            // client
             eprintln!("[ERROR] The interface already exists. Skipping.");
 
             return Err(anyhow!("Interface already exists"));
@@ -153,7 +161,8 @@ impl AppState {
 
     pub fn remove_interface(&mut self, interface_name: &str) -> Result<()> {
         if !self.interfaces.contains_key(interface_name) {
-            // TODO: We need proper error escallation and communication with the client
+            // TODO: We need proper error escallation and communication with the
+            // client
             eprintln!("[ERROR] The interface does not exist. Skipping.");
 
             return Err(anyhow!("Interface does not exist"));

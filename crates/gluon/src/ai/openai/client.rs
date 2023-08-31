@@ -1,56 +1,25 @@
-use std::{fmt, ops::Deref, time::Duration};
-
+use super::{msg::OpenAIMsg, output::Body, params::OpenAIParams};
 use anyhow::{anyhow, Result};
 use bytes::Bytes;
 use futures::Stream;
 use reqwest::Client;
 use serde_json::{json, Value};
-
-use super::{msg::OpenAIMsg, output::Body, params::OpenAIParams};
+use std::time::Duration;
 
 pub struct OpenAI {
-    api_key: Option<String>,
-}
-
-/// We manually implement `Debug` to intentionally maskl the API Key with
-/// the value `Some` or `None`, for security reasons.
-impl fmt::Debug for OpenAI {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let value = if self.api_key.is_some() {
-            "Some"
-        } else {
-            "None"
-        };
-
-        // TODO: Conside indicating at least if API key is Some or None
-        f.debug_struct("OpenAI")
-            .field("api_key", &value) // We hide the API Key and only indicate if it is Some or None
-            .finish()
-    }
+    api_key: String,
 }
 
 impl OpenAI {
-    pub fn empty() -> Self {
-        Self { api_key: None }
-    }
-
     pub fn new(api_key: String) -> Self {
-        Self {
-            api_key: Some(api_key),
-        }
-    }
-    // === Setter methods with chaining ===
-
-    pub fn api_key(mut self, key: String) -> Self {
-        self.api_key = Some(key);
-        self
+        Self { api_key }
     }
 
     // === OpenAI IO ===
 
     pub async fn chat(
         &self,
-        job: impl Deref<Target = OpenAIParams>,
+        job: &OpenAIParams,
         msgs: &[&OpenAIMsg],
         funcs: &[&String],
         stop_seq: &[String],
@@ -65,7 +34,7 @@ impl OpenAI {
 
     pub async fn chat_raw(
         &self,
-        job: impl Deref<Target = OpenAIParams>,
+        job: &OpenAIParams,
         msgs: &[&OpenAIMsg],
         funcs: &[&String],
         stop_seq: &[String],
@@ -77,13 +46,7 @@ impl OpenAI {
         println!("[DEBUG] Sending reqeust to OpenAI...");
         let res = client
             .post("https://api.openai.com/v1/chat/completions")
-            .header(
-                "Authorization",
-                format!(
-                    "Bearer {}",
-                    self.api_key.as_ref().expect("No API Keys provided")
-                ),
-            )
+            .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
             .json(&req_body)
             .send()
@@ -121,13 +84,7 @@ impl OpenAI {
                 Duration::from_secs(5),
                 client
                     .post("https://api.openai.com/v1/chat/completions")
-                    .header(
-                        "Authorization",
-                        format!(
-                            "Bearer {}",
-                            self.api_key.as_ref().expect("No API Keys provided")
-                        ),
-                    )
+                    .header("Authorization", format!("Bearer {}", self.api_key))
                     .header("Content-Type", "application/json")
                     .json(&req_body)
                     .send(),
@@ -144,7 +101,10 @@ impl OpenAI {
                 Err(e) => {
                     retries -= 1;
                     if retries == 0 {
-                        return Err(anyhow!("Failed after maximum retries: {:?}", e));
+                        return Err(anyhow!(
+                            "Failed after maximum retries: {:?}",
+                            e
+                        ));
                     }
 
                     println!("[DEBUG] Request failed, retrying...");
@@ -155,7 +115,7 @@ impl OpenAI {
 
     fn request_body(
         &self,
-        job: impl Deref<Target = OpenAIParams>,
+        job: &OpenAIParams,
         msgs: &[&OpenAIMsg],
         // TODO: Add to OpenAIParams
         funcs: &[&String],
@@ -166,6 +126,7 @@ impl OpenAI {
         let mut data = json!({
             "model": job.model.as_str(),
             "messages": msgs,
+            "stream": stream,
             // "stop": self.stop,
         });
 
@@ -201,7 +162,8 @@ impl OpenAI {
         }
 
         if let Some(frequency_penalty) = &job.frequency_penalty {
-            data["frequency_penalty"] = serde_json::to_value(frequency_penalty)?;
+            data["frequency_penalty"] =
+                serde_json::to_value(frequency_penalty)?;
         }
 
         if let Some(presence_penalty) = &job.presence_penalty {
@@ -214,10 +176,6 @@ impl OpenAI {
 
         if let Some(n) = &job.n {
             data["n"] = serde_json::to_value(n)?;
-        }
-
-        if stream {
-            data["stream"] = serde_json::Value::Bool(true);
         }
 
         Ok(data)

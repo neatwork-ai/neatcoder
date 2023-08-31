@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Jobs {
     todo: Todo,
     in_progress: InProgress,
@@ -15,16 +15,11 @@ pub struct Jobs {
 }
 
 impl Jobs {
-    pub fn empty() -> Self {
-        Self {
-            todo: Pipeline::empty(),
-            in_progress: Pipeline::empty(),
-            stopped: Pipeline::empty(),
-            done: Pipeline::empty(),
-        }
-    }
-
-    pub fn new_todo(&mut self, job_name: &str, request: ManagerRequest) -> Uuid {
+    pub fn new_todo(
+        &mut self,
+        job_name: &str,
+        request: ManagerRequest,
+    ) -> Uuid {
         let job = Job::new_todo(job_name, request);
         let job_id = job.id;
 
@@ -33,7 +28,11 @@ impl Jobs {
         job_id
     }
 
-    pub fn new_in_progress(&mut self, job_name: &str, request: RequestType) -> Uuid {
+    pub fn new_in_progress(
+        &mut self,
+        job_name: &str,
+        request: RequestType,
+    ) -> Uuid {
         let job = Job::new_in_progress(job_name, request);
         let job_id = job.id;
 
@@ -126,19 +125,10 @@ pub type InProgress = Pipeline;
 pub type Stopped = Pipeline;
 pub type Done = Pipeline;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Pipeline {
     jobs: HashMap<Uuid, Job>,
     order: VecDeque<Uuid>,
-}
-
-impl Pipeline {
-    pub fn empty() -> Self {
-        Self {
-            jobs: HashMap::new(),
-            order: VecDeque::new(),
-        }
-    }
 }
 
 impl Pipeline {

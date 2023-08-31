@@ -24,69 +24,34 @@ use crate::{
     utils::write_json,
 };
 
-pub async fn handle(
-    open_ai_client: Arc<OpenAI>,
-    job_futures: &mut JobFutures,
-    params: Arc<OpenAIParams>,
-    app_state: Arc<RwLock<AppState>>,
-) {
-    let mut app_data = app_state.write().await;
-    let job_name = "Build Execution Plan";
-
-    app_data
-        .jobs
-        .new_in_progress(job_name, RequestType::BuildExecutionPlan);
-
-    let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
-        run_build_execution_plan(c, j, state)
-    };
-
-    let task = Task(Box::new(closure));
-
-    job_futures.push(
-        task.0
-            .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
-    );
-
-    println!("[INFO] Pushed task to execution queue: `{}`", job_name);
-}
-
-pub async fn run_build_execution_plan(
-    client: Arc<OpenAI>,
-    params: Arc<OpenAIParams>,
-    app_state: Arc<RwLock<AppState>>,
-) -> Result<WorkerResponse> {
+pub async fn handle(dot_neat: &mut AppState) {
     println!("[INFO] Running `Planning Execution` Job...");
 
-    let execution_plan = build_execution_plan(client, params, app_state.clone()).await?;
+    let execution_plan =
+        build_execution_plan(client, params, app_state.clone()).await?;
 
     let files = Files::from_schedule(&execution_plan)?;
-    let mut app_data = app_state.write().await;
 
     // Add code writing jobs to the job queue
     for file in files.iter() {
         let file_ = file.clone();
 
-        app_data.jobs.new_todo(
+        dot_neat.jobs.new_todo(
             "TODO: This is a placeholder",
             ManagerRequest::CodeGen { filename: file_ },
         );
     }
 
-    app_data.jobs.finish_job_by_order()?;
+    dot_neat.jobs.finish_job_by_order()?;
 
     println!("[INFO] Completed `Planning Execution` Job...");
 
     Ok(WorkerResponse::BuildExecutionPlan {
-        jobs: app_data.jobs.clone(),
+        jobs: dot_neat.jobs.clone(),
     })
 }
 
-pub async fn build_execution_plan(
-    client: Arc<OpenAI>,
-    params: Arc<OpenAIParams>,
-    app_state: Arc<RwLock<AppState>>,
-) -> Result<Value> {
+pub async fn build_execution_plan(dot_neat: &mut AppState) -> Result<Value> {
     let state = app_state.read().await;
 
     let mut prompts = Vec::new();
@@ -172,15 +137,16 @@ impl DerefMut for Files {
 
 impl Files {
     pub fn from_schedule(job_schedule: &Value) -> Result<Self> {
-        let mut files: Files = match from_value::<Files>(job_schedule["order"].clone()) {
-            Ok(files) => files,
-            Err(e) => {
-                // Handle the error
-                return Err(anyhow!(
+        let mut files: Files =
+            match from_value::<Files>(job_schedule["order"].clone()) {
+                Ok(files) => files,
+                Err(e) => {
+                    // Handle the error
+                    return Err(anyhow!(
                     "Error converting dependecy graph to `Files` struct: {e}"
                 ));
-            }
-        };
+                }
+            };
 
         // Filter out files that are not rust files
         files.retain(|file| {
