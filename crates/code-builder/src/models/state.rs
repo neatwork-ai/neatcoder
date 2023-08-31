@@ -1,11 +1,20 @@
 use anyhow::{anyhow, Result};
+use js_sys::Error;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
-use super::{
-    interfaces::{Interface, SchemaFile},
-    jobs::jobs::Jobs,
+use crate::{
+    endpoints::{
+        execution_plan::build_execution_plan,
+        scaffold_project::{scaffold_project, ScaffoldProject},
+        stream_code::{stream_code, CodeGen},
+    },
+    openai::{client::OpenAI, params::OpenAIParams},
+    utils::jsvalue_to_map,
 };
+
+use super::interfaces::{Interface, SchemaFile};
 
 // NOTE: We will need to perform the following improvements to the data model:
 //
@@ -24,10 +33,11 @@ use super::{
 /// Acts as a shared application data (i.e. shared state). It contains
 /// information related to the initial prompt, the scaffold of the project, its
 /// interfaces, and current jobs in the TODO pipeline among others (see `Jobs`).
+#[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AppState {
     /// Initial prompt containing the specifications of the project
-    pub specs: Option<String>,
+    pub(crate) specs: Option<String>,
     /// JSON String containing the File System Scaffold
     /// Example:
     /// ```json
@@ -53,26 +63,20 @@ pub struct AppState {
     ///     }
     ///   }
     /// ```
-    pub scaffold: Option<String>,
+    pub(crate) scaffold: Option<String>,
     /// Vector of strings containing the interface config files (e.g. SQL DLLs, etc.)
     /// The HashMap represents HashMap<Interface Name, Interface>
-    pub interfaces: HashMap<String, Interface>,
-    /// HashMap containing all the code files in the codebase
-    /// Should be read as HashMap<FileName, Code String>
-    // TODO: This is static and does not reflect codebase changes...
-    pub codebase: HashMap<String, String>,
-    /// Keeps track of all the jobs performed or to be performed by the worker
-    pub jobs: Jobs,
+    pub(crate) interfaces: HashMap<String, Interface>,
 }
 
+#[wasm_bindgen]
 impl AppState {
+    #[wasm_bindgen(constructor)]
     pub fn new(specs: String) -> Self {
         Self {
             specs: Some(specs),
             scaffold: None,
             interfaces: HashMap::new(),
-            codebase: HashMap::new(),
-            jobs: Jobs::empty(),
         }
     }
 
@@ -81,22 +85,104 @@ impl AppState {
             specs: None,
             scaffold: None,
             interfaces: HashMap::new(),
-            codebase: HashMap::new(),
-            jobs: Jobs::empty(),
         }
     }
 
-    pub fn with_interfaces(mut self, interfaces: HashMap<String, Interface>) -> Result<Self> {
+    #[wasm_bindgen(setter)]
+    pub fn set_interfaces(
+        &mut self,
+        interfaces: JsValue,
+    ) -> Result<(), JsValue> {
         if !self.interfaces.is_empty() {
-            return Err(anyhow!("Data model already exists"));
+            return Err(anyhow!("Data model already exists"))
+                .map_err(|e| Error::new(&e.to_string()).into());
         }
 
+        let interfaces = jsvalue_to_map::<Interface>(&interfaces);
         self.interfaces = interfaces;
 
-        Ok(self)
+        Ok(())
     }
 
     pub fn add_schema(
+        &mut self,
+        interface_name: String,
+        schema_name: String,
+        schema: SchemaFile,
+    ) -> Result<(), JsValue> {
+        self.add_schema_(interface_name, schema_name, schema)
+            .map_err(|e| Error::new(&e.to_string()).into())
+    }
+
+    pub fn remove_schema(
+        &mut self,
+        interface_name: &str,
+        schema_name: &str,
+    ) -> Result<(), JsValue> {
+        self.remove_schema_(interface_name, schema_name)
+            .map_err(|e| Error::new(&e.to_string()).into())
+    }
+
+    pub fn add_interface(
+        &mut self,
+        interface: Interface,
+    ) -> Result<(), JsValue> {
+        self.add_interface_(interface)
+            .map_err(|e| Error::new(&e.to_string()).into())
+    }
+
+    pub fn remove_interface(
+        &mut self,
+        interface_name: &str,
+    ) -> Result<(), JsValue> {
+        self.remove_interface_(interface_name)
+            .map_err(|e| Error::new(&e.to_string()).into())
+    }
+
+    pub async fn scaffold_project(
+        &mut self,
+        client: &OpenAI,
+        ai_params: &OpenAIParams,
+        client_params: ScaffoldProject,
+    ) -> Result<(), JsValue> {
+        let scaffold_json =
+            scaffold_project(client, ai_params, client_params, self)
+                .await
+                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+        self.scaffold = Some(scaffold_json.to_string());
+
+        Ok(())
+    }
+
+    pub async fn build_execution_plan(
+        &mut self,
+        client: &OpenAI,
+        ai_params: &OpenAIParams,
+    ) -> Result<(), JsValue> {
+        build_execution_plan(client, ai_params, self)
+            .await
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+        Ok(())
+    }
+
+    pub async fn strem_code(
+        &mut self,
+        client: &OpenAI,
+        ai_params: &OpenAIParams,
+        client_params: CodeGen,
+    ) -> Result<(), JsValue> {
+        stream_code(client, ai_params, client_params, self)
+            .await
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+        Ok(())
+    }
+}
+
+impl AppState {
+    fn add_schema_(
         &mut self,
         interface_name: String,
         schema_name: String,
@@ -118,7 +204,11 @@ impl AppState {
         Ok(())
     }
 
-    pub fn remove_schema(&mut self, interface_name: &str, schema_name: &str) -> Result<()> {
+    pub fn remove_schema_(
+        &mut self,
+        interface_name: &str,
+        schema_name: &str,
+    ) -> Result<()> {
         if !self.interfaces.contains_key(interface_name) {
             // TODO: We need proper error escallation and communication with the client
             eprintln!("[ERROR] The interface does not exist.");
@@ -135,10 +225,10 @@ impl AppState {
         Ok(())
     }
 
-    pub fn add_interface(&mut self, interface: Interface) -> Result<()> {
+    pub fn add_interface_(&mut self, interface: Interface) -> Result<()> {
         let interface_name = interface.name();
 
-        if self.interfaces.contains_key(interface_name) {
+        if self.interfaces.contains_key(&interface_name) {
             // TODO: We need proper error escallation and communication with the client
             eprintln!("[ERROR] The interface already exists. Skipping.");
 
@@ -151,7 +241,7 @@ impl AppState {
         Ok(())
     }
 
-    pub fn remove_interface(&mut self, interface_name: &str) -> Result<()> {
+    pub fn remove_interface_(&mut self, interface_name: &str) -> Result<()> {
         if !self.interfaces.contains_key(interface_name) {
             // TODO: We need proper error escallation and communication with the client
             eprintln!("[ERROR] The interface does not exist. Skipping.");

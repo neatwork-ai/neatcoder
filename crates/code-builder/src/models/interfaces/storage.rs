@@ -1,10 +1,14 @@
+use crate::{
+    openai::msg::{GptRole, OpenAIMsg},
+    utils::{jsvalue_to_map, map_to_jsvalue},
+};
 use anyhow::Result;
-use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{self, Display},
 };
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use super::{AsContext, SchemaFile};
 
@@ -14,16 +18,18 @@ use super::{AsContext, SchemaFile};
 /// themselves. For example, using storage services like AWS S3 we ould build a
 /// data-lake that utilizes `parquet` files or `ndjson` files.
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[wasm_bindgen]
 pub struct Datastore {
-    pub name: String,
+    pub(crate) name: String,
     pub file_type: FileType,
     pub storage_type: StorageType,
-    pub region: Option<String>,
-    pub schemas: HashMap<String, SchemaFile>,
+    pub(crate) region: Option<String>,
+    pub(crate) schemas: HashMap<String, SchemaFile>,
 }
 
 /// Enum documenting the type of data storages.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+#[wasm_bindgen]
 pub enum StorageType {
     AwsS3,
     GoogleCloudStorage,
@@ -33,7 +39,8 @@ pub enum StorageType {
 }
 
 /// Enum documenting the most popular file types for data storage.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+#[wasm_bindgen]
 pub enum FileType {
     // === Data Store Formats ===
     /// A simple CSV file with a few rows should allow the LLM
@@ -69,6 +76,41 @@ pub enum FileType {
     Xml,
 }
 
+impl Datastore {
+    // Create a new Api instance from JavaScript
+    pub fn new(
+        name: String,
+        file_type: FileType,
+        storage_type: StorageType,
+        region: Option<String>,
+        schemas: &JsValue,
+    ) -> Datastore {
+        Datastore {
+            name,
+            file_type,
+            storage_type,
+            schemas: jsvalue_to_map(schemas),
+            region,
+        }
+    }
+
+    // Get the schemas as a JsValue to return to JavaScript
+    pub fn schemas(&self) -> JsValue {
+        map_to_jsvalue(&self.schemas)
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn region(&self) -> JsValue {
+        match &self.region {
+            Some(s) => JsValue::from_str(s),
+            None => JsValue::NULL,
+        }
+    }
+}
+
 impl AsContext for Datastore {
     fn add_context(&self, msg_sequence: &mut Vec<OpenAIMsg>) -> Result<()> {
         let mut main_prompt = format!(
@@ -82,7 +124,8 @@ Have in consideration the following {} data storage:
         );
 
         if let Some(region) = &self.region {
-            main_prompt = format!("{}\n{} {}", main_prompt, "- region:", region);
+            main_prompt =
+                format!("{}\n{} {}", main_prompt, "- region:", region);
         }
 
         msg_sequence.push(OpenAIMsg {

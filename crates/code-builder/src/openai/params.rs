@@ -1,10 +1,20 @@
-use crate::utils::bounded_float::{Bounded, Scale01, Scale100s, Scale22};
 use anyhow::{anyhow, Result};
 use serde::Serialize;
 use std::collections::HashMap;
+use wasm_bindgen::prelude::wasm_bindgen;
 
-use super::model::OpenAIModels;
+use super::utils::{Bounded, Scale01, Scale100s, Scale22};
 
+#[wasm_bindgen]
+#[derive(Debug, Serialize, Clone, Copy)]
+pub enum OpenAIModels {
+    Gpt432k,
+    Gpt4,
+    Gpt35Turbo,
+    Gpt35Turbo16k,
+}
+
+#[wasm_bindgen]
 #[derive(Debug, Serialize)]
 pub struct OpenAIParams {
     pub model: OpenAIModels,
@@ -28,7 +38,7 @@ pub struct OpenAIParams {
     /// narrower range of high-probability words. This leads to
     /// more focused and deterministic output, with fewer alternatives
     /// and reduced randomness.
-    pub top_p: Option<Scale01>,
+    pub(crate) top_p: Option<Scale01>, // TODO: Add getter
     /// The frequency penalty parameter helps reduce the repetition of words
     /// or sentences within the generated text. It is a float value ranging
     /// from -2.0 to 2.0, which is subtracted to the logarithmic probability of a
@@ -38,7 +48,7 @@ pub struct OpenAIParams {
     ///
     /// In the official documentation:
     /// https://platform.openai.com/docs/api-reference/chat/create#chat/create-frequency_penalty
-    pub frequency_penalty: Option<Scale22>,
+    pub(crate) frequency_penalty: Option<Scale22>, // TODO: Add getter
     /// The presence penalty parameter stears how the model penalizes new tokens
     /// based on whether they have appeared (hence presense) in the text so far.
     ///
@@ -47,7 +57,7 @@ pub struct OpenAIParams {
     ///
     /// In the official documentation:
     /// https://platform.openai.com/docs/api-reference/chat/create#chat/create-presence_penalty
-    pub presence_penalty: Option<Scale22>,
+    pub(crate) presence_penalty: Option<Scale22>, // TODO: Add getter
     /// How many chat completion choices to generate for each input message.
     pub n: Option<u64>,
     /// Whether to stream back partial progress. If set, tokens will be sent as
@@ -63,11 +73,11 @@ pub struct OpenAIParams {
     /// between -1 and 1 should decrease or increase likelihood of selection;
     /// values like -100 or 100 should result in a ban or exclusive selection
     /// of the relevant token.
-    pub logit_bias: HashMap<String, Scale100s>,
+    pub(crate) logit_bias: HashMap<String, Scale100s>, // TODO: Add getter
     /// A unique identifier representing your end-user, which can help OpenAI
     /// to monitor and detect abuse. You can read more at:
     /// https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids
-    pub user: Option<String>,
+    pub(crate) user: Option<String>,
 }
 
 impl OpenAIParams {
@@ -149,7 +159,10 @@ impl OpenAIParams {
         self
     }
 
-    pub fn logit_bias(mut self, mut logit_bias: HashMap<String, f64>) -> Result<Self> {
+    pub fn logit_bias(
+        mut self,
+        mut logit_bias: HashMap<String, f64>,
+    ) -> Result<Self> {
         let logit_bias = logit_bias
             .drain()
             .map(|(key, val)| Ok((key, Scale100s::new(val)?)))

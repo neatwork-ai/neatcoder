@@ -5,9 +5,11 @@ use bytes::Bytes;
 use futures::Stream;
 use reqwest::Client;
 use serde_json::{json, Value};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::{msg::OpenAIMsg, output::Body, params::OpenAIParams};
 
+#[wasm_bindgen]
 pub struct OpenAI {
     api_key: Option<String>,
 }
@@ -125,7 +127,9 @@ impl OpenAI {
                         "Authorization",
                         format!(
                             "Bearer {}",
-                            self.api_key.as_ref().expect("No API Keys provided")
+                            self.api_key
+                                .as_ref()
+                                .expect("No API Keys provided")
                         ),
                     )
                     .header("Content-Type", "application/json")
@@ -144,7 +148,10 @@ impl OpenAI {
                 Err(e) => {
                     retries -= 1;
                     if retries == 0 {
-                        return Err(anyhow!("Failed after maximum retries: {:?}", e));
+                        return Err(anyhow!(
+                            "Failed after maximum retries: {:?}",
+                            e
+                        ));
                     }
 
                     println!("[DEBUG] Request failed, retrying...");
@@ -201,7 +208,8 @@ impl OpenAI {
         }
 
         if let Some(frequency_penalty) = &job.frequency_penalty {
-            data["frequency_penalty"] = serde_json::to_value(frequency_penalty)?;
+            data["frequency_penalty"] =
+                serde_json::to_value(frequency_penalty)?;
         }
 
         if let Some(presence_penalty) = &job.presence_penalty {

@@ -1,9 +1,14 @@
 use anyhow::Result;
-use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{self, Display},
+};
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+
+use crate::{
+    openai::msg::{GptRole, OpenAIMsg},
+    utils::{jsvalue_to_map, map_to_jsvalue},
 };
 
 use super::{AsContext, SchemaFile};
@@ -19,16 +24,53 @@ use super::{AsContext, SchemaFile};
 // TODO: We can increase the configurations here such as SSL stuff, etc.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
+#[wasm_bindgen]
 pub struct Database {
-    pub name: String,
+    pub(crate) name: String,
     pub db_type: DbType,
     pub port: Option<usize>,
-    pub host: Option<String>,
-    pub schemas: HashMap<String, SchemaFile>,
+    pub(crate) host: Option<String>,
+    pub(crate) schemas: HashMap<String, SchemaFile>,
+}
+
+impl Database {
+    // Create a new Api instance from JavaScript
+    pub fn new(
+        name: String,
+        db_type: DbType,
+        port: Option<usize>,
+        host: Option<String>,
+        schemas: &JsValue,
+    ) -> Database {
+        Database {
+            name,
+            db_type,
+            port,
+            host,
+            schemas: jsvalue_to_map(schemas),
+        }
+    }
+
+    // Get the schemas as a JsValue to return to JavaScript
+    pub fn schemas(&self) -> JsValue {
+        map_to_jsvalue(&self.schemas)
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn host(&self) -> JsValue {
+        match &self.host {
+            Some(s) => JsValue::from_str(s),
+            None => JsValue::NULL,
+        }
+    }
 }
 
 /// Enum documenting the type of Database/DataWarehouse interface.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+#[wasm_bindgen]
 pub enum DbType {
     // === Tabular Store Types ===
     // Traditional RDBMS systems that store data in rows and columns. Used mainly for OLTP operations.
@@ -51,7 +93,7 @@ pub enum DbType {
     //
     /// Google's fully managed, petabyte-scale data warehouse.
     BigQuery,
-    /// Amazon's fully managed data warehouse solution.    
+    /// Amazon's fully managed data warehouse solution.
     Redshift,
     /// A cloud-native data warehousing platform.
     Snowflake,
@@ -145,11 +187,13 @@ Have in consideration the following {} Database:
         );
 
         if let Some(port) = &self.port {
-            main_prompt = format!("{}\n{} {}", main_prompt, "- database port:", port);
+            main_prompt =
+                format!("{}\n{} {}", main_prompt, "- database port:", port);
         }
 
         if let Some(host) = &self.host {
-            main_prompt = format!("{}\n{} {}", main_prompt, "- database host:", host);
+            main_prompt =
+                format!("{}\n{} {}", main_prompt, "- database host:", host);
         }
 
         msg_sequence.push(OpenAIMsg {
