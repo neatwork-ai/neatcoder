@@ -1,3 +1,4 @@
+mod conf;
 mod prelude;
 
 use anyhow::{anyhow, Result};
@@ -35,17 +36,15 @@ async fn main() -> Result<()> {
     dotenv::dotenv().ok();
     env_logger::builder().format_timestamp_millis().init();
 
-    info!("Reading OpenAI API key");
-    let api_key = env::var("OPENAI_API_KEY").map_err(|_| {
-        anyhow!("OPENAI_API_KEY environment variable not found")
-    })?;
+    info!("Building configuration");
+    let conf = conf::Conf::from_env()?;
 
-    let open_ai_client = Arc::new(OpenAI::new(api_key));
+    let open_ai_client = Arc::new(OpenAI::new(conf.openai_api_key.clone()));
 
     let ai_job = Arc::new(
         OpenAIParams::empty(OpenAIModels::Gpt35Turbo)
-            .temperature(0.7)
-            .top_p(0.9)?,
+            .temperature(conf.llm_temperature)
+            .top_p(conf.llm_top_p)?,
     );
 
     let listener_address = "127.0.0.1:1895"; // TODO: conf
