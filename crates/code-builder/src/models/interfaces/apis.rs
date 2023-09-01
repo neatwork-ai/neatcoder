@@ -26,8 +26,9 @@ pub struct Api {
     pub(crate) schemas: HashMap<String, SchemaFile>,
 }
 
+#[wasm_bindgen]
 impl Api {
-    // Create a new Api instance from JavaScript
+    #[wasm_bindgen(constructor)]
     pub fn new(
         name: String,
         api_type: ApiType,
@@ -44,20 +45,28 @@ impl Api {
         }
     }
 
-    // Get the schemas as a JsValue to return to JavaScript
-    pub fn schemas(&self) -> JsValue {
-        map_to_jsvalue(&self.schemas)
-    }
-
-    pub fn name(&self) -> String {
+    #[wasm_bindgen(getter, js_name = name)]
+    pub fn get_name(&self) -> String {
         self.name.clone()
     }
 
-    pub fn host(&self) -> JsValue {
+    // Get the schemas as a JsValue to return to JavaScript
+    #[wasm_bindgen(getter, js_name = schemas)]
+    pub fn get_schemas(&self) -> JsValue {
+        map_to_jsvalue(&self.schemas)
+    }
+
+    #[wasm_bindgen(getter, js_name = host)]
+    pub fn get_host(&self) -> JsValue {
         match &self.host {
             Some(s) => JsValue::from_str(s),
             None => JsValue::NULL,
         }
+    }
+
+    #[wasm_bindgen(getter, js_name = apiType)]
+    pub fn get_api_type(&self) -> ApiType {
+        self.api_type
     }
 }
 

@@ -1,9 +1,9 @@
 use self::{apis::Api, dbs::Database, storage::Datastore};
-use crate::openai::msg::OpenAIMsg;
+use crate::{openai::msg::OpenAIMsg, utils::map_to_jsvalue};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 pub mod apis;
 pub mod dbs;
@@ -17,6 +17,25 @@ pub struct Interface {
     pub(crate) inner: InterfaceInner,
 }
 
+#[wasm_bindgen]
+impl Interface {
+    // TODO: Add constructor
+
+    #[wasm_bindgen(getter, js_name = interface)]
+    pub fn get_interface(&self) -> JsValue {
+        match &self.interface_type {
+            InterfaceType::Database => self.inner.get_database(),
+            InterfaceType::Storage => self.inner.get_storage(),
+            InterfaceType::Api => self.inner.get_api(),
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = interfaceType)]
+    pub fn get_interface_type(&self) -> InterfaceType {
+        self.interface_type
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[wasm_bindgen]
 pub struct InterfaceInner {
@@ -25,7 +44,36 @@ pub struct InterfaceInner {
     pub(crate) api: Option<Api>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[wasm_bindgen]
+impl InterfaceInner {
+    // TODO: Add constructor
+
+    #[wasm_bindgen(getter, js_name = database)]
+    pub fn get_database(&self) -> JsValue {
+        match &self.database {
+            Some(database) => database.clone().into(),
+            None => JsValue::NULL,
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = storage)]
+    pub fn get_storage(&self) -> JsValue {
+        match &self.storage {
+            Some(storage) => storage.clone().into(),
+            None => JsValue::NULL,
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = api)]
+    pub fn get_api(&self) -> JsValue {
+        match &self.api {
+            Some(api) => api.clone().into(),
+            None => JsValue::NULL,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 #[wasm_bindgen]
 pub enum InterfaceType {
     /// `Database` variant refers to Database storage solutions or to more
@@ -84,20 +132,51 @@ impl AsContext for Interface {
     }
 }
 
+#[wasm_bindgen]
 impl Interface {
-    pub fn name(&self) -> String {
+    #[wasm_bindgen(getter, js_name = name)]
+    pub fn get_name(&self) -> String {
         match self.interface_type {
             InterfaceType::Database => {
-                self.inner.database.as_ref().unwrap().name()
+                self.inner.database.as_ref().unwrap().name.clone()
             }
             InterfaceType::Storage => {
-                self.inner.storage.as_ref().unwrap().name()
+                self.inner.storage.as_ref().unwrap().name.clone()
             }
-            InterfaceType::Api => self.inner.api.as_ref().unwrap().name(),
+            InterfaceType::Api => self.inner.api.as_ref().unwrap().name.clone(),
         }
     }
 
-    pub fn schemas_mut(&mut self) -> &mut HashMap<String, SchemaFile> {
+    #[wasm_bindgen(getter, js_name = schemas)]
+    pub fn get_schemas(&mut self) -> JsValue {
+        let schemas = match self.interface_type {
+            InterfaceType::Database => {
+                &self.inner.database.as_mut().unwrap().schemas
+            }
+            InterfaceType::Storage => {
+                &self.inner.storage.as_mut().unwrap().schemas
+            }
+            InterfaceType::Api => &self.inner.api.as_mut().unwrap().schemas,
+        };
+
+        map_to_jsvalue(schemas)
+    }
+
+    #[wasm_bindgen(js_name = insertSchema)]
+    pub fn insert_schema(&mut self, schema_name: String, schema: String) {
+        let schemas = self.schemas_mut();
+        schemas.insert(schema_name, schema);
+    }
+
+    #[wasm_bindgen(js_name = removeSchema)]
+    pub fn remove_schema(&mut self, schema_name: &str) {
+        let schemas = self.schemas_mut();
+        schemas.remove(schema_name);
+    }
+}
+
+impl Interface {
+    fn schemas_mut(&mut self) -> &mut HashMap<String, SchemaFile> {
         match self.interface_type {
             InterfaceType::Database => {
                 &mut self.inner.database.as_mut().unwrap().schemas
@@ -107,15 +186,5 @@ impl Interface {
             }
             InterfaceType::Api => &mut self.inner.api.as_mut().unwrap().schemas,
         }
-    }
-
-    pub fn insert_schema(&mut self, schema_name: String, schema: String) {
-        let schemas = self.schemas_mut();
-        schemas.insert(schema_name, schema);
-    }
-
-    pub fn remove_schema(&mut self, schema_name: &str) {
-        let schemas = self.schemas_mut();
-        schemas.remove(schema_name);
     }
 }

@@ -11,7 +11,7 @@ use crate::{
         stream_code::{stream_code, CodeGen},
     },
     openai::{client::OpenAI, params::OpenAIParams},
-    utils::jsvalue_to_map,
+    utils::{jsvalue_to_map, map_to_jsvalue},
 };
 
 use super::interfaces::{Interface, SchemaFile};
@@ -88,7 +88,28 @@ impl AppState {
         }
     }
 
-    #[wasm_bindgen(setter)]
+    #[wasm_bindgen(getter, js_name = specs)]
+    pub fn get_specs(&self) -> JsValue {
+        match &self.specs {
+            Some(s) => JsValue::from_str(s),
+            None => JsValue::NULL,
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = scaffold)]
+    pub fn get_scaffold(&self) -> JsValue {
+        match &self.scaffold {
+            Some(s) => JsValue::from_str(s),
+            None => JsValue::NULL,
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = interfaces)]
+    pub fn get_interfaces(&self) -> JsValue {
+        map_to_jsvalue::<Interface>(&self.interfaces)
+    }
+
+    #[wasm_bindgen(setter = setInterface)]
     pub fn set_interfaces(
         &mut self,
         interfaces: JsValue,
@@ -104,6 +125,7 @@ impl AppState {
         Ok(())
     }
 
+    #[wasm_bindgen(js_name = addSchema)]
     pub fn add_schema(
         &mut self,
         interface_name: String,
@@ -114,6 +136,7 @@ impl AppState {
             .map_err(|e| Error::new(&e.to_string()).into())
     }
 
+    #[wasm_bindgen(js_name = removeSchema)]
     pub fn remove_schema(
         &mut self,
         interface_name: &str,
@@ -123,6 +146,7 @@ impl AppState {
             .map_err(|e| Error::new(&e.to_string()).into())
     }
 
+    #[wasm_bindgen(js_name = addInterface)]
     pub fn add_interface(
         &mut self,
         interface: Interface,
@@ -131,6 +155,7 @@ impl AppState {
             .map_err(|e| Error::new(&e.to_string()).into())
     }
 
+    #[wasm_bindgen(js_name = removeInterface)]
     pub fn remove_interface(
         &mut self,
         interface_name: &str,
@@ -139,6 +164,7 @@ impl AppState {
             .map_err(|e| Error::new(&e.to_string()).into())
     }
 
+    #[wasm_bindgen(js_name = scaffoldProject)]
     pub async fn scaffold_project(
         &mut self,
         client: &OpenAI,
@@ -155,6 +181,7 @@ impl AppState {
         Ok(())
     }
 
+    #[wasm_bindgen(js_name = buildExecutionPlan)]
     pub async fn build_execution_plan(
         &mut self,
         client: &OpenAI,
@@ -167,7 +194,8 @@ impl AppState {
         Ok(())
     }
 
-    pub async fn strem_code(
+    #[wasm_bindgen(js_name = streamCode)]
+    pub async fn stream_code(
         &mut self,
         client: &OpenAI,
         ai_params: &OpenAIParams,
@@ -226,7 +254,7 @@ impl AppState {
     }
 
     pub fn add_interface_(&mut self, interface: Interface) -> Result<()> {
-        let interface_name = interface.name();
+        let interface_name = interface.get_name();
 
         if self.interfaces.contains_key(&interface_name) {
             // TODO: We need proper error escallation and communication with the client
