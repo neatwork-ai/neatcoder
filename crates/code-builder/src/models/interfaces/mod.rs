@@ -1,4 +1,4 @@
-use self::{apis::Api, dbs::Database, storage::Datastore};
+use self::{apis::Api, dbs::Database, storage::Storage};
 use crate::{openai::msg::OpenAIMsg, utils::map_to_jsvalue};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,27 @@ pub struct Interface {
 
 #[wasm_bindgen]
 impl Interface {
-    // TODO: Add constructor
+    #[wasm_bindgen(getter, js_name = newDb)]
+    pub fn new_db(db: Database) -> Self {
+        Self {
+            interface_type: InterfaceType::Database,
+            inner: InterfaceInner::new_db(db),
+        }
+    }
+    #[wasm_bindgen(getter, js_name = newApi)]
+    pub fn new_api(api: Api) -> Self {
+        Self {
+            interface_type: InterfaceType::Api,
+            inner: InterfaceInner::new_api(api),
+        }
+    }
+    #[wasm_bindgen(getter, js_name = newStorage)]
+    pub fn new_storage(storage: Storage) -> Self {
+        Self {
+            interface_type: InterfaceType::Storage,
+            inner: InterfaceInner::new_storage(storage),
+        }
+    }
 
     #[wasm_bindgen(getter, js_name = interface)]
     pub fn get_interface(&self) -> JsValue {
@@ -40,13 +60,38 @@ impl Interface {
 #[wasm_bindgen]
 pub struct InterfaceInner {
     pub(crate) database: Option<Database>,
-    pub(crate) storage: Option<Datastore>,
+    pub(crate) storage: Option<Storage>,
     pub(crate) api: Option<Api>,
 }
 
 #[wasm_bindgen]
 impl InterfaceInner {
-    // TODO: Add constructor
+    #[wasm_bindgen(getter, js_name = newDb)]
+    pub fn new_db(db: Database) -> Self {
+        Self {
+            database: Some(db),
+            storage: None,
+            api: None,
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = newApi)]
+    pub fn new_api(api: Api) -> Self {
+        Self {
+            database: None,
+            storage: None,
+            api: Some(api),
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = newStorage)]
+    pub fn new_storage(storage: Storage) -> Self {
+        Self {
+            database: None,
+            storage: Some(storage),
+            api: None,
+        }
+    }
 
     #[wasm_bindgen(getter, js_name = database)]
     pub fn get_database(&self) -> JsValue {

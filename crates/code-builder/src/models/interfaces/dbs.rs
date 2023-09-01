@@ -1,3 +1,8 @@
+use super::{AsContext, SchemaFile};
+use crate::{
+    openai::msg::{GptRole, OpenAIMsg},
+    utils::{jsvalue_to_map, map_to_jsvalue},
+};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -5,13 +10,6 @@ use std::{
     fmt::{self, Display},
 };
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
-
-use crate::{
-    openai::msg::{GptRole, OpenAIMsg},
-    utils::{jsvalue_to_map, map_to_jsvalue},
-};
-
-use super::{AsContext, SchemaFile};
 
 /// Struct documenting a Database/DataWarehouse interface. This refers to Database
 /// storage solutions or to more classic Data Warehousing solutions such as
@@ -22,12 +20,14 @@ use super::{AsContext, SchemaFile};
 /// transactions as well as CAP Theorem guarantees. Usually these solutions
 /// provide a declarative framework for accessing and managing data.
 // TODO: We can increase the configurations here such as SSL stuff, etc.
+#[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-#[wasm_bindgen]
 pub struct Database {
     pub(crate) name: String,
     pub db_type: DbType,
+    /// Field that is only present when the type chose is a custom one
+    custom_type: Option<String>,
     pub port: Option<usize>,
     pub(crate) host: Option<String>,
     pub(crate) schemas: HashMap<String, SchemaFile>,
@@ -46,6 +46,25 @@ impl Database {
         Database {
             name,
             db_type,
+            custom_type: None,
+            port,
+            host,
+            schemas: jsvalue_to_map(schemas),
+        }
+    }
+
+    #[wasm_bindgen(js_name = newCustom)]
+    pub fn new_custom(
+        name: String,
+        custom_type: String,
+        port: Option<usize>,
+        host: Option<String>,
+        schemas: &JsValue,
+    ) -> Database {
+        Database {
+            name,
+            db_type: DbType::Custom,
+            custom_type: Some(custom_type),
             port,
             host,
             schemas: jsvalue_to_map(schemas),
@@ -78,8 +97,8 @@ impl Database {
 }
 
 /// Enum documenting the type of Database/DataWarehouse interface.
-#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 #[wasm_bindgen]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub enum DbType {
     // === Tabular Store Types ===
     // Traditional RDBMS systems that store data in rows and columns. Used mainly for OLTP operations.
@@ -182,6 +201,8 @@ pub enum DbType {
     EXist,
     /// An enterprise NoSQL database.
     MarkLogic,
+    /// A custom database interface
+    Custom,
 }
 
 impl AsContext for Database {
@@ -263,8 +284,54 @@ impl Display for DbType {
             DbType::BaseX => "BaseX",
             DbType::EXist => "EXist",
             DbType::MarkLogic => "MarkLogic",
+            DbType::Custom => "Custom",
         };
 
         f.write_str(tag)
     }
+}
+
+// This is implemented outside the impl block because abstract data structs
+// are not supported in javascript
+#[wasm_bindgen(js_name = dbTypeFromFriendlyUX)]
+pub fn db_type_from_friendly_ux(database: String) -> DbType {
+    let db = match database.as_str() {
+        "ClickHouse" => DbType::ClickHouse,
+        "DuckDb" => DbType::DuckDb,
+        "MS SQL" => DbType::MsSql,
+        "MySQL" => DbType::MySql,
+        "PostgreSQL" => DbType::PostgreSql,
+        "SQLite" => DbType::SqLite,
+        "BigQuery" => DbType::BigQuery,
+        "Redshift" => DbType::Redshift,
+        "Snowflake" => DbType::Snowflake,
+        "Hive" => DbType::Hive,
+        "Cassandra" => DbType::Cassandra,
+        "Hbase" => DbType::Hbase,
+        "ScyellaDB" => DbType::ScyellaDB,
+        "InfluxDB" => DbType::InfluxDB,
+        "TimescaleDB" => DbType::TimescaleDB,
+        "OpenTSDB" => DbType::OpenTSDB,
+        "MongoDB" => DbType::MongoDB,
+        "CounchDB" => DbType::CounchDB,
+        "RavenDB" => DbType::RavenDB,
+        "Firestore" => DbType::Firestore,
+        "DynamoDB" => DbType::DynamoDB,
+        "CosmosDB" => DbType::CosmosDB,
+        "Redis" => DbType::Redis,
+        "BerkeleyDB" => DbType::BerkeleyDB,
+        "Riak" => DbType::Riak,
+        "CouchBase" => DbType::CouchBase,
+        "Db4o" => DbType::Db4o,
+        "Versant" => DbType::Versant,
+        "Neo4j" => DbType::Neo4j,
+        "OrientDB" => DbType::OrientDB,
+        "AmazonNeptune" => DbType::AmazonNeptune,
+        "ArangoDB" => DbType::ArangoDB,
+        "BaseX" => DbType::BaseX,
+        "EXist" => DbType::EXist,
+        "MarkLogic" => DbType::MarkLogic,
+        _ => DbType::Custom,
+    };
+    db
 }

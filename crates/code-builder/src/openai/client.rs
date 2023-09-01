@@ -14,33 +14,21 @@ pub struct OpenAI {
     api_key: Option<String>,
 }
 
-/// We manually implement `Debug` to intentionally maskl the API Key with
-/// the value `Some` or `None`, for security reasons.
-impl fmt::Debug for OpenAI {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let value = if self.api_key.is_some() {
-            "Some"
-        } else {
-            "None"
-        };
-
-        // TODO: Conside indicating at least if API key is Some or None
-        f.debug_struct("OpenAI")
-            .field("api_key", &value) // We hide the API Key and only indicate if it is Some or None
-            .finish()
-    }
-}
-
+#[wasm_bindgen]
 impl OpenAI {
-    pub fn empty() -> Self {
-        Self { api_key: None }
-    }
-
+    #[wasm_bindgen(constructor)]
     pub fn new(api_key: String) -> Self {
         Self {
             api_key: Some(api_key),
         }
     }
+
+    pub fn empty() -> Self {
+        Self { api_key: None }
+    }
+}
+
+impl OpenAI {
     // === Setter methods with chaining ===
 
     pub fn api_key(mut self, key: String) -> Self {
@@ -203,5 +191,22 @@ impl OpenAI {
         }
 
         Ok(data)
+    }
+}
+
+/// We manually implement `Debug` to intentionally maskl the API Key with
+/// the value `Some` or `None`, for security reasons.
+impl fmt::Debug for OpenAI {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let value = if self.api_key.is_some() {
+            "Some"
+        } else {
+            "None"
+        };
+
+        // TODO: Consider indicating at least if API key is Some or None
+        f.debug_struct("OpenAI")
+            .field("api_key", &value) // We hide the API Key and only indicate if it is Some or None
+            .finish()
     }
 }

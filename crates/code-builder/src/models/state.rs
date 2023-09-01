@@ -1,15 +1,17 @@
 use anyhow::{anyhow, Result};
-use js_sys::Error;
+use js_sys::{Error, Function};
 use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen::to_value;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::{
     endpoints::{
-        execution_plan::build_execution_plan,
-        scaffold_project::{scaffold_project, ScaffoldProject},
+        execution_plan::{build_execution_plan, Files},
+        scaffold_project::scaffold_project,
         stream_code::{stream_code, CodeGen},
     },
+    models::task_params::{TaskParams, TaskType},
     openai::{client::OpenAI, params::OpenAIParams},
     utils::{jsvalue_to_map, map_to_jsvalue},
 };
@@ -39,7 +41,7 @@ use super::{
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AppState {
-    #[serde(skip_serializing, skip_deserializing)]
+    #[serde(skip)]
     listeners: Vec<js_sys::Function>,
     /// Initial prompt containing the specifications of the project
     pub(crate) specs: Option<String>,
@@ -123,6 +125,39 @@ impl AppState {
         map_to_jsvalue::<String, Interface>(&self.interfaces)
     }
 
+    #[wasm_bindgen(getter, js_name = taskPool)]
+    pub fn get_task_pool(&self) -> JsValue {
+        to_value(&self.task_pool).unwrap()
+    }
+
+    #[wasm_bindgen(js_name = getTodoTasks)]
+    pub fn get_todo_tasks(&self) -> JsValue {
+        let tasks: Vec<_> = self
+            .task_pool
+            .todo
+            .order
+            .iter()
+            .filter_map(|&id| self.task_pool.todo.tasks.get(&id))
+            .cloned()
+            .collect();
+
+        to_value(&tasks).unwrap()
+    }
+
+    #[wasm_bindgen(js_name = getDoneTasks)]
+    pub fn get_done_tasks(&self) -> JsValue {
+        let tasks: Vec<_> = self
+            .task_pool
+            .done
+            .order
+            .iter()
+            .filter_map(|&id| self.task_pool.todo.tasks.get(&id))
+            .cloned()
+            .collect();
+
+        to_value(&tasks).unwrap()
+    }
+
     #[wasm_bindgen(setter = setInterface)]
     pub fn set_interfaces(
         &mut self,
@@ -136,6 +171,8 @@ impl AppState {
         let interfaces = jsvalue_to_map::<Interface>(&interfaces);
         self.interfaces = interfaces;
 
+        self.trigger_callbacks();
+
         Ok(())
     }
 
@@ -146,6 +183,8 @@ impl AppState {
         schema_name: String,
         schema: SchemaFile,
     ) -> Result<(), JsValue> {
+        self.trigger_callbacks();
+
         self.add_schema_(interface_name, schema_name, schema)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -156,6 +195,8 @@ impl AppState {
         interface_name: &str,
         schema_name: &str,
     ) -> Result<(), JsValue> {
+        self.trigger_callbacks();
+
         self.remove_schema_(interface_name, schema_name)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -165,6 +206,8 @@ impl AppState {
         &mut self,
         interface: Interface,
     ) -> Result<(), JsValue> {
+        self.trigger_callbacks();
+
         self.add_interface_(interface)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -174,6 +217,8 @@ impl AppState {
         &mut self,
         interface_name: &str,
     ) -> Result<(), JsValue> {
+        self.trigger_callbacks();
+
         self.remove_interface_(interface_name)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -183,14 +228,20 @@ impl AppState {
         &mut self,
         client: &OpenAI,
         ai_params: &OpenAIParams,
-        client_params: ScaffoldProject,
+        task_params: TaskParams,
     ) -> Result<(), JsValue> {
+        let task_params = task_params
+            .scaffold_project()
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
         let scaffold_json =
-            scaffold_project(client, ai_params, client_params, self)
+            scaffold_project(client, ai_params, task_params, self)
                 .await
                 .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
         self.scaffold = Some(scaffold_json.to_string());
+
+        self.trigger_callbacks();
 
         Ok(())
     }
@@ -201,9 +252,27 @@ impl AppState {
         client: &OpenAI,
         ai_params: &OpenAIParams,
     ) -> Result<(), JsValue> {
-        build_execution_plan(client, ai_params, self)
+        let plan = build_execution_plan(client, ai_params, self)
             .await
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+        let files = Files::from_schedule(&plan)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+        // Add code writing jobs to the job queue
+        for file in files.iter() {
+            let file_ = file.clone();
+
+            let task_params = TaskParams::new(
+                TaskType::CodeGen,
+                Box::new(CodeGen { filename: file_ }),
+            )
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+            self.task_pool.add_todo(&format!("{}", file), task_params);
+        }
+
+        self.trigger_callbacks();
 
         Ok(())
     }
@@ -213,9 +282,17 @@ impl AppState {
         &mut self,
         client: &OpenAI,
         ai_params: &OpenAIParams,
-        client_params: CodeGen,
+        task_params: TaskParams,
+        codebase: JsValue,
+        callback: Function,
     ) -> Result<(), JsValue> {
-        stream_code(client, ai_params, client_params, self)
+        let task_params = task_params
+            .stream_code()
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+        let codebase = jsvalue_to_map::<String>(&codebase);
+
+        stream_code(self, client, ai_params, task_params, codebase, callback)
             .await
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
@@ -299,7 +376,7 @@ impl AppState {
 
 impl AppState {
     fn trigger_callbacks(&self) {
-        // Notify listeners of event A
+        // Notify listeners
         for callback in &self.listeners {
             let this = JsValue::NULL;
             let _ = callback.call0(&this);

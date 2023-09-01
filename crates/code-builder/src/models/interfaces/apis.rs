@@ -21,6 +21,8 @@ use super::{AsContext, SchemaFile};
 pub struct Api {
     pub(crate) name: String,
     pub api_type: ApiType,
+    /// Field that is only present when the type chose is a custom one
+    custom_type: Option<String>,
     pub port: Option<usize>,
     pub(crate) host: Option<String>,
     pub(crate) schemas: HashMap<String, SchemaFile>,
@@ -39,6 +41,24 @@ impl Api {
         Api {
             name,
             api_type,
+            custom_type: None,
+            port,
+            host,
+            schemas: jsvalue_to_map(schemas),
+        }
+    }
+
+    pub fn new_custom(
+        name: String,
+        custom_type: String,
+        port: Option<usize>,
+        host: Option<String>,
+        schemas: &JsValue,
+    ) -> Api {
+        Api {
+            name,
+            api_type: ApiType::Custom,
+            custom_type: Some(custom_type),
             port,
             host,
             schemas: jsvalue_to_map(schemas),
@@ -104,6 +124,7 @@ pub enum ApiType {
     /// AsyncAPI Specification: Describes asynchronous APIs, extending the
     /// OpenAPI spec to cover protocols like MQTT, WebSockets, etc.
     Mqtt,
+    Custom,
 }
 
 impl AsContext for Api {
@@ -162,8 +183,33 @@ impl Display for ApiType {
             ApiType::TcpSocket => "Raw TCP Socket",
             ApiType::LibraryIDL => "Library IDL",
             ApiType::Mqtt => "MQTT",
+            ApiType::Custom => "Custom",
         };
 
         f.write_str(tag)
     }
+}
+
+// This is implemented outside the impl block because abstract data structs
+// are not supported in javascript
+#[wasm_bindgen(js_name = apiTypeFromFriendlyUX)]
+pub fn api_type_from_friendly_ux(api: String) -> ApiType {
+    let api = match api.as_str() {
+        "Restful API" => ApiType::RestfulApi,
+        "Soap API" => ApiType::SoapApi,
+        "RPC API" => ApiType::RpcApi,
+        "gRPC API" => ApiType::GRpcApi,
+        "GraphQL" => ApiType::GraphQL,
+        "WebHooks" => ApiType::WebHooks,
+        "HTTP Long-Polling" => ApiType::HttpLongPolling,
+        "Server-Sent Events" => ApiType::ServerSentEvents,
+        "HTTP Server Push" => ApiType::HttpServerPush,
+        "WebSub" => ApiType::WebSub,
+        "WebSockets" => ApiType::WebSockets,
+        "Raw TCP Socket" => ApiType::TcpSocket,
+        "Library IDL" => ApiType::LibraryIDL,
+        "MQTT" => ApiType::Mqtt,
+        _ => ApiType::Custom,
+    };
+    api
 }

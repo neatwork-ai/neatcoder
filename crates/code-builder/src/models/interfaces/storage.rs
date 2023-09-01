@@ -19,10 +19,14 @@ use super::{AsContext, SchemaFile};
 /// data-lake that utilizes `parquet` files or `ndjson` files.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[wasm_bindgen]
-pub struct Datastore {
+pub struct Storage {
     pub(crate) name: String,
     pub file_type: FileType,
     pub storage_type: StorageType,
+    /// Field that is only present when the type chose is a custom one
+    custom_file_type: Option<String>,
+    /// Field that is only present when the type chose is a custom one
+    custom_storage_type: Option<String>,
     pub(crate) region: Option<String>,
     pub(crate) schemas: HashMap<String, SchemaFile>,
 }
@@ -36,6 +40,7 @@ pub enum StorageType {
     FirebaseCloudStorage,
     AzureBlobStorage,
     LocalStorage,
+    Custom,
 }
 
 /// Enum documenting the most popular file types for data storage.
@@ -76,23 +81,27 @@ pub enum FileType {
     Xml,
 }
 
-impl Datastore {
-    // Create a new Api instance from JavaScript
+impl Storage {
+    // Create a new Storage instance from JavaScript
     pub fn new(
         name: String,
         file_type: FileType,
         storage_type: StorageType,
         region: Option<String>,
         schemas: &JsValue,
-    ) -> Datastore {
-        Datastore {
+    ) -> Storage {
+        Storage {
             name,
             file_type,
             storage_type,
+            custom_file_type: None,
+            custom_storage_type: None,
             schemas: jsvalue_to_map(schemas),
             region,
         }
     }
+
+    // TODO: New Custom method
 
     // Get the schemas as a JsValue to return to JavaScript
     pub fn schemas(&self) -> JsValue {
@@ -111,7 +120,7 @@ impl Datastore {
     }
 }
 
-impl AsContext for Datastore {
+impl AsContext for Storage {
     fn add_context(&self, msg_sequence: &mut Vec<OpenAIMsg>) -> Result<()> {
         let mut main_prompt = format!(
             "
@@ -156,6 +165,7 @@ impl Display for StorageType {
             StorageType::FirebaseCloudStorage => "Firebase Cloud Storage",
             StorageType::AzureBlobStorage => "Azure Blob Storage",
             StorageType::LocalStorage => "Local Storage",
+            StorageType::Custom => "Custom Storage",
         };
 
         f.write_str(tag)
@@ -177,4 +187,19 @@ impl Display for FileType {
 
         f.write_str(tag)
     }
+}
+
+// This is implemented outside the impl block because abstract data structs
+// are not supported in javascript
+#[wasm_bindgen(js_name = storageTypeFromFriendlyUX)]
+pub fn storage_type_from_friendly_ux(api: String) -> StorageType {
+    let api = match api.as_str() {
+        "AWS S3" => StorageType::AwsS3,
+        "Google Cloud Storage" => StorageType::GoogleCloudStorage,
+        "Firebase Cloud Storage" => StorageType::FirebaseCloudStorage,
+        "Azure Blob Storage" => StorageType::AzureBlobStorage,
+        "Local Storage" => StorageType::LocalStorage,
+        _ => StorageType::Custom,
+    };
+    api
 }

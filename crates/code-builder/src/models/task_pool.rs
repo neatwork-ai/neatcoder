@@ -1,6 +1,6 @@
-use crate::utils::map_to_jsvalue;
+use crate::{models::task_params::TaskParams, utils::map_to_jsvalue};
 
-use super::task::{Task, TaskType};
+use super::task::Task;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
@@ -12,22 +12,15 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 pub struct TaskPool {
     pub counter: usize,
     pub(crate) todo: Todo,
-    pub(crate) in_progress: InProgress,
     pub(crate) done: Done,
 }
 
 #[wasm_bindgen]
 impl TaskPool {
-    pub fn new(
-        counter: usize,
-        todo: Todo,
-        in_progress: InProgress,
-        done: Done,
-    ) -> Self {
+    pub fn new(counter: usize, todo: Todo, done: Done) -> Self {
         Self {
             counter,
             todo,
-            in_progress,
             done,
         }
     }
@@ -36,64 +29,22 @@ impl TaskPool {
         Self {
             counter: 0,
             todo: Pipeline::empty(),
-            in_progress: Pipeline::empty(),
             done: Pipeline::empty(),
         }
     }
 
-    pub fn add_todo(&mut self, name: &str, task_type: TaskType) -> usize {
+    pub fn add_todo(&mut self, name: &str, task_params: TaskParams) -> usize {
         self.counter += 1;
         let task_id = self.counter;
 
-        self.todo
-            .push_back(Task::new_todo(task_id, name, task_type));
+        self.todo.push_back(Task::new(task_id, name, task_params));
 
         task_id
-    }
-
-    pub fn add_in_progress(
-        &mut self,
-        name: &str,
-        task_type: TaskType,
-    ) -> usize {
-        self.counter += 1;
-        let task_id = self.counter;
-
-        self.in_progress
-            .push_back(Task::new_in_progress(task_id, name, task_type));
-
-        task_id
-    }
-
-    pub fn start_task_by_id(&mut self, task_id: usize) -> Result<(), JsValue> {
-        let mut task = self
-            .todo
-            .remove(task_id)
-            .expect("Could not find task in todo list");
-
-        task.start()?;
-
-        self.in_progress.push_back(task);
-
-        Ok(())
-    }
-
-    pub fn start_task_by_order(&mut self) -> Result<(), JsValue> {
-        let mut task = self
-            .todo
-            .pop_front()
-            .expect("Could not find any task in the todo list");
-
-        task.start()?;
-
-        self.in_progress.push_back(task);
-
-        Ok(())
     }
 
     pub fn finish_task_by_id(&mut self, task_id: usize) -> Result<(), JsValue> {
         let mut task = self
-            .in_progress
+            .todo
             .remove(task_id)
             .expect("Could not find task in todo list");
 
@@ -106,7 +57,7 @@ impl TaskPool {
 
     pub fn finish_task_by_order(&mut self) -> Result<(), JsValue> {
         let mut task = self
-            .in_progress
+            .todo
             .pop_front()
             .expect("Could not find any task in the todo list");
 
@@ -119,8 +70,6 @@ impl TaskPool {
 }
 
 pub type Todo = Pipeline;
-pub type InProgress = Pipeline;
-pub type Stopped = Pipeline;
 pub type Done = Pipeline;
 
 #[wasm_bindgen]

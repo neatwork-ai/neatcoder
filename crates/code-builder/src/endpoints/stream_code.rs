@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use futures::StreamExt;
 use js_sys::Function;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
@@ -14,25 +15,22 @@ use crate::{
 };
 
 #[wasm_bindgen]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CodeGen {
     pub(crate) filename: String,
-    pub(crate) codebase: HashMap<String, String>,
-    pub(crate) callback: Function,
 }
 
 pub async fn stream_code(
+    app_state: &AppState,
     client: &OpenAI,
     ai_params: &OpenAIParams,
-    client_params: CodeGen,
-    app_state: &AppState,
+    task_params: CodeGen,
+    codebase: HashMap<String, String>,
+    callback: Function,
 ) -> Result<()> {
     let mut prompts = Vec::new();
 
-    let CodeGen {
-        filename,
-        codebase,
-        callback,
-    } = client_params;
+    let CodeGen { filename } = task_params;
 
     println!("[INFO] Running `CodeGen` Job: {}", filename);
 

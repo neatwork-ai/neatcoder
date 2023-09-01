@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -13,6 +14,7 @@ use crate::{
 };
 
 #[wasm_bindgen]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ScaffoldProject {
     pub(crate) specs: String,
 }
