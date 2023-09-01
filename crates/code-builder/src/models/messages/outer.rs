@@ -4,11 +4,15 @@ use uuid::Uuid;
 use crate::models::{
     interfaces::{Interface, SchemaFile},
     jobs::jobs::Jobs,
+    state::AppState,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ClientMsg {
+    InitState {
+        state: AppState,
+    },
     InitPrompt {
         prompt: String,
     },
@@ -27,15 +31,23 @@ pub enum ClientMsg {
         #[serde(rename = "schema")]
         schema: SchemaFile,
     },
+    RemoveSchema {
+        #[serde(rename = "interfaceName")]
+        interface_name: String,
+        #[serde(rename = "schemaName")]
+        schema_name: String,
+    },
+    UpdateScaffold {
+        scaffold: String,
+    },
+    AddSourceFile {
+        filename: String,
+        file: String,
+    },
+    RemoveSourceFile {
+        filename: String,
+    },
     StartJob {
-        #[serde(rename = "jobId")]
-        job_id: Uuid,
-    },
-    StopJob {
-        #[serde(rename = "jobId")]
-        job_id: Uuid,
-    },
-    RetryJob {
         #[serde(rename = "jobId")]
         job_id: Uuid,
     },
@@ -44,35 +56,8 @@ pub enum ClientMsg {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ServerMsg {
-    // Server Side Acknowledge Message
-    InitPromptAck {
-        success: bool,
-    },
-    AddSchemaAck {
-        #[serde(rename = "schemaName")]
-        schema_name: String,
-        success: bool,
-    },
-    AddInterfaceAck {
-        #[serde(rename = "interfaceName")]
-        interface_name: String,
-        success: bool,
-    },
-    RemoveInterfaceAck {
-        #[serde(rename = "interfaceName")]
-        interface_name: String,
-        success: bool,
-    },
-
-    // Server Side Commands
-    UpdateJobQueue {
-        jobs: Jobs,
-    },
-    CreateFile {
-        filename: String,
-    },
-    BeginStream {
-        filename: String,
-    },
+    UpdateJobQueue { jobs: Jobs },
+    CreateFile { filename: String },
+    BeginStream { filename: String },
     EndStream {},
 }

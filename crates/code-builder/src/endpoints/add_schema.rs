@@ -30,7 +30,7 @@ pub async fn handle(
             .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
     );
 
-    println!("[INFO] Pushed task to exeuction queue: `AddSchema`");
+    println!("[INFO] Pushed task to execution queue: `AddSchema`");
 
     Ok(())
 }
@@ -43,7 +43,9 @@ pub async fn run_add_schema(
     schema_name: String,
     schema: SchemaFile,
 ) -> Result<WorkerResponse> {
+    println!("[INFO] Resolved Task: `AddSchema`");
     add_schema(app_state, interface_name, schema_name.clone(), schema).await?;
+    println!("[INFO] Resolved Task: `AddSchema`");
 
     Ok(WorkerResponse::AddSchema { schema_name })
 }

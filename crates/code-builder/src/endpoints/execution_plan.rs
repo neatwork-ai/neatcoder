@@ -48,7 +48,7 @@ pub async fn handle(
             .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
     );
 
-    println!("[INFO] Pushed task to exeuction queue: `{}`", job_name);
+    println!("[INFO] Pushed task to execution queue: `{}`", job_name);
 }
 
 pub async fn run_build_execution_plan(

@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::{
@@ -23,7 +24,7 @@ use super::{
 /// Acts as a shared application data (i.e. shared state). It contains
 /// information related to the initial prompt, the scaffold of the project, its
 /// interfaces, and current jobs in the TODO pipeline among others (see `Jobs`).
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AppState {
     /// Initial prompt containing the specifications of the project
     pub specs: Option<String>,
@@ -113,6 +114,23 @@ impl AppState {
 
         // Replaces the existing interface if any
         interface.insert_schema(schema_name, schema);
+
+        Ok(())
+    }
+
+    pub fn remove_schema(&mut self, interface_name: &str, schema_name: &str) -> Result<()> {
+        if !self.interfaces.contains_key(interface_name) {
+            // TODO: We need proper error escallation and communication with the client
+            eprintln!("[ERROR] The interface does not exist.");
+
+            return Err(anyhow!("Interface does not exist"));
+        }
+
+        // Safe to unwrap due to previous check
+        let interface = self.interfaces.get_mut(interface_name).unwrap();
+
+        // Replaces the existing interface if any
+        interface.remove_schema(schema_name);
 
         Ok(())
     }

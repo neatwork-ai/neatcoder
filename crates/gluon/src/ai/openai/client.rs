@@ -1,4 +1,4 @@
-use std::{fmt, ops::Deref};
+use std::{fmt, ops::Deref, time::Duration};
 
 use anyhow::{anyhow, Result};
 use bytes::Bytes;
@@ -55,7 +55,9 @@ impl OpenAI {
         funcs: &[&String],
         stop_seq: &[String],
     ) -> Result<String> {
+        println!("[DEBUG] Getting Chat Raw...");
         let chat = self.chat_raw(job, msgs, funcs, stop_seq).await?;
+        println!("[DEBUG] Got answer.");
         let answer = chat.choices.first().unwrap().message.content.as_str();
 
         Ok(String::from(answer))
@@ -72,7 +74,7 @@ impl OpenAI {
 
         // fill in your own data as needed
         let req_body = self.request_body(job, msgs, funcs, stop_seq, false)?;
-
+        println!("[DEBUG] Sending reqeust to OpenAI...");
         let res = client
             .post("https://api.openai.com/v1/chat/completions")
             .header(
@@ -86,7 +88,7 @@ impl OpenAI {
             .json(&req_body)
             .send()
             .await?;
-
+        println!("[DEBUG] Got response.....");
         let status = res.status();
 
         if !status.is_success() {
@@ -111,23 +113,44 @@ impl OpenAI {
         // fill in your own data as needed
         let req_body = self.request_body(job, msgs, funcs, stop_seq, true)?;
 
-        let response = client
-            .post("https://api.openai.com/v1/chat/completions")
-            .header(
-                "Authorization",
-                format!(
-                    "Bearer {}",
-                    self.api_key.as_ref().expect("No API Keys provided")
-                ),
+        let mut retries = 3; // Number of retries
+        loop {
+            println!("[DEBUG] Sending request to OpenAI...");
+
+            let res = tokio::time::timeout(
+                Duration::from_secs(5),
+                client
+                    .post("https://api.openai.com/v1/chat/completions")
+                    .header(
+                        "Authorization",
+                        format!(
+                            "Bearer {}",
+                            self.api_key.as_ref().expect("No API Keys provided")
+                        ),
+                    )
+                    .header("Content-Type", "application/json")
+                    .json(&req_body)
+                    .send(),
             )
-            .header("Content-Type", "application/json")
-            .json(&req_body)
-            .send()
             .await?;
 
-        let stream = response.bytes_stream();
+            match res {
+                Ok(response) => {
+                    println!("[DEBUG] Got response.....");
+                    let stream = response.bytes_stream();
 
-        Ok(stream)
+                    return Ok(stream);
+                }
+                Err(e) => {
+                    retries -= 1;
+                    if retries == 0 {
+                        return Err(anyhow!("Failed after maximum retries: {:?}", e));
+                    }
+
+                    println!("[DEBUG] Request failed, retrying...");
+                }
+            }
+        }
     }
 
     fn request_body(

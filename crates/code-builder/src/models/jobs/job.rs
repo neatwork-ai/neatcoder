@@ -16,6 +16,7 @@ use crate::models::TaskTrait;
 pub struct Job {
     pub id: Uuid,
     pub name: String,
+    #[serde(skip_serializing)]
     pub request: Option<ManagerRequest>,
     pub job_type: RequestType,
     pub status: JobStatus,
@@ -28,9 +29,6 @@ pub enum JobStatus {
     Done,
     Stopped,
 }
-
-// TODO: Reconsider if needed
-// unsafe impl Send for ManagerRequest {}
 
 impl Job {
     pub fn new_todo(name: &str, request: ManagerRequest) -> Self {
@@ -87,7 +85,6 @@ impl Job {
     }
 }
 
-// TODO: TASK
 pub struct Task(pub(crate) Box<dyn TaskTrait>);
 
 impl Task {

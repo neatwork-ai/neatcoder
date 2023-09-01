@@ -3,8 +3,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::models::{
-    interfaces::Interface, jobs::job::Task, messages::inner::WorkerResponse, state::AppState,
-    worker::JobFutures,
+    jobs::job::Task, messages::inner::WorkerResponse, state::AppState, worker::JobFutures,
 };
 use gluon::ai::openai::{client::OpenAI, params::OpenAIParams};
 
@@ -15,10 +14,10 @@ pub async fn handle(
     job_futures: &mut JobFutures,
     params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
-    interface: Interface,
+    scaffold: String,
 ) -> Result<()> {
     let closure = |c: Arc<OpenAI>, j: Arc<OpenAIParams>, state: Arc<RwLock<AppState>>| {
-        run_add_interface(c, j, state, interface)
+        run_update_scaffold(c, j, state, scaffold)
     };
 
     let task = Task(Box::new(closure));
@@ -28,29 +27,26 @@ pub async fn handle(
             .call_box(open_ai_client.clone(), params.clone(), app_state.clone()),
     );
 
-    println!("[INFO] Pushed task to execution queue: `AddInterface`");
+    println!("[INFO] Pushed task to execution queue: `UpdateScaffold`");
 
     Ok(())
 }
 
-pub async fn run_add_interface(
+pub async fn run_update_scaffold(
     _client: Arc<OpenAI>,
     _params: Arc<OpenAIParams>,
     app_state: Arc<RwLock<AppState>>,
-    interface: Interface,
+    scaffold: String,
 ) -> Result<WorkerResponse> {
-    println!("[INFO] Resolving Task: `AddInterface`");
-    let interface_name = interface.name().to_string();
-    add_interface(app_state, interface).await?;
-    println!("[INFO] Resolved Task: `AddInterface`");
+    update_scaffold(app_state, scaffold.clone()).await?;
 
-    Ok(WorkerResponse::AddInterface { interface_name })
+    Ok(WorkerResponse::UpdateScaffold)
 }
 
-pub async fn add_interface(app_state: Arc<RwLock<AppState>>, interface: Interface) -> Result<()> {
+pub async fn update_scaffold(app_state: Arc<RwLock<AppState>>, scaffold: String) -> Result<()> {
     let mut app_data = app_state.write().await;
 
-    app_data.add_interface(interface)?;
+    app_data.scaffold = Some(scaffold);
 
     Ok(())
 }

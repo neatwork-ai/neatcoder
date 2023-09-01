@@ -73,4 +73,14 @@ impl Interface {
 
         schemas.insert(schema_name, schema);
     }
+
+    pub fn remove_schema(&mut self, schema_name: &str) {
+        let schemas = match self {
+            Interface::Database(db) => &mut db.schemas,
+            Interface::Storage(ds) => &mut ds.schemas,
+            Interface::Api(api) => &mut api.schemas,
+        };
+
+        schemas.remove(schema_name);
+    }
 }
