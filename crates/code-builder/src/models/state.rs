@@ -14,7 +14,10 @@ use crate::{
     utils::{jsvalue_to_map, map_to_jsvalue},
 };
 
-use super::interfaces::{Interface, SchemaFile};
+use super::{
+    interfaces::{Interface, SchemaFile},
+    task_pool::TaskPool,
+};
 
 // NOTE: We will need to perform the following improvements to the data model:
 //
@@ -36,6 +39,8 @@ use super::interfaces::{Interface, SchemaFile};
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AppState {
+    #[serde(skip_serializing, skip_deserializing)]
+    listeners: Vec<js_sys::Function>,
     /// Initial prompt containing the specifications of the project
     pub(crate) specs: Option<String>,
     /// JSON String containing the File System Scaffold
@@ -67,25 +72,34 @@ pub struct AppState {
     /// Vector of strings containing the interface config files (e.g. SQL DLLs, etc.)
     /// The HashMap represents HashMap<Interface Name, Interface>
     pub(crate) interfaces: HashMap<String, Interface>,
+    pub(crate) task_pool: TaskPool,
 }
 
 #[wasm_bindgen]
 impl AppState {
     #[wasm_bindgen(constructor)]
-    pub fn new(specs: String) -> Self {
+    pub fn new(specs: String, task_pool: TaskPool) -> Self {
         Self {
+            listeners: Vec::new(),
             specs: Some(specs),
             scaffold: None,
             interfaces: HashMap::new(),
+            task_pool,
         }
     }
 
     pub fn empty() -> Self {
         Self {
+            listeners: Vec::new(),
             specs: None,
             scaffold: None,
             interfaces: HashMap::new(),
+            task_pool: TaskPool::empty(),
         }
+    }
+
+    pub fn subscribe(&mut self, callback: &js_sys::Function) {
+        self.listeners.push(callback.clone());
     }
 
     #[wasm_bindgen(getter, js_name = specs)]
@@ -106,7 +120,7 @@ impl AppState {
 
     #[wasm_bindgen(getter, js_name = interfaces)]
     pub fn get_interfaces(&self) -> JsValue {
-        map_to_jsvalue::<Interface>(&self.interfaces)
+        map_to_jsvalue::<String, Interface>(&self.interfaces)
     }
 
     #[wasm_bindgen(setter = setInterface)]
@@ -280,5 +294,15 @@ impl AppState {
         self.interfaces.remove(interface_name);
 
         Ok(())
+    }
+}
+
+impl AppState {
+    fn trigger_callbacks(&self) {
+        // Notify listeners of event A
+        for callback in &self.listeners {
+            let this = JsValue::NULL;
+            let _ = callback.call0(&this);
+        }
     }
 }

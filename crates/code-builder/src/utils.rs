@@ -7,7 +7,9 @@ use std::collections::HashMap;
 use wasm_bindgen::JsValue;
 
 // Convert a HashMap<String, String> to a JsValue
-pub fn map_to_jsvalue<T: Serialize>(map: &HashMap<String, T>) -> JsValue {
+pub fn map_to_jsvalue<K: Serialize, V: Serialize>(
+    map: &HashMap<K, V>,
+) -> JsValue {
     JsValue::from_str(&serde_json::to_string(&map).unwrap())
 }
 
