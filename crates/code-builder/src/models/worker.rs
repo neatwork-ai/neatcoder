@@ -15,13 +15,17 @@ use crate::endpoints;
 
 use super::{
     messages::inner::{ManagerRequest, WorkerResponse},
-    shutdown::ShutdownSignal,
     state::AppState,
 };
 
 /// Type alias for a collection of futures representing jobs.
-pub type JobFutures =
-    FuturesUnordered<Pin<Box<dyn Future<Output = Result<WorkerResponse, Error>> + 'static + Send>>>;
+pub type JobFutures = FuturesUnordered<
+    Pin<
+        Box<
+            dyn Future<Output = Result<WorkerResponse, Error>> + 'static + Send,
+        >,
+    >,
+>;
 
 /// Definition of the JobWorker struct, responsible for managing and executing jobs.
 /// When the server gets spawned it will spawn a `JobWorker` threads which will be
@@ -71,16 +75,15 @@ impl JobWorker {
         ai_params: Arc<OpenAIParams>,
         rx_request: Receiver<ManagerRequest>,
         tx_response: Sender<WorkerResponse>,
-        shutdown: ShutdownSignal, // TODO: Refactor to `AtomicBool`
     ) -> JoinHandle<Result<(), Error>> {
         tokio::spawn(async move {
             Self::new(open_ai_client, ai_params, rx_request, tx_response)
-                .run(shutdown)
+                .run()
                 .await
         })
     }
 
-    pub async fn run(&mut self, shutdown: ShutdownSignal) -> Result<(), Error> {
+    pub async fn run(&mut self) -> Result<(), Error> {
         loop {
             tokio::select! {
                 // Handles requests from the client, reads/writes to `AppState`
@@ -96,19 +99,8 @@ impl JobWorker {
                     println!("[INFO] Handling Results");
                     handle_response(result, self.tx_response.clone()).await?;
                 },
-                shutdown_handle = shutdown.wait_for_signal().await => {
-                    if let Ok(signal) = shutdown_handle {
-                        if *signal.lock().await {
-                            break;
-                        }
-                    } else if let Err(e) = shutdown_handle {
-                        println!("Failed to get signal, with error: {e}")
-                    }
-                }
             }
         }
-
-        Ok(())
     }
 }
 
@@ -116,7 +108,13 @@ impl JobWorker {
 pub async fn handle_request(
     request: ManagerRequest,
     job_futures: &mut FuturesUnordered<
-        Pin<Box<dyn Future<Output = Result<WorkerResponse, Error>> + Send + 'static>>,
+        Pin<
+            Box<
+                dyn Future<Output = Result<WorkerResponse, Error>>
+                    + Send
+                    + 'static,
+            >,
+        >,
     >,
     open_ai_client: Arc<OpenAI>,
     ai_params: Arc<OpenAIParams>,
