@@ -221,25 +221,28 @@ impl OpenAIParams {
     }
 }
 
+#[wasm_bindgen]
 impl OpenAIModels {
-    pub fn new(model: &str) -> Result<Self> {
-        let model = match model {
+    #[wasm_bindgen(constructor)]
+    pub fn new(model: String) -> Self {
+        let model = match model.as_str() {
             "gpt-4-32k" => OpenAIModels::Gpt432k,
             "gpt-4" => OpenAIModels::Gpt4,
             "gpt-3.5-turbo" => OpenAIModels::Gpt35Turbo,
             "gpt-3.5-turbo-16k" => OpenAIModels::Gpt35Turbo16k,
-            _ => return Err(anyhow!(format!("Invalid model {}", model))),
+            _ => panic!("Invalid model {}", model),
         };
 
-        Ok(model)
+        model
     }
 
-    pub fn as_str(&self) -> &str {
+    #[wasm_bindgen(js_name = asString)]
+    pub fn as_string(&self) -> String {
         match self {
-            OpenAIModels::Gpt432k => "gpt-4-32k",
-            OpenAIModels::Gpt4 => "gpt-4",
-            OpenAIModels::Gpt35Turbo => "gpt-3.5-turbo",
-            OpenAIModels::Gpt35Turbo16k => "gpt-3.5-turbo-16k",
+            OpenAIModels::Gpt432k => String::from("gpt-4-32k"),
+            OpenAIModels::Gpt4 => String::from("gpt-4"),
+            OpenAIModels::Gpt35Turbo => String::from("gpt-3.5-turbo"),
+            OpenAIModels::Gpt35Turbo16k => String::from("gpt-3.5-turbo-16k"),
         }
     }
 }
