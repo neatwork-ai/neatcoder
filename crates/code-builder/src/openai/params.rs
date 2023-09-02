@@ -1,7 +1,12 @@
 use anyhow::{anyhow, Result};
 use serde::Serialize;
 use std::collections::HashMap;
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+
+use crate::{
+    openai::utils::{BoundedFloat, Range100s},
+    utils::jsvalue_to_map,
+};
 
 use super::utils::{Bounded, Scale01, Scale100s, Scale22};
 
@@ -80,7 +85,61 @@ pub struct OpenAIParams {
     pub(crate) user: Option<String>,
 }
 
+#[wasm_bindgen]
 impl OpenAIParams {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        model: OpenAIModels,
+        temperature: Option<f64>,
+        max_tokens: Option<u64>,
+        top_p: Option<f64>,
+        frequency_penalty: Option<f64>,
+        presence_penalty: Option<f64>,
+        n: Option<u64>,
+        stream: bool,
+        logit_bias: JsValue,
+        user: Option<String>,
+    ) -> Self {
+        let top_p = match top_p {
+            Some(top_p) => Some(
+                BoundedFloat::new(top_p)
+                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+            ),
+            None => None,
+        };
+
+        let frequency_penalty = match frequency_penalty {
+            Some(frequency_penalty) => Some(
+                BoundedFloat::new(frequency_penalty)
+                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+            ),
+            None => None,
+        };
+
+        let presence_penalty = match presence_penalty {
+            Some(presence_penalty) => Some(
+                BoundedFloat::new(presence_penalty)
+                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+            ),
+            None => None,
+        };
+
+        let logit_bias = jsvalue_to_map::<BoundedFloat<Range100s>>(&logit_bias);
+
+        Self {
+            model,
+            temperature,
+            max_tokens,
+            top_p,
+            frequency_penalty,
+            presence_penalty,
+            n,
+            stream,
+            logit_bias,
+            user,
+        }
+    }
+
     pub fn empty(model: OpenAIModels) -> Self {
         Self {
             model,
@@ -96,32 +155,6 @@ impl OpenAIParams {
         }
     }
 
-    pub fn new(
-        model: OpenAIModels,
-        temperature: Option<f64>,
-        max_tokens: Option<u64>,
-        top_p: Option<Scale01>,
-        frequency_penalty: Option<Scale22>,
-        presence_penalty: Option<Scale22>,
-        n: Option<u64>,
-        stream: bool,
-        logit_bias: HashMap<String, Scale100s>,
-        user: Option<String>,
-    ) -> Self {
-        Self {
-            model,
-            temperature,
-            max_tokens,
-            top_p,
-            frequency_penalty,
-            presence_penalty,
-            n,
-            stream,
-            logit_bias,
-            user,
-        }
-    }
-
     // === Setter methods with chaining ===
 
     pub fn temperature(mut self, temperature: f64) -> Self {
@@ -129,24 +162,32 @@ impl OpenAIParams {
         self
     }
 
+    #[wasm_bindgen(js_name = maxTokens)]
     pub fn max_tokens(mut self, max_tokens: u64) -> Self {
         self.max_tokens = Some(max_tokens);
         self
     }
 
-    pub fn top_p(mut self, top_p: f64) -> Result<Self> {
-        self.top_p = Some(Scale01::new(top_p)?);
-        Ok(self)
+    #[wasm_bindgen(js_name = topP)]
+    pub fn top_p(mut self, top_p: f64) -> Self {
+        self.top_p = Some(Scale01::new(top_p).expect("Invalid top_p value"));
+        self
     }
 
-    pub fn frequency_penalty(mut self, frequency_penalty: f64) -> Result<Self> {
-        self.frequency_penalty = Some(Scale22::new(frequency_penalty)?);
-        Ok(self)
+    #[wasm_bindgen(js_name = frequencyPenalty)]
+    pub fn frequency_penalty(mut self, frequency_penalty: f64) -> Self {
+        self.frequency_penalty = Some(
+            Scale22::new(frequency_penalty).expect("Invalid frequency penalty"),
+        );
+        self
     }
 
-    pub fn presence_penalty(mut self, presence_penalty: f64) -> Result<Self> {
-        self.presence_penalty = Some(Scale22::new(presence_penalty)?);
-        Ok(self)
+    #[wasm_bindgen(js_name = presencePenalty)]
+    pub fn presence_penalty(mut self, presence_penalty: f64) -> Self {
+        self.presence_penalty = Some(
+            Scale22::new(presence_penalty).expect("Invalid presence penalty"),
+        );
+        self
     }
 
     pub fn n(mut self, n: u64) -> Self {
@@ -159,17 +200,18 @@ impl OpenAIParams {
         self
     }
 
-    pub fn logit_bias(
-        mut self,
-        mut logit_bias: HashMap<String, f64>,
-    ) -> Result<Self> {
+    #[wasm_bindgen(js_name = logicBias)]
+    pub fn logit_bias(mut self, logit_bias: JsValue) -> Self {
+        let mut logit_bias = jsvalue_to_map::<f64>(&logit_bias);
+
         let logit_bias = logit_bias
             .drain()
             .map(|(key, val)| Ok((key, Scale100s::new(val)?)))
-            .collect::<Result<HashMap<String, Scale100s>>>()?;
+            .collect::<Result<HashMap<String, Scale100s>>>()
+            .expect("Invalid logit biases");
 
         self.logit_bias = logit_bias;
-        Ok(self)
+        self
     }
 
     // TODO: Add validation

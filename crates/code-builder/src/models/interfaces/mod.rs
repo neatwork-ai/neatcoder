@@ -19,21 +19,21 @@ pub struct Interface {
 
 #[wasm_bindgen]
 impl Interface {
-    #[wasm_bindgen(getter, js_name = newDb)]
+    #[wasm_bindgen(js_name = newDb)]
     pub fn new_db(db: Database) -> Self {
         Self {
             interface_type: InterfaceType::Database,
             inner: InterfaceInner::new_db(db),
         }
     }
-    #[wasm_bindgen(getter, js_name = newApi)]
+    #[wasm_bindgen(js_name = newApi)]
     pub fn new_api(api: Api) -> Self {
         Self {
             interface_type: InterfaceType::Api,
             inner: InterfaceInner::new_api(api),
         }
     }
-    #[wasm_bindgen(getter, js_name = newStorage)]
+    #[wasm_bindgen(js_name = newStorage)]
     pub fn new_storage(storage: Storage) -> Self {
         Self {
             interface_type: InterfaceType::Storage,
@@ -66,7 +66,7 @@ pub struct InterfaceInner {
 
 #[wasm_bindgen]
 impl InterfaceInner {
-    #[wasm_bindgen(getter, js_name = newDb)]
+    #[wasm_bindgen(js_name = newDb)]
     pub fn new_db(db: Database) -> Self {
         Self {
             database: Some(db),
