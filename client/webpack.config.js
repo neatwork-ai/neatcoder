@@ -47,7 +47,7 @@ const extensionConfig = {
   },
   plugins: [
     new WasmPackPlugin({
-      crateDirectory: path.resolve(__dirname, ".")
+      crateDirectory: path.resolve(__dirname, "../crates/code-builder")
     })
   ],
 };

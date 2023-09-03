@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# Remove the pkg directory if it exists
+if [ -d "client/pkg" ]; then
+    rm -rf client/pkg
+    echo "Removed existing pkg directory."
+fi
+
 # Navigate to the wasm-lib directory
 cd crates/code-builder
 
@@ -13,6 +19,8 @@ if [ $? -ne 0 ]; then
 fi
 
 # Move the pkg directory to ../client
-mv pkg ../client/
+mv pkg ../../client/
+
+cd ../../
 
 echo "Compilation successful!"

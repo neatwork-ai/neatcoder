@@ -4,6 +4,11 @@
   "description": "AI agent for writing large scale, production-grade software",
   "version": "0.0.1",
   "icon": "assets/neatwork-logo.png",
+  "repository": {
+    "url": "https://github.com/neatwork-ai/neatcode.git",
+    "type": "git"
+  },
+  "license": "UNLICENSED",
   "engines": {
     "vscode": ">=1.80.0"
   },
