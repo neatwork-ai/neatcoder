@@ -20,6 +20,19 @@ pub struct CodeGen {
     pub(crate) filename: String,
 }
 
+#[wasm_bindgen]
+impl CodeGen {
+    #[wasm_bindgen(constructor)]
+    pub fn new(filename: String) -> CodeGen {
+        CodeGen { filename }
+    }
+
+    #[wasm_bindgen(getter, js_name = getFilename)]
+    pub fn get_filename(&self) -> String {
+        self.filename.clone()
+    }
+}
+
 pub async fn stream_code(
     app_state: &AppState,
     client: &OpenAI,

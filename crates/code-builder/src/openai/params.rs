@@ -221,9 +221,7 @@ impl OpenAIParams {
     }
 }
 
-#[wasm_bindgen]
 impl OpenAIModels {
-    #[wasm_bindgen(constructor)]
     pub fn new(model: String) -> Self {
         let model = match model.as_str() {
             "gpt-4-32k" => OpenAIModels::Gpt432k,
@@ -235,9 +233,7 @@ impl OpenAIModels {
 
         model
     }
-}
 
-impl OpenAIModels {
     pub fn as_string(&self) -> String {
         match self {
             OpenAIModels::Gpt432k => String::from("gpt-4-32k"),

@@ -19,6 +19,14 @@ pub struct ScaffoldProject {
     pub(crate) specs: String,
 }
 
+#[wasm_bindgen]
+impl ScaffoldProject {
+    #[wasm_bindgen(constructor)]
+    pub fn new(specs: String) -> ScaffoldProject {
+        ScaffoldProject { specs }
+    }
+}
+
 pub async fn scaffold_project(
     client: &OpenAI,
     ai_params: &OpenAIParams,

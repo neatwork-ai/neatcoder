@@ -41,4 +41,9 @@ impl Task {
     pub fn get_name(&self) -> String {
         self.name.clone()
     }
+
+    #[wasm_bindgen(getter, js_name = taskParams)]
+    pub fn get_task_params(&self) -> TaskParams {
+        self.task_params.clone()
+    }
 }

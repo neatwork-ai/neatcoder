@@ -158,6 +158,11 @@ impl AppState {
         to_value(&tasks).unwrap()
     }
 
+    #[wasm_bindgen(js_name = finishTaskById)]
+    pub fn finish_task_by_id(&mut self, task_id: usize) -> Result<(), JsValue> {
+        self.task_pool.finish_task_by_id(task_id)
+    }
+
     #[wasm_bindgen(setter = setInterface)]
     pub fn set_interfaces(
         &mut self,
@@ -204,11 +209,11 @@ impl AppState {
     #[wasm_bindgen(js_name = addInterface)]
     pub fn add_interface(
         &mut self,
-        interface: Interface,
+        new_interface: Interface,
     ) -> Result<(), JsValue> {
         self.trigger_callbacks();
 
-        self.add_interface_(interface)
+        self.add_interface_(new_interface)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
 
@@ -344,8 +349,8 @@ impl AppState {
         Ok(())
     }
 
-    pub fn add_interface_(&mut self, interface: Interface) -> Result<()> {
-        let interface_name = interface.get_name();
+    pub fn add_interface_(&mut self, new_interface: Interface) -> Result<()> {
+        let interface_name = new_interface.get_name();
 
         if self.interfaces.contains_key(&interface_name) {
             // TODO: We need proper error escallation and communication with the client
@@ -355,7 +360,7 @@ impl AppState {
         }
 
         self.interfaces
-            .insert(interface_name.to_string(), interface);
+            .insert(interface_name.to_string(), new_interface);
 
         Ok(())
     }

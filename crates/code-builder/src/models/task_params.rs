@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 #[wasm_bindgen]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TaskParams {
-    task_type: TaskType,
+    pub task_type: TaskType,
     pub(crate) inner: TaskParamsInner,
 }
 
@@ -30,10 +30,10 @@ pub struct TaskParamsInner {
 }
 
 #[wasm_bindgen]
-impl TaskParamsInner {
+impl TaskParams {
     #[wasm_bindgen(getter, js_name = scaffoldProject)]
     pub fn get_scaffold_project(&self) -> JsValue {
-        match &self.scaffold_project {
+        match &self.inner.scaffold_project {
             Some(scaffold_project) => scaffold_project.clone().into(),
             None => JsValue::NULL,
         }
@@ -41,15 +41,20 @@ impl TaskParamsInner {
 
     #[wasm_bindgen(getter, js_name = streamCode)]
     pub fn get_stream_code(&self) -> JsValue {
-        match &self.stream_code {
+        match &self.inner.stream_code {
             Some(stream_code) => stream_code.clone().into(),
             None => JsValue::NULL,
         }
     }
 }
 
+#[wasm_bindgen]
 impl TaskParams {
-    pub fn new_2(task_type: TaskType, inner: JsValue) -> Result<Self, JsValue> {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        task_type: TaskType,
+        inner: JsValue,
+    ) -> Result<TaskParams, JsValue> {
         match task_type {
             TaskType::ScaffoldProject => Ok(TaskParams {
                 task_type,

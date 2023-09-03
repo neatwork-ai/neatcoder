@@ -75,7 +75,7 @@ impl InterfaceInner {
         }
     }
 
-    #[wasm_bindgen(getter, js_name = newApi)]
+    #[wasm_bindgen(js_name = newApi)]
     pub fn new_api(api: Api) -> Self {
         Self {
             database: None,
@@ -84,7 +84,7 @@ impl InterfaceInner {
         }
     }
 
-    #[wasm_bindgen(getter, js_name = newStorage)]
+    #[wasm_bindgen(js_name = newStorage)]
     pub fn new_storage(storage: Storage) -> Self {
         Self {
             database: None,
