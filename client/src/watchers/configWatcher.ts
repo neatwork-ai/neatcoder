@@ -4,7 +4,7 @@ import * as path from "path";
 import { InterfacesProvider } from "../providers/interfaces";
 import { setupSchemaWatchers } from "./schemaWatcher";
 import { getOrCreateConfigPath, getRoot } from "../utils";
-import * as wasm from "../../pkg/code_builder";
+import * as wasm from "../../pkg/neatcoder";
 
 let originalConfig: any;
 

@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "crates/code-builder",
+    "crates/neatcoder",
     "crates/parser"
 ]
 exclude = [

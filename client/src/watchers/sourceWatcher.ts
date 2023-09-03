@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import * as wasm from "../../pkg/code_builder";
+import * as wasm from "../../pkg/neatcoder";
 
 /**
  * Sets up a FileSystemWatcher for the `src` folder in the workspace and

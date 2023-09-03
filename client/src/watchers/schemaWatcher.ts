@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { getFilename, getOrCreateConfigPath } from "../utils";
 import { InterfacesProvider } from "../providers/interfaces";
-import * as wasm from "../../pkg/code_builder";
+import * as wasm from "../../pkg/neatcoder";
 
 /**
  * Sets up watchers for schema directories defined in a configuration file.

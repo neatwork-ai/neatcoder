@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import * as wasm from "../../pkg/code_builder";
+import * as wasm from "../../pkg/neatcoder";
 import { getOrCreateApiSchemaPath, getOrCreateConfigPath } from "../utils";
 
 /**

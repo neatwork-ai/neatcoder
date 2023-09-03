@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import path = require("path");
 import pako = require("pako");
-import * as wasm from "../pkg/code_builder";
+import * as wasm from "../pkg/neatcoder";
 
 /// ===== Read ===== ///
 

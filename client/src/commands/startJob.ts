@@ -8,7 +8,7 @@ import {
 import * as fs from "fs";
 import * as path from "path";
 import { TaskView } from "../models/task";
-import * as wasm from "../../pkg/code_builder";
+import * as wasm from "../../pkg/neatcoder";
 import { scanSourceFolder, streamCode } from "./streamCode";
 
 export async function startJob(

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { TaskView, toTaskView } from "../models/task";
-import * as wasm from "../../pkg/code_builder";
+import * as wasm from "../../pkg/neatcoder";
 
 /// Implements a data provider for the view
 export class TaskPoolProvider implements vscode.TreeDataProvider<TaskView> {

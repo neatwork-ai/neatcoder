@@ -3,7 +3,7 @@ import {
   getOrCreateConfigPath,
   getOrCreateDatastoreSchemaPath,
 } from "../utils";
-import * as wasm from "../../pkg/code_builder";
+import * as wasm from "../../pkg/neatcoder";
 
 /**
  * Presents a quick pick list to the user to select or input a datastore type.

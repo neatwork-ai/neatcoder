@@ -7,7 +7,7 @@ if [ -d "client/pkg" ]; then
 fi
 
 # Navigate to the wasm-lib directory
-cd crates/code-builder
+cd crates/neatcoder
 
 # Compile the wasm library (assuming you're using wasm-pack)
 wasm-pack build --target nodejs

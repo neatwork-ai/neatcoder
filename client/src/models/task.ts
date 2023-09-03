@@ -1,6 +1,6 @@
 /// Defines data model for the JobQueue view
 import * as vscode from "vscode";
-import * as wasm from "../../pkg/code_builder";
+import * as wasm from "../../pkg/neatcoder";
 
 export class TaskView extends vscode.TreeItem {
   task: wasm.Task;
