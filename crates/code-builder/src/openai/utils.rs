@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use serde::{Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::{marker::PhantomData, ops::Deref};
 
 #[derive(Debug, Clone, Copy)]
@@ -56,6 +56,19 @@ impl<T> Serialize for BoundedFloat<T> {
         S: Serializer,
     {
         serializer.serialize_f64(self.inner)
+    }
+}
+
+impl<'de, T> Deserialize<'de> for BoundedFloat<T>
+where
+    T: MinMax,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = f64::deserialize(deserializer)?;
+        BoundedFloat::<T>::new(value).map_err(de::Error::custom)
     }
 }
 

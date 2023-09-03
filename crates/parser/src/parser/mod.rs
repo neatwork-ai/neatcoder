@@ -3,13 +3,18 @@ use std::fmt::Debug;
 
 use crate::err::ParseError;
 
-pub mod csv;
-pub mod html;
 pub mod json;
-pub mod python;
-pub mod rust;
-pub mod sql;
 pub mod yaml;
+#[cfg(feature = "full")]
+pub mod csv;
+#[cfg(feature = "full")]
+pub mod html;
+#[cfg(feature = "full")]
+pub mod python;
+#[cfg(feature = "full")]
+pub mod rust;
+#[cfg(feature = "full")]
+pub mod sql;
 
 /// A supertrait defining methods to convert LLM string outputs into various Rust
 /// native objects such as html, json, yaml, rust code, python code, etc.

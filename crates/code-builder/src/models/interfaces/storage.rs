@@ -1,10 +1,14 @@
+use crate::{
+    openai::msg::{GptRole, OpenAIMsg},
+    utils::{jsvalue_to_map, map_to_jsvalue},
+};
 use anyhow::Result;
-use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{self, Display},
 };
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use super::{AsContext, SchemaFile};
 
@@ -14,26 +18,34 @@ use super::{AsContext, SchemaFile};
 /// themselves. For example, using storage services like AWS S3 we ould build a
 /// data-lake that utilizes `parquet` files or `ndjson` files.
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Datastore {
-    pub name: String,
+#[wasm_bindgen]
+pub struct Storage {
+    pub(crate) name: String,
     pub file_type: FileType,
     pub storage_type: StorageType,
-    pub region: Option<String>,
-    pub schemas: HashMap<String, SchemaFile>,
+    /// Field that is only present when the type chose is a custom one
+    custom_file_type: Option<String>,
+    /// Field that is only present when the type chose is a custom one
+    custom_storage_type: Option<String>,
+    pub(crate) region: Option<String>,
+    pub(crate) schemas: HashMap<String, SchemaFile>,
 }
 
 /// Enum documenting the type of data storages.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+#[wasm_bindgen]
 pub enum StorageType {
     AwsS3,
     GoogleCloudStorage,
     FirebaseCloudStorage,
     AzureBlobStorage,
     LocalStorage,
+    Custom,
 }
 
 /// Enum documenting the most popular file types for data storage.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
+#[wasm_bindgen]
 pub enum FileType {
     // === Data Store Formats ===
     /// A simple CSV file with a few rows should allow the LLM
@@ -69,7 +81,46 @@ pub enum FileType {
     Xml,
 }
 
-impl AsContext for Datastore {
+impl Storage {
+    // Create a new Storage instance from JavaScript
+    pub fn new(
+        name: String,
+        file_type: FileType,
+        storage_type: StorageType,
+        region: Option<String>,
+        schemas: &JsValue,
+    ) -> Storage {
+        Storage {
+            name,
+            file_type,
+            storage_type,
+            custom_file_type: None,
+            custom_storage_type: None,
+            schemas: jsvalue_to_map(schemas),
+            region,
+        }
+    }
+
+    // TODO: New Custom method
+
+    // Get the schemas as a JsValue to return to JavaScript
+    pub fn schemas(&self) -> JsValue {
+        map_to_jsvalue(&self.schemas)
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn region(&self) -> JsValue {
+        match &self.region {
+            Some(s) => JsValue::from_str(s),
+            None => JsValue::NULL,
+        }
+    }
+}
+
+impl AsContext for Storage {
     fn add_context(&self, msg_sequence: &mut Vec<OpenAIMsg>) -> Result<()> {
         let mut main_prompt = format!(
             "
@@ -82,7 +133,8 @@ Have in consideration the following {} data storage:
         );
 
         if let Some(region) = &self.region {
-            main_prompt = format!("{}\n{} {}", main_prompt, "- region:", region);
+            main_prompt =
+                format!("{}\n{} {}", main_prompt, "- region:", region);
         }
 
         msg_sequence.push(OpenAIMsg {
@@ -113,6 +165,7 @@ impl Display for StorageType {
             StorageType::FirebaseCloudStorage => "Firebase Cloud Storage",
             StorageType::AzureBlobStorage => "Azure Blob Storage",
             StorageType::LocalStorage => "Local Storage",
+            StorageType::Custom => "Custom Storage",
         };
 
         f.write_str(tag)
@@ -134,4 +187,19 @@ impl Display for FileType {
 
         f.write_str(tag)
     }
+}
+
+// This is implemented outside the impl block because abstract data structs
+// are not supported in javascript
+#[wasm_bindgen(js_name = storageTypeFromFriendlyUX)]
+pub fn storage_type_from_friendly_ux(api: String) -> StorageType {
+    let api = match api.as_str() {
+        "AWS S3" => StorageType::AwsS3,
+        "Google Cloud Storage" => StorageType::GoogleCloudStorage,
+        "Firebase Cloud Storage" => StorageType::FirebaseCloudStorage,
+        "Azure Blob Storage" => StorageType::AzureBlobStorage,
+        "Local Storage" => StorageType::LocalStorage,
+        _ => StorageType::Custom,
+    };
+    api
 }

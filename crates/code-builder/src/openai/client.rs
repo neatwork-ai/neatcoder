@@ -1,44 +1,34 @@
-use std::{fmt, ops::Deref, time::Duration};
+use std::{fmt, ops::Deref};
 
 use anyhow::{anyhow, Result};
 use bytes::Bytes;
 use futures::Stream;
 use reqwest::Client;
 use serde_json::{json, Value};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::{msg::OpenAIMsg, output::Body, params::OpenAIParams};
 
+#[wasm_bindgen]
 pub struct OpenAI {
     api_key: Option<String>,
 }
 
-/// We manually implement `Debug` to intentionally maskl the API Key with
-/// the value `Some` or `None`, for security reasons.
-impl fmt::Debug for OpenAI {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let value = if self.api_key.is_some() {
-            "Some"
-        } else {
-            "None"
-        };
-
-        // TODO: Conside indicating at least if API key is Some or None
-        f.debug_struct("OpenAI")
-            .field("api_key", &value) // We hide the API Key and only indicate if it is Some or None
-            .finish()
-    }
-}
-
+#[wasm_bindgen]
 impl OpenAI {
-    pub fn empty() -> Self {
-        Self { api_key: None }
-    }
-
+    #[wasm_bindgen(constructor)]
     pub fn new(api_key: String) -> Self {
         Self {
             api_key: Some(api_key),
         }
     }
+
+    pub fn empty() -> Self {
+        Self { api_key: None }
+    }
+}
+
+impl OpenAI {
     // === Setter methods with chaining ===
 
     pub fn api_key(mut self, key: String) -> Self {
@@ -113,44 +103,23 @@ impl OpenAI {
         // fill in your own data as needed
         let req_body = self.request_body(job, msgs, funcs, stop_seq, true)?;
 
-        let mut retries = 3; // Number of retries
-        loop {
-            println!("[DEBUG] Sending request to OpenAI...");
-
-            let res = tokio::time::timeout(
-                Duration::from_secs(5),
-                client
-                    .post("https://api.openai.com/v1/chat/completions")
-                    .header(
-                        "Authorization",
-                        format!(
-                            "Bearer {}",
-                            self.api_key.as_ref().expect("No API Keys provided")
-                        ),
-                    )
-                    .header("Content-Type", "application/json")
-                    .json(&req_body)
-                    .send(),
+        let response = client
+            .post("https://api.openai.com/v1/chat/completions")
+            .header(
+                "Authorization",
+                format!(
+                    "Bearer {}",
+                    self.api_key.as_ref().expect("No API Keys provided")
+                ),
             )
+            .header("Content-Type", "application/json")
+            .json(&req_body)
+            .send()
             .await?;
 
-            match res {
-                Ok(response) => {
-                    println!("[DEBUG] Got response.....");
-                    let stream = response.bytes_stream();
+        let stream = response.bytes_stream();
 
-                    return Ok(stream);
-                }
-                Err(e) => {
-                    retries -= 1;
-                    if retries == 0 {
-                        return Err(anyhow!("Failed after maximum retries: {:?}", e));
-                    }
-
-                    println!("[DEBUG] Request failed, retrying...");
-                }
-            }
-        }
+        return Ok(stream);
     }
 
     fn request_body(
@@ -164,7 +133,7 @@ impl OpenAI {
         stream: bool,
     ) -> Result<Value> {
         let mut data = json!({
-            "model": job.model.as_str(),
+            "model": job.model.as_string(),
             "messages": msgs,
             // "stop": self.stop,
         });
@@ -201,7 +170,8 @@ impl OpenAI {
         }
 
         if let Some(frequency_penalty) = &job.frequency_penalty {
-            data["frequency_penalty"] = serde_json::to_value(frequency_penalty)?;
+            data["frequency_penalty"] =
+                serde_json::to_value(frequency_penalty)?;
         }
 
         if let Some(presence_penalty) = &job.presence_penalty {
@@ -221,5 +191,22 @@ impl OpenAI {
         }
 
         Ok(data)
+    }
+}
+
+/// We manually implement `Debug` to intentionally maskl the API Key with
+/// the value `Some` or `None`, for security reasons.
+impl fmt::Debug for OpenAI {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let value = if self.api_key.is_some() {
+            "Some"
+        } else {
+            "None"
+        };
+
+        // TODO: Consider indicating at least if API key is Some or None
+        f.debug_struct("OpenAI")
+            .field("api_key", &value) // We hide the API Key and only indicate if it is Some or None
+            .finish()
     }
 }

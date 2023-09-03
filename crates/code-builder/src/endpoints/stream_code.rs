@@ -1,81 +1,78 @@
 use anyhow::{anyhow, Result};
-use gluon::ai::openai::{
-    client::OpenAI,
-    msg::{GptRole, OpenAIMsg},
-    params::OpenAIParams,
-};
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use futures::StreamExt;
+use js_sys::Function;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::models::{
-    code_stream::CodeStream, interfaces::AsContext, messages::inner::WorkerResponse,
-    state::AppState, worker::JobFutures,
+use crate::{
+    models::{interfaces::AsContext, state::AppState},
+    openai::{
+        client::OpenAI,
+        msg::{GptRole, OpenAIMsg},
+        params::OpenAIParams,
+    },
 };
 
-pub async fn handle(
-    _open_ai_client: Arc<OpenAI>,
-    _job_futures: &mut JobFutures,
-    _params: Arc<OpenAIParams>,
-    _app_state: Arc<RwLock<AppState>>,
-    _filename: String,
-) -> Result<()> {
-    todo!();
+#[wasm_bindgen]
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct CodeGen {
+    pub(crate) filename: String,
 }
 
-pub async fn run_stream_code(
-    client: Arc<OpenAI>,
-    params: Arc<OpenAIParams>,
-    app_state: Arc<RwLock<AppState>>,
-    filename: String,
-) -> Result<WorkerResponse> {
-    println!("[INFO] Running `CodeGen` Job: {}", filename);
+#[wasm_bindgen]
+impl CodeGen {
+    #[wasm_bindgen(constructor)]
+    pub fn new(filename: String) -> CodeGen {
+        CodeGen { filename }
+    }
 
-    let stream = stream_code(client, params, app_state, filename).await?;
-
-    println!("[INFO] Completed `CodeGen` Job...");
-
-    Ok(WorkerResponse::CodeGen { stream })
+    #[wasm_bindgen(getter, js_name = getFilename)]
+    pub fn get_filename(&self) -> String {
+        self.filename.clone()
+    }
 }
 
 pub async fn stream_code(
-    client: Arc<OpenAI>,
-    params: Arc<OpenAIParams>,
-    app_state: Arc<RwLock<AppState>>,
-    filename: String,
-) -> Result<CodeStream> {
-    // TODO: add task to DONE..
-    println!("[INFO] Running `CodeGen` Job: {}", filename);
-
-    let state = app_state.read().await;
+    app_state: &AppState,
+    client: &OpenAI,
+    ai_params: &OpenAIParams,
+    task_params: CodeGen,
+    codebase: HashMap<String, String>,
+    callback: Function,
+) -> Result<()> {
     let mut prompts = Vec::new();
 
-    let api_description = state.specs.as_ref().unwrap();
+    let CodeGen { filename } = task_params;
 
-    if state.scaffold.is_none() {
-        return Err(anyhow!("No folder scaffold config available.."));
+    println!("[INFO] Running `CodeGen` Job: {}", filename);
+
+    if app_state.scaffold.is_none() {
+        return Err(anyhow!("No project scaffold config available.."));
     }
 
-    let project_scaffold = state.scaffold.as_ref().unwrap();
+    let project_scaffold = app_state.scaffold.as_ref().unwrap();
+    let project_description = app_state.specs.as_ref().unwrap();
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
         content: String::from(
-            "You are a software engineer who is specialised in building APIs in Rust.",
+            "You are a software engineer who is specialised in Rust.",
         ),
     });
 
-    for (_, interface) in state.interfaces.iter() {
+    for (_, interface) in app_state.interfaces.iter() {
         // Attaches context to the message sequence
         interface.add_context(&mut prompts)?;
     }
 
     prompts.push(OpenAIMsg {
         role: GptRole::User,
-        content: String::from(api_description),
+        content: String::from(project_description),
     });
 
-    for file in state.codebase.keys() {
-        let code = state.codebase.get(file).unwrap();
+    for file in codebase.keys() {
+        let code = codebase.get(file).unwrap();
 
         prompts.push(OpenAIMsg {
             role: GptRole::User,
@@ -103,7 +100,48 @@ pub async fn stream_code(
         content: main_prompt,
     });
 
-    let stream = CodeStream::new(filename, client, params, prompts);
+    stream_rust(client, ai_params, prompts, callback).await?;
 
-    Ok(stream)
+    Ok(())
+}
+
+pub async fn stream_rust(
+    client: &OpenAI,
+    ai_params: &OpenAIParams,
+    prompts: Vec<OpenAIMsg>,
+    callback: Function,
+) -> Result<()> {
+    println!("[INFO] Initiating Stream");
+
+    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
+
+    let mut chat_stream =
+        client.chat_stream(ai_params, &prompts, &[], &[]).await?;
+
+    let mut start_delimiter = false;
+    while let Some(item) = chat_stream.next().await {
+        match item {
+            Ok(bytes) => {
+                let token = std::str::from_utf8(&bytes)
+                    .expect("Failed to generate utf8 from bytes");
+                if !start_delimiter && ["```rust", "```"].contains(&token) {
+                    start_delimiter = true;
+                    continue;
+                } else if !start_delimiter {
+                    continue;
+                } else {
+                    if token == "```" {
+                        break;
+                    }
+
+                    // Call the JavaScript callback with the token
+                    let this = JsValue::NULL;
+                    let js_token = JsValue::from_str(&token);
+                    callback.call1(&this, &js_token).unwrap();
+                }
+            }
+            Err(e) => eprintln!("Failed to receive token, with error: {e}"),
+        }
+    }
+    Ok(())
 }

@@ -1,10 +1,25 @@
-use crate::utils::bounded_float::{Bounded, Scale01, Scale100s, Scale22};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::Serialize;
 use std::collections::HashMap;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use super::model::OpenAIModels;
+use crate::{
+    openai::utils::{BoundedFloat, Range100s},
+    utils::jsvalue_to_map,
+};
 
+use super::utils::{Bounded, Scale01, Scale100s, Scale22};
+
+#[wasm_bindgen]
+#[derive(Debug, Serialize, Clone, Copy)]
+pub enum OpenAIModels {
+    Gpt432k,
+    Gpt4,
+    Gpt35Turbo,
+    Gpt35Turbo16k,
+}
+
+#[wasm_bindgen]
 #[derive(Debug, Serialize)]
 pub struct OpenAIParams {
     pub model: OpenAIModels,
@@ -28,7 +43,7 @@ pub struct OpenAIParams {
     /// narrower range of high-probability words. This leads to
     /// more focused and deterministic output, with fewer alternatives
     /// and reduced randomness.
-    pub top_p: Option<Scale01>,
+    pub(crate) top_p: Option<Scale01>, // TODO: Add getter
     /// The frequency penalty parameter helps reduce the repetition of words
     /// or sentences within the generated text. It is a float value ranging
     /// from -2.0 to 2.0, which is subtracted to the logarithmic probability of a
@@ -38,7 +53,7 @@ pub struct OpenAIParams {
     ///
     /// In the official documentation:
     /// https://platform.openai.com/docs/api-reference/chat/create#chat/create-frequency_penalty
-    pub frequency_penalty: Option<Scale22>,
+    pub(crate) frequency_penalty: Option<Scale22>, // TODO: Add getter
     /// The presence penalty parameter stears how the model penalizes new tokens
     /// based on whether they have appeared (hence presense) in the text so far.
     ///
@@ -47,7 +62,7 @@ pub struct OpenAIParams {
     ///
     /// In the official documentation:
     /// https://platform.openai.com/docs/api-reference/chat/create#chat/create-presence_penalty
-    pub presence_penalty: Option<Scale22>,
+    pub(crate) presence_penalty: Option<Scale22>, // TODO: Add getter
     /// How many chat completion choices to generate for each input message.
     pub n: Option<u64>,
     /// Whether to stream back partial progress. If set, tokens will be sent as
@@ -63,14 +78,68 @@ pub struct OpenAIParams {
     /// between -1 and 1 should decrease or increase likelihood of selection;
     /// values like -100 or 100 should result in a ban or exclusive selection
     /// of the relevant token.
-    pub logit_bias: HashMap<String, Scale100s>,
+    pub(crate) logit_bias: HashMap<String, Scale100s>, // TODO: Add getter
     /// A unique identifier representing your end-user, which can help OpenAI
     /// to monitor and detect abuse. You can read more at:
     /// https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids
-    pub user: Option<String>,
+    pub(crate) user: Option<String>,
 }
 
+#[wasm_bindgen]
 impl OpenAIParams {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        model: OpenAIModels,
+        temperature: Option<f64>,
+        max_tokens: Option<u64>,
+        top_p: Option<f64>,
+        frequency_penalty: Option<f64>,
+        presence_penalty: Option<f64>,
+        n: Option<u64>,
+        stream: bool,
+        logit_bias: JsValue,
+        user: Option<String>,
+    ) -> Self {
+        let top_p = match top_p {
+            Some(top_p) => Some(
+                BoundedFloat::new(top_p)
+                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+            ),
+            None => None,
+        };
+
+        let frequency_penalty = match frequency_penalty {
+            Some(frequency_penalty) => Some(
+                BoundedFloat::new(frequency_penalty)
+                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+            ),
+            None => None,
+        };
+
+        let presence_penalty = match presence_penalty {
+            Some(presence_penalty) => Some(
+                BoundedFloat::new(presence_penalty)
+                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+            ),
+            None => None,
+        };
+
+        let logit_bias = jsvalue_to_map::<BoundedFloat<Range100s>>(&logit_bias);
+
+        Self {
+            model,
+            temperature,
+            max_tokens,
+            top_p,
+            frequency_penalty,
+            presence_penalty,
+            n,
+            stream,
+            logit_bias,
+            user,
+        }
+    }
+
     pub fn empty(model: OpenAIModels) -> Self {
         Self {
             model,
@@ -86,32 +155,6 @@ impl OpenAIParams {
         }
     }
 
-    pub fn new(
-        model: OpenAIModels,
-        temperature: Option<f64>,
-        max_tokens: Option<u64>,
-        top_p: Option<Scale01>,
-        frequency_penalty: Option<Scale22>,
-        presence_penalty: Option<Scale22>,
-        n: Option<u64>,
-        stream: bool,
-        logit_bias: HashMap<String, Scale100s>,
-        user: Option<String>,
-    ) -> Self {
-        Self {
-            model,
-            temperature,
-            max_tokens,
-            top_p,
-            frequency_penalty,
-            presence_penalty,
-            n,
-            stream,
-            logit_bias,
-            user,
-        }
-    }
-
     // === Setter methods with chaining ===
 
     pub fn temperature(mut self, temperature: f64) -> Self {
@@ -119,24 +162,32 @@ impl OpenAIParams {
         self
     }
 
+    #[wasm_bindgen(js_name = maxTokens)]
     pub fn max_tokens(mut self, max_tokens: u64) -> Self {
         self.max_tokens = Some(max_tokens);
         self
     }
 
-    pub fn top_p(mut self, top_p: f64) -> Result<Self> {
-        self.top_p = Some(Scale01::new(top_p)?);
-        Ok(self)
+    #[wasm_bindgen(js_name = topP)]
+    pub fn top_p(mut self, top_p: f64) -> Self {
+        self.top_p = Some(Scale01::new(top_p).expect("Invalid top_p value"));
+        self
     }
 
-    pub fn frequency_penalty(mut self, frequency_penalty: f64) -> Result<Self> {
-        self.frequency_penalty = Some(Scale22::new(frequency_penalty)?);
-        Ok(self)
+    #[wasm_bindgen(js_name = frequencyPenalty)]
+    pub fn frequency_penalty(mut self, frequency_penalty: f64) -> Self {
+        self.frequency_penalty = Some(
+            Scale22::new(frequency_penalty).expect("Invalid frequency penalty"),
+        );
+        self
     }
 
-    pub fn presence_penalty(mut self, presence_penalty: f64) -> Result<Self> {
-        self.presence_penalty = Some(Scale22::new(presence_penalty)?);
-        Ok(self)
+    #[wasm_bindgen(js_name = presencePenalty)]
+    pub fn presence_penalty(mut self, presence_penalty: f64) -> Self {
+        self.presence_penalty = Some(
+            Scale22::new(presence_penalty).expect("Invalid presence penalty"),
+        );
+        self
     }
 
     pub fn n(mut self, n: u64) -> Self {
@@ -149,14 +200,18 @@ impl OpenAIParams {
         self
     }
 
-    pub fn logit_bias(mut self, mut logit_bias: HashMap<String, f64>) -> Result<Self> {
+    #[wasm_bindgen(js_name = logicBias)]
+    pub fn logit_bias(mut self, logit_bias: JsValue) -> Self {
+        let mut logit_bias = jsvalue_to_map::<f64>(&logit_bias);
+
         let logit_bias = logit_bias
             .drain()
             .map(|(key, val)| Ok((key, Scale100s::new(val)?)))
-            .collect::<Result<HashMap<String, Scale100s>>>()?;
+            .collect::<Result<HashMap<String, Scale100s>>>()
+            .expect("Invalid logit biases");
 
         self.logit_bias = logit_bias;
-        Ok(self)
+        self
     }
 
     // TODO: Add validation
@@ -167,24 +222,24 @@ impl OpenAIParams {
 }
 
 impl OpenAIModels {
-    pub fn new(model: &str) -> Result<Self> {
-        let model = match model {
+    pub fn new(model: String) -> Self {
+        let model = match model.as_str() {
             "gpt-4-32k" => OpenAIModels::Gpt432k,
             "gpt-4" => OpenAIModels::Gpt4,
             "gpt-3.5-turbo" => OpenAIModels::Gpt35Turbo,
             "gpt-3.5-turbo-16k" => OpenAIModels::Gpt35Turbo16k,
-            _ => return Err(anyhow!(format!("Invalid model {}", model))),
+            _ => panic!("Invalid model {}", model),
         };
 
-        Ok(model)
+        model
     }
 
-    pub fn as_str(&self) -> &str {
+    pub fn as_string(&self) -> String {
         match self {
-            OpenAIModels::Gpt432k => "gpt-4-32k",
-            OpenAIModels::Gpt4 => "gpt-4",
-            OpenAIModels::Gpt35Turbo => "gpt-3.5-turbo",
-            OpenAIModels::Gpt35Turbo16k => "gpt-3.5-turbo-16k",
+            OpenAIModels::Gpt432k => String::from("gpt-4-32k"),
+            OpenAIModels::Gpt4 => String::from("gpt-4"),
+            OpenAIModels::Gpt35Turbo => String::from("gpt-3.5-turbo"),
+            OpenAIModels::Gpt35Turbo16k => String::from("gpt-3.5-turbo-16k"),
         }
     }
 }

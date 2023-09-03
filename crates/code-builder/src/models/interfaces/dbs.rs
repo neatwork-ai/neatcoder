@@ -1,12 +1,15 @@
+use super::{AsContext, SchemaFile};
+use crate::{
+    openai::msg::{GptRole, OpenAIMsg},
+    utils::{jsvalue_to_map, map_to_jsvalue},
+};
 use anyhow::Result;
-use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{self, Display},
 };
-
-use super::{AsContext, SchemaFile};
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 /// Struct documenting a Database/DataWarehouse interface. This refers to Database
 /// storage solutions or to more classic Data Warehousing solutions such as
@@ -17,18 +20,85 @@ use super::{AsContext, SchemaFile};
 /// transactions as well as CAP Theorem guarantees. Usually these solutions
 /// provide a declarative framework for accessing and managing data.
 // TODO: We can increase the configurations here such as SSL stuff, etc.
+#[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Database {
-    pub name: String,
+    pub(crate) name: String,
     pub db_type: DbType,
+    /// Field that is only present when the type chose is a custom one
+    custom_type: Option<String>,
     pub port: Option<usize>,
-    pub host: Option<String>,
-    pub schemas: HashMap<String, SchemaFile>,
+    pub(crate) host: Option<String>,
+    pub(crate) schemas: HashMap<String, SchemaFile>,
+}
+
+#[wasm_bindgen]
+impl Database {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        name: String,
+        db_type: DbType,
+        port: Option<usize>,
+        host: Option<String>,
+        schemas: &JsValue,
+    ) -> Database {
+        Database {
+            name,
+            db_type,
+            custom_type: None,
+            port,
+            host,
+            schemas: jsvalue_to_map(schemas),
+        }
+    }
+
+    #[wasm_bindgen(js_name = newCustom)]
+    pub fn new_custom(
+        name: String,
+        custom_type: String,
+        port: Option<usize>,
+        host: Option<String>,
+        schemas: &JsValue,
+    ) -> Database {
+        Database {
+            name,
+            db_type: DbType::Custom,
+            custom_type: Some(custom_type),
+            port,
+            host,
+            schemas: jsvalue_to_map(schemas),
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = name)]
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    // Get the schemas as a JsValue to return to JavaScript
+    #[wasm_bindgen(getter, js_name = schemas)]
+    pub fn get_schemas(&self) -> JsValue {
+        map_to_jsvalue(&self.schemas)
+    }
+
+    #[wasm_bindgen(getter, js_name = host)]
+    pub fn get_host(&self) -> JsValue {
+        match &self.host {
+            Some(s) => JsValue::from_str(s),
+            None => JsValue::NULL,
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = dbType)]
+    pub fn get_db_type(&self) -> DbType {
+        self.db_type
+    }
 }
 
 /// Enum documenting the type of Database/DataWarehouse interface.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[wasm_bindgen]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub enum DbType {
     // === Tabular Store Types ===
     // Traditional RDBMS systems that store data in rows and columns. Used mainly for OLTP operations.
@@ -51,7 +121,7 @@ pub enum DbType {
     //
     /// Google's fully managed, petabyte-scale data warehouse.
     BigQuery,
-    /// Amazon's fully managed data warehouse solution.    
+    /// Amazon's fully managed data warehouse solution.
     Redshift,
     /// A cloud-native data warehousing platform.
     Snowflake,
@@ -131,6 +201,8 @@ pub enum DbType {
     EXist,
     /// An enterprise NoSQL database.
     MarkLogic,
+    /// A custom database interface
+    Custom,
 }
 
 impl AsContext for Database {
@@ -145,11 +217,13 @@ Have in consideration the following {} Database:
         );
 
         if let Some(port) = &self.port {
-            main_prompt = format!("{}\n{} {}", main_prompt, "- database port:", port);
+            main_prompt =
+                format!("{}\n{} {}", main_prompt, "- database port:", port);
         }
 
         if let Some(host) = &self.host {
-            main_prompt = format!("{}\n{} {}", main_prompt, "- database host:", host);
+            main_prompt =
+                format!("{}\n{} {}", main_prompt, "- database host:", host);
         }
 
         msg_sequence.push(OpenAIMsg {
@@ -210,8 +284,54 @@ impl Display for DbType {
             DbType::BaseX => "BaseX",
             DbType::EXist => "EXist",
             DbType::MarkLogic => "MarkLogic",
+            DbType::Custom => "Custom",
         };
 
         f.write_str(tag)
     }
+}
+
+// This is implemented outside the impl block because abstract data structs
+// are not supported in javascript
+#[wasm_bindgen(js_name = dbTypeFromFriendlyUX)]
+pub fn db_type_from_friendly_ux(database: String) -> DbType {
+    let db = match database.as_str() {
+        "ClickHouse" => DbType::ClickHouse,
+        "DuckDb" => DbType::DuckDb,
+        "MS SQL" => DbType::MsSql,
+        "MySQL" => DbType::MySql,
+        "PostgreSQL" => DbType::PostgreSql,
+        "SQLite" => DbType::SqLite,
+        "BigQuery" => DbType::BigQuery,
+        "Redshift" => DbType::Redshift,
+        "Snowflake" => DbType::Snowflake,
+        "Hive" => DbType::Hive,
+        "Cassandra" => DbType::Cassandra,
+        "Hbase" => DbType::Hbase,
+        "ScyellaDB" => DbType::ScyellaDB,
+        "InfluxDB" => DbType::InfluxDB,
+        "TimescaleDB" => DbType::TimescaleDB,
+        "OpenTSDB" => DbType::OpenTSDB,
+        "MongoDB" => DbType::MongoDB,
+        "CounchDB" => DbType::CounchDB,
+        "RavenDB" => DbType::RavenDB,
+        "Firestore" => DbType::Firestore,
+        "DynamoDB" => DbType::DynamoDB,
+        "CosmosDB" => DbType::CosmosDB,
+        "Redis" => DbType::Redis,
+        "BerkeleyDB" => DbType::BerkeleyDB,
+        "Riak" => DbType::Riak,
+        "CouchBase" => DbType::CouchBase,
+        "Db4o" => DbType::Db4o,
+        "Versant" => DbType::Versant,
+        "Neo4j" => DbType::Neo4j,
+        "OrientDB" => DbType::OrientDB,
+        "AmazonNeptune" => DbType::AmazonNeptune,
+        "ArangoDB" => DbType::ArangoDB,
+        "BaseX" => DbType::BaseX,
+        "EXist" => DbType::EXist,
+        "MarkLogic" => DbType::MarkLogic,
+        _ => DbType::Custom,
+    };
+    db
 }

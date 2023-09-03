@@ -1,10 +1,14 @@
+use crate::{
+    openai::msg::{GptRole, OpenAIMsg},
+    utils::{jsvalue_to_map, map_to_jsvalue},
+};
 use anyhow::Result;
-use gluon::ai::openai::msg::{GptRole, OpenAIMsg};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{self, Display},
 };
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use super::{AsContext, SchemaFile};
 
@@ -12,17 +16,83 @@ use super::{AsContext, SchemaFile};
 /// executables themselves or execution environments, and therefore it
 /// groups RPC APIs, WebSockets, library interfaces, IDLs, etc.
 // TODO: We can increase the configurations here such as SSL stuff, etc.
+#[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Api {
-    pub name: String,
+    pub(crate) name: String,
     pub api_type: ApiType,
+    /// Field that is only present when the type chose is a custom one
+    custom_type: Option<String>,
     pub port: Option<usize>,
-    pub host: Option<String>,
-    pub schemas: HashMap<String, SchemaFile>,
+    pub(crate) host: Option<String>,
+    pub(crate) schemas: HashMap<String, SchemaFile>,
+}
+
+#[wasm_bindgen]
+impl Api {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        name: String,
+        api_type: ApiType,
+        port: Option<usize>,
+        host: Option<String>,
+        schemas: &JsValue,
+    ) -> Api {
+        Api {
+            name,
+            api_type,
+            custom_type: None,
+            port,
+            host,
+            schemas: jsvalue_to_map(schemas),
+        }
+    }
+
+    pub fn new_custom(
+        name: String,
+        custom_type: String,
+        port: Option<usize>,
+        host: Option<String>,
+        schemas: &JsValue,
+    ) -> Api {
+        Api {
+            name,
+            api_type: ApiType::Custom,
+            custom_type: Some(custom_type),
+            port,
+            host,
+            schemas: jsvalue_to_map(schemas),
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = name)]
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    // Get the schemas as a JsValue to return to JavaScript
+    #[wasm_bindgen(getter, js_name = schemas)]
+    pub fn get_schemas(&self) -> JsValue {
+        map_to_jsvalue(&self.schemas)
+    }
+
+    #[wasm_bindgen(getter, js_name = host)]
+    pub fn get_host(&self) -> JsValue {
+        match &self.host {
+            Some(s) => JsValue::from_str(s),
+            None => JsValue::NULL,
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = apiType)]
+    pub fn get_api_type(&self) -> ApiType {
+        self.api_type
+    }
 }
 
 /// Enum documenting the type of APIs.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[wasm_bindgen]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub enum ApiType {
     /// OpenAPI/Swagger Specification Files: JSON or YAML files that describe
     /// RESTful APIs, including endpoints, parameters, responses, etc.
@@ -54,6 +124,7 @@ pub enum ApiType {
     /// AsyncAPI Specification: Describes asynchronous APIs, extending the
     /// OpenAPI spec to cover protocols like MQTT, WebSockets, etc.
     Mqtt,
+    Custom,
 }
 
 impl AsContext for Api {
@@ -112,8 +183,33 @@ impl Display for ApiType {
             ApiType::TcpSocket => "Raw TCP Socket",
             ApiType::LibraryIDL => "Library IDL",
             ApiType::Mqtt => "MQTT",
+            ApiType::Custom => "Custom",
         };
 
         f.write_str(tag)
     }
+}
+
+// This is implemented outside the impl block because abstract data structs
+// are not supported in javascript
+#[wasm_bindgen(js_name = apiTypeFromFriendlyUX)]
+pub fn api_type_from_friendly_ux(api: String) -> ApiType {
+    let api = match api.as_str() {
+        "Restful API" => ApiType::RestfulApi,
+        "Soap API" => ApiType::SoapApi,
+        "RPC API" => ApiType::RpcApi,
+        "gRPC API" => ApiType::GRpcApi,
+        "GraphQL" => ApiType::GraphQL,
+        "WebHooks" => ApiType::WebHooks,
+        "HTTP Long-Polling" => ApiType::HttpLongPolling,
+        "Server-Sent Events" => ApiType::ServerSentEvents,
+        "HTTP Server Push" => ApiType::HttpServerPush,
+        "WebSub" => ApiType::WebSub,
+        "WebSockets" => ApiType::WebSockets,
+        "Raw TCP Socket" => ApiType::TcpSocket,
+        "Library IDL" => ApiType::LibraryIDL,
+        "MQTT" => ApiType::Mqtt,
+        _ => ApiType::Custom,
+    };
+    api
 }

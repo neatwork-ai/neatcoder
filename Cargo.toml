@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "crates/gluon",
     "crates/code-builder",
     "crates/parser"
 ]

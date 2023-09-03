@@ -1,53 +1,36 @@
+use crate::openai::{client::OpenAI, msg::OpenAIMsg, params::OpenAIParams};
 use anyhow::{anyhow, Result};
-use futures::StreamExt;
-use gluon::ai::openai::{client::OpenAI, msg::OpenAIMsg, params::OpenAIParams};
-use parser::parser::{
-    json::AsJson,
-    rust::{AsRust, Rust},
-};
+use parser::parser::json::AsJson;
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
-use std::sync::Arc;
+use std::collections::HashMap;
+use wasm_bindgen::JsValue;
 
-pub async fn write_rust(
-    client: Arc<OpenAI>,
-    params: Arc<OpenAIParams>,
-    prompts: &Vec<&OpenAIMsg>,
-) -> Result<(String, Rust)> {
-    let mut retries = 3;
+// Convert a HashMap<String, String> to a JsValue
+pub fn map_to_jsvalue<K: Serialize, V: Serialize>(
+    map: &HashMap<K, V>,
+) -> JsValue {
+    JsValue::from_str(&serde_json::to_string(&map).unwrap())
+}
 
-    loop {
-        let answer = client.chat(params.clone(), prompts, &[], &[]).await?;
-
-        match answer.as_str().strip_rust() {
-            Ok(result) => {
-                break Ok((answer, result));
-            }
-            Err(e) => {
-                println!("Error while parsing rust code: \n{}", e);
-                retries -= 1;
-
-                if retries <= 0 {
-                    return Err(anyhow!("Failed to parse rust code."));
-                }
-
-                println!("Retrying...");
-            }
-        }
-    }
+// Convert a JsValue back to a HashMap<String, String>
+pub fn jsvalue_to_map<T: DeserializeOwned>(
+    value: &JsValue,
+) -> HashMap<String, T> {
+    serde_json::from_str::<HashMap<String, T>>(&value.as_string().unwrap())
+        .unwrap()
 }
 
 pub async fn write_json(
-    client: Arc<OpenAI>,
-    params: Arc<OpenAIParams>,
+    client: &OpenAI,
+    ai_params: &OpenAIParams,
     prompts: &Vec<&OpenAIMsg>,
 ) -> Result<(String, Value)> {
     let mut retries = 3;
 
     loop {
-        // write_dammit(client.clone(), params.clone(), &prompts).await?;
-
         println!("[INFO] Prompting the LLM...");
-        let answer = client.chat(params.clone(), prompts, &[], &[]).await?;
+        let answer = client.chat(ai_params, prompts, &[], &[]).await?;
 
         match answer.as_str().strip_json() {
             Ok(result) => {
@@ -66,38 +49,4 @@ pub async fn write_json(
             }
         }
     }
-}
-
-async fn write_dammit(
-    client: Arc<OpenAI>,
-    params: Arc<OpenAIParams>,
-    prompts: &Vec<&OpenAIMsg>,
-) -> Result<()> {
-    println!("[INFO] Initiating Stream");
-
-    let mut chat_stream =
-        client.chat_stream(&params, &prompts, &[], &[]).await?;
-
-    let mut start_delimiter = false;
-    while let Some(item) = chat_stream.next().await {
-        match item {
-            Ok(bytes) => {
-                let token = std::str::from_utf8(&bytes)
-                    .expect("Failed to generate utf8 from bytes");
-                if !start_delimiter && ["```json", "```"].contains(&token) {
-                    start_delimiter = true;
-                    continue;
-                } else if !start_delimiter {
-                    println!("{:?}", token);
-                    continue;
-                } else {
-                    if token == "```" {
-                        break;
-                    }
-                }
-            }
-            Err(e) => eprintln!("Failed to receive token, with error: {e}"),
-        }
-    }
-    Ok(())
 }

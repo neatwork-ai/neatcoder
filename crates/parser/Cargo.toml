@@ -5,17 +5,20 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+full = ["csv", "scraper", "syn", "rustpython-parser", "sqlparser"]
+
 [dependencies]
 anyhow = "1.0"
 thiserror = "1.0"
 
 # Parsing
-# TODO: Add conditional compilation
-csv = "1.2"
-scraper = "0.17"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 serde_json = "1.0"
-syn = "2.0"
-rustpython-parser = "0.2.0"
-sqlparser = "0.36"
+
+csv = { version = "1.2", optional = true }
+scraper = { version = "0.17", optional = true }
+syn = { version = "2.0", optional = true }
+rustpython-parser = { version = "0.2.0", optional = true }
+sqlparser = { version = "0.36", optional = true }
