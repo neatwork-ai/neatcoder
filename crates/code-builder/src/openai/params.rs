@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::Serialize;
 use std::collections::HashMap;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
@@ -235,8 +235,9 @@ impl OpenAIModels {
 
         model
     }
+}
 
-    #[wasm_bindgen(js_name = asString)]
+impl OpenAIModels {
     pub fn as_string(&self) -> String {
         match self {
             OpenAIModels::Gpt432k => String::from("gpt-4-32k"),

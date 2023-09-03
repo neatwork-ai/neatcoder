@@ -133,7 +133,7 @@ impl OpenAI {
         stream: bool,
     ) -> Result<Value> {
         let mut data = json!({
-            "model": job.model.as_str(),
+            "model": job.model.as_string(),
             "messages": msgs,
             // "stop": self.stop,
         });

@@ -49,7 +49,41 @@ impl TaskParamsInner {
 }
 
 impl TaskParams {
-    pub fn new(task_type: TaskType, inner: Box<dyn Any>) -> Result<Self> {
+    pub fn new_2(task_type: TaskType, inner: JsValue) -> Result<Self, JsValue> {
+        match task_type {
+            TaskType::ScaffoldProject => Ok(TaskParams {
+                task_type,
+                inner: TaskParamsInner {
+                    scaffold_project: Some(
+                        serde_wasm_bindgen::from_value(inner)
+                            .expect("Failed to cast to type `ScaffoldProject`"),
+                    ),
+                    stream_code: None,
+                },
+            }),
+            TaskType::BuildExecutionPlan => Ok(TaskParams {
+                task_type,
+                inner: TaskParamsInner {
+                    scaffold_project: None,
+                    stream_code: None,
+                },
+            }),
+            TaskType::CodeGen => Ok(TaskParams {
+                task_type,
+                inner: TaskParamsInner {
+                    scaffold_project: None,
+                    stream_code: Some(
+                        serde_wasm_bindgen::from_value(inner)
+                            .expect("Failed to cast to type `ScaffoldProject`"),
+                    ),
+                },
+            }),
+        }
+    }
+}
+
+impl TaskParams {
+    pub fn new_(task_type: TaskType, inner: Box<dyn Any>) -> Result<Self> {
         match task_type {
             TaskType::ScaffoldProject => {
                 if let Some(scaffold) = inner.downcast_ref::<ScaffoldProject>()

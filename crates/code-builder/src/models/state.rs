@@ -263,7 +263,7 @@ impl AppState {
         for file in files.iter() {
             let file_ = file.clone();
 
-            let task_params = TaskParams::new(
+            let task_params = TaskParams::new_(
                 TaskType::CodeGen,
                 Box::new(CodeGen { filename: file_ }),
             )
