@@ -40,18 +40,26 @@ export function setupConfigWatcher(
 
   // Watch the config.json
   return fs.watch(configPath, (event, filename) => {
+    logger.appendLine(`[INFO] Some event:${event}`);
     if (filename) {
       const fullPath = path.join(root, ".neat", filename);
+      logger.appendLine(`[INFO] FULL PATH:${fullPath}`);
+      logger.appendLine(`[INFO] FULL PATH EXISTS? ${fs.existsSync(fullPath)}`);
+      logger.appendLine(`[INFO] FILE SYNC:${fs.statSync(fullPath).isFile()}`);
       if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
         logger.appendLine(`[INFO] Detected changes in: ${filename}`);
 
         // Refresh UI
         interfacesProvider.refresh();
+        logger.appendLine(`a`);
 
         // Refresh Server
         // Read the new content
         const newContentString = fs.readFileSync(fullPath, "utf-8");
+        logger.appendLine(`b`);
+        logger.appendLine(`[INFO] THE NEW CONFIG :${newContentString}`);
         const newContent = JSON.parse(newContentString);
+        logger.appendLine(`c`);
 
         // Compare and handle additions
         const bool1 = handleAdditions(

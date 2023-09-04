@@ -9,6 +9,7 @@ export function removeInterface(
   item: InterfaceItem,
   logger: vscode.OutputChannel
 ) {
+  logger.appendLine(`Item: ${item}`);
   if (!item) {
     vscode.window.showErrorMessage("Please select an interface to remove.");
     return;

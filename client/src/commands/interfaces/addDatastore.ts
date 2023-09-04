@@ -12,7 +12,10 @@ import * as wasm from "../../../pkg/neatcoder";
  *
  * @returns {void}
  */
-export function addDatastore(appState: wasm.AppState): void {
+export function addDatastore(
+  appState: wasm.AppState,
+  logger: vscode.OutputChannel
+): void {
   {
     const quickPick = vscode.window.createQuickPick();
     quickPick.items = dbList.map((label) => ({ label }));
@@ -39,14 +42,17 @@ export function addDatastore(appState: wasm.AppState): void {
     // Runs once the user proceeds by click enter or left-click with the mouse
     quickPick.onDidAccept(() => {
       let selectedDbType: string;
+      logger.appendLine("BOINK");
 
       if (
         quickPick.selectedItems[0] &&
         dbList.includes(quickPick.selectedItems[0].label)
       ) {
+        logger.appendLine("BUNKER IF");
         customEntered = false;
         selectedDbType = quickPick.selectedItems[0].label;
       } else {
+        logger.appendLine("BUNKER ELSE");
         selectedDbType = customEntered
           ? quickPick.value
           : quickPick.selectedItems[0].label;
@@ -54,6 +60,7 @@ export function addDatastore(appState: wasm.AppState): void {
 
       // If the selected item has "(custom)", trim that part out
       if (selectedDbType.endsWith(" (custom)")) {
+        logger.appendLine("BUNKER TONY");
         selectedDbType = selectedDbType.substring(
           0,
           selectedDbType.lastIndexOf(" (custom)")
@@ -61,12 +68,10 @@ export function addDatastore(appState: wasm.AppState): void {
       }
 
       // Convert the string into DbType
-      const dbType = wasm.dbTypeFromFriendlyUX(selectedDbType);
-
-      if (dbType) {
-        handleDatastoreSelection(appState, dbType);
-        quickPick.dispose();
-      }
+      logger.appendLine(`Selected Datastore type ${selectedDbType}`);
+      const dbType: wasm.DbType = wasm.dbTypeFromFriendlyUX(selectedDbType);
+      handleDatastoreSelection(appState, dbType, logger);
+      quickPick.dispose();
     });
 
     quickPick.show();
@@ -82,7 +87,8 @@ export function addDatastore(appState: wasm.AppState): void {
  */
 function handleDatastoreSelection(
   appState: wasm.AppState,
-  dbType: wasm.DbType
+  dbType: wasm.DbType,
+  logger: vscode.OutputChannel
 ): void {
   // Prompt for the datastore name
   vscode.window
@@ -134,12 +140,14 @@ function handleDatastoreSelection(
           }
 
           // Modify paths
+          logger.appendLine(`AAAA`);
           config.paths.push({
             name: datastoreName,
             path: `.neat/dbs/${datastoreName}`,
           });
 
           // Modify dbs (you can modify this based on additional inputs if required)
+          logger.appendLine(`BBBB`);
           config.dbs.push({
             name: datastoreName,
             dbType: dbType, // This assumes that your selection from quick pick is the dbType
@@ -152,14 +160,10 @@ function handleDatastoreSelection(
             .writeFile(vscode.Uri.file(configPath), updatedContent)
             .then(
               () => {
-                vscode.window.showInformationMessage(
-                  "Config updated successfully!"
-                );
+                logger.appendLine("Config updated successfully!");
               },
               (error) => {
-                vscode.window.showErrorMessage(
-                  `Failed to update config: ${error.message}`
-                );
+                logger.appendLine("Config updated successfully!");
               }
             );
         },

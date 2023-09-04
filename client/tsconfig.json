@@ -9,7 +9,4 @@
 		"rootDir": "src",
 		"strict": true
 	},
-	"exclude": [
-		"server-test/**/*"
-	]
 }
