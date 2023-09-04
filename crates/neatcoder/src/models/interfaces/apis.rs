@@ -34,16 +34,16 @@ impl Api {
     pub fn new(
         name: String,
         api_type: ApiType,
-        port: Option<usize>,
-        host: Option<String>,
+        // port: Option<usize>,
+        // host: Option<String>,
         schemas: JsValue,
     ) -> Api {
         Api {
             name,
             api_type,
             custom_type: None,
-            port,
-            host,
+            port: None,
+            host: None,
             schemas: jsvalue_to_map(schemas),
         }
     }

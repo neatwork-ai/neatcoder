@@ -194,15 +194,18 @@ export function getOrCreateApiSchemaPath(apiName: string): string {
   return apiPath;
 }
 
-export function getOrCreateDatastoreSchemaPath(apiName: string): string {
+export function getOrCreateSchemasPath(
+  interfaceName: string,
+  folderName: string
+): string {
   const root = getRoot();
-  const dbsPath = path.join(root, ".neat/dbs", apiName);
+  const schemasPath = path.join(root, `.neat/${folderName}`, interfaceName);
 
   // Create the directory if it doesn't exist
-  if (!fs.existsSync(dbsPath)) {
-    fs.mkdirSync(dbsPath, { recursive: true });
+  if (!fs.existsSync(schemasPath)) {
+    fs.mkdirSync(schemasPath, { recursive: true });
   }
-  return dbsPath;
+  return schemasPath;
 }
 
 export function getRoot(): string {

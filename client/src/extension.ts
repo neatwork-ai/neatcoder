@@ -3,8 +3,6 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import { TaskPoolProvider } from "./providers/taskPool";
-import { addDatastore } from "./commands/interfaces/addDatastore";
-import { addApi } from "./commands/interfaces/addApi";
 import { InterfacesProvider } from "./providers/interfaces";
 import { TasksCompletedProvider } from "./providers/tasksCompleted";
 import { setupConfigWatcher } from "./watchers/configWatcher";
@@ -19,6 +17,7 @@ import InterfaceItem from "./providers/interfaceItem";
 import * as wasm from "./../pkg";
 import { readAppState } from "./utils";
 import { TaskView } from "./models/task";
+import { addInterface } from "./commands/interfaces/addInterface";
 
 let configWatcher: fs.FSWatcher | undefined;
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
@@ -89,13 +88,23 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.addDatastore", () => {
-      addDatastore(appState, logger);
+      addInterface(
+        appState,
+        wasm.InterfaceType.Database,
+        interfacesProvider,
+        logger
+      );
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.addApi", () => {
-      addApi(appState);
+      addInterface(
+        appState,
+        wasm.InterfaceType.Api,
+        interfacesProvider,
+        logger
+      );
     })
   );
 

@@ -176,13 +176,7 @@ function createDbInterface(
 ): wasm.Interface {
   const dbType: wasm.DbType = wasm.dbTypeFromFriendlyUX(newItem.dbType);
 
-  const database: wasm.Database = new wasm.Database(
-    newItem.name,
-    dbType,
-    // newItem.port, // TODO
-    // newItem.host,
-    {}
-  );
+  const database: wasm.Database = new wasm.Database(newItem.name, dbType, {});
 
   logger.appendLine(`[INFO] Adding Database Interface ${newItem.name}`);
 
@@ -195,13 +189,7 @@ function createApiInterface(
 ): wasm.Interface {
   const apiType: wasm.ApiType = wasm.apiTypeFromFriendlyUX(newItem.apiType);
 
-  const api: wasm.Api = new wasm.Api(
-    newItem.name,
-    apiType,
-    newItem.port,
-    newItem.host,
-    {}
-  );
+  const api: wasm.Api = new wasm.Api(newItem.name, apiType, {});
 
   logger.appendLine(`[INFO] Adding Api Interface ${newItem.name}`);
 
