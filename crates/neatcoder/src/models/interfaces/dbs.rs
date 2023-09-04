@@ -335,3 +335,46 @@ pub fn db_type_from_friendly_ux(database: String) -> DbType {
     };
     db
 }
+
+#[wasm_bindgen(js_name = dbTypeToFriendlyUX)]
+pub fn db_type_to_friendly_ux(db_type: DbType) -> String {
+    let db = match db_type {
+        DbType::ClickHouse => "ClickHouse",
+        DbType::DuckDb => "DuckDb",
+        DbType::MsSql => "MS SQL",
+        DbType::MySql => "MySQL",
+        DbType::PostgreSql => "PostgreSQL",
+        DbType::SqLite => "SQLite",
+        DbType::BigQuery => "BigQuery",
+        DbType::Redshift => "Redshift",
+        DbType::Snowflake => "Snowflake",
+        DbType::Hive => "Hive",
+        DbType::Cassandra => "Cassandra",
+        DbType::Hbase => "Hbase",
+        DbType::ScyellaDB => "ScyellaDB",
+        DbType::InfluxDB => "InfluxDB",
+        DbType::TimescaleDB => "TimescaleDB",
+        DbType::OpenTSDB => "OpenTSDB",
+        DbType::MongoDB => "MongoDB",
+        DbType::CounchDB => "CounchDB",
+        DbType::RavenDB => "RavenDB",
+        DbType::Firestore => "Firestore",
+        DbType::DynamoDB => "DynamoDB",
+        DbType::CosmosDB => "CosmosDB",
+        DbType::Redis => "Redis",
+        DbType::BerkeleyDB => "BerkeleyDB",
+        DbType::Riak => "Riak",
+        DbType::CouchBase => "CouchBase",
+        DbType::Db4o => "Db4o",
+        DbType::Versant => "Versant",
+        DbType::Neo4j => "Neo4j",
+        DbType::OrientDB => "OrientDB",
+        DbType::AmazonNeptune => "AmazonNeptune",
+        DbType::ArangoDB => "ArangoDB",
+        DbType::BaseX => "BaseX",
+        DbType::EXist => "EXist",
+        DbType::MarkLogic => "MarkLogic",
+        DbType::Custom => "Custom",
+    };
+    db.to_string()
+}

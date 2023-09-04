@@ -5,6 +5,9 @@ import { apiList, dbList } from "../../models/mappings";
 import * as wasm from "../../../pkg/neatcoder";
 import { InterfacesProvider } from "../../providers/interfaces";
 
+// TODO: what happens if we overwrite the interface with a new diferent one? what happens to the schemas?
+// We should not allow this to happen.
+
 /**
  * Presents a quick pick list to the user to select or input a datastore type.
  * Handles the user's selection/input and updates the appropriate configuration.

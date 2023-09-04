@@ -57,7 +57,7 @@ export class InterfacesProvider
           ? config.dbs.map((db) => {
               return new InterfaceItem(
                 db.name,
-                db.dbType,
+                wasm.dbTypeToFriendlyUX(Number(db.dbType)),
                 null,
                 vscode.TreeItemCollapsibleState.Collapsed,
                 ItemType.database
@@ -69,7 +69,7 @@ export class InterfacesProvider
           ? config.apis.map((api) => {
               return new InterfaceItem(
                 api.name,
-                api.apiType,
+                wasm.apiTypeToFriendlyUX(Number(api.apiType)),
                 null,
                 vscode.TreeItemCollapsibleState.Collapsed,
                 ItemType.api

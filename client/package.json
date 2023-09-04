@@ -111,7 +111,7 @@
       "view/item/context": [
         {
           "command": "extension.addSchema",
-          "when": "view == interfacesView && viewItem == databaseItem",
+          "when": "view == interfacesView && (viewItem == databaseItem || viewItem == apiItem)",
           "group": "inline"
         },
         {

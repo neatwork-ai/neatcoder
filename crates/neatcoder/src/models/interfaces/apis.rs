@@ -213,3 +213,25 @@ pub fn api_type_from_friendly_ux(api: String) -> ApiType {
     };
     api
 }
+
+#[wasm_bindgen(js_name = apiTypeToFriendlyUX)]
+pub fn api_type_to_friendly_ux(api_type: ApiType) -> String {
+    let api = match api_type {
+        ApiType::RestfulApi => "Restful API",
+        ApiType::SoapApi => "Soap API",
+        ApiType::RpcApi => "RPC API",
+        ApiType::GRpcApi => "gRPC API",
+        ApiType::GraphQL => "GraphQL",
+        ApiType::WebHooks => "WebHooks",
+        ApiType::HttpLongPolling => "HTTP Long-Polling",
+        ApiType::ServerSentEvents => "Server-Sent Events",
+        ApiType::HttpServerPush => "HTTP Server Push",
+        ApiType::WebSub => "WebSub",
+        ApiType::WebSockets => "WebSockets",
+        ApiType::TcpSocket => "Raw TCP Socket",
+        ApiType::LibraryIDL => "Library IDL",
+        ApiType::Mqtt => "MQTT",
+        ApiType::Custom => "Custom",
+    };
+    api.to_string()
+}
