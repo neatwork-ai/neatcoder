@@ -16,29 +16,30 @@ export function removeInterface(
   }
 
   const interfaceName = item.label; // Extracting interface name from the clicked item
-
   const config = getConfig();
 
-  // Remove interface from dbs and apis
-  config.dbs = config.dbs.filter((db: any) => db.name !== interfaceName);
-  config.apis = config.apis.filter((api: any) => api.name !== interfaceName);
-
-  // Remove interface from paths
-  config.paths = config.paths.filter(
-    (entry: any) => entry.name !== interfaceName
-  );
-
-  let configPath = getOrCreateConfigPath();
-
-  // Write updated config back
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 4));
-
-  // Delete the corresponding schemas folder
-
+  // We need to get the variable before removing the interface from the config
   const schemasPathObj = config.paths.find(
     (entry: any) => entry.name === interfaceName
   );
+
+  _removeInterface(config, interfaceName);
+
+  // Delete the corresponding schemas folder.
+  // Delete schemas comes after removing the interface as the
+  // intention is that by removing the interface first the schema watchers
+  // should be garbage collected
+  _deleteSchemas(schemasPathObj, interfaceName, logger);
+}
+
+function _deleteSchemas(
+  schemasPathObj: any,
+  interfaceName: string,
+  logger: vscode.OutputChannel
+): void {
+  logger.appendLine(`SCHEMA PATH OBJ IS ${schemasPathObj}.`);
   if (!schemasPathObj) {
+    // TODO: Incorrect because the folder still exists..
     logger.appendLine(
       `[WARN] No folder found for the interface ${interfaceName} schemas.`
     );
@@ -60,4 +61,20 @@ export function removeInterface(
   vscode.window.showInformationMessage(
     `Interface named ${interfaceName} removed successfully.`
   );
+}
+
+function _removeInterface(config: any, interfaceName: string) {
+  // Remove interface from dbs and apis
+  config.dbs = config.dbs.filter((db: any) => db.name !== interfaceName);
+  config.apis = config.apis.filter((api: any) => api.name !== interfaceName);
+
+  // Remove interface from paths
+  config.paths = config.paths.filter(
+    (entry: any) => entry.name !== interfaceName
+  );
+
+  let configPath = getOrCreateConfigPath();
+
+  // Write updated config back
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 4));
 }
