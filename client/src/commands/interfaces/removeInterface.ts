@@ -5,12 +5,12 @@ import InterfaceItem from "../../providers/interfaceItem";
 import { getConfig, getOrCreateConfigPath, getPath } from "../../utils";
 import * as wasm from "../../../pkg/neatcoder";
 
+// TODO: We should remove the schema watcher
 export function removeInterface(
   item: InterfaceItem,
   appState: wasm.AppState,
   logger: vscode.OutputChannel
 ) {
-  logger.appendLine(`Item: ${item}`);
   if (!item) {
     vscode.window.showErrorMessage("Please select an interface to remove.");
     return;
@@ -40,7 +40,6 @@ function _deleteSchemas(
   interfaceName: string,
   logger: vscode.OutputChannel
 ): void {
-  logger.appendLine(`SCHEMA PATH OBJ IS ${schemasPathObj}.`);
   if (!schemasPathObj) {
     // TODO: Incorrect because the folder still exists..
     logger.appendLine(

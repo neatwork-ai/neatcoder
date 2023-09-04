@@ -40,38 +40,24 @@ export function setupConfigWatcher(
 
   // Watch the config.json
   return fs.watch(configPath, (event, filename) => {
-    logger.appendLine(`[INFO] Some event:${event}`);
     if (filename) {
       const fullPath = path.join(root, ".neat", filename);
-      logger.appendLine(`[INFO] FULL PATH:${fullPath}`);
-      logger.appendLine(`[INFO] FULL PATH EXISTS? ${fs.existsSync(fullPath)}`);
-      logger.appendLine(`[INFO] FILE SYNC:${fs.statSync(fullPath).isFile()}`);
       if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
         logger.appendLine(`[INFO] Detected changes in: ${filename}`);
 
         // Refresh UI
         interfacesProvider.refresh();
-        logger.appendLine(`a`);
 
-        // Refresh Server
         // Read the new content
         const newContentString = fs.readFileSync(fullPath, "utf-8");
-        logger.appendLine(`b`);
-        // for (let i = 0; i < 1000000000000; i++) {
-        //   // Your code here
-        // }
-
-        logger.appendLine(`[INFO] THE NEW CONFIG :${newContentString}`);
         let newContent;
 
         try {
           newContent = JSON.parse(newContentString);
         } catch (error) {
-          logger.appendLine(`Error parsing JSON: ${error}`);
+          logger.appendLine(`[ERROR] Failed to parse JSON: ${error}`);
           return;
         }
-
-        logger.appendLine(`c`);
 
         // Compare and handle additions
         const bool1 = handleAdditions(
@@ -97,6 +83,7 @@ export function setupConfigWatcher(
           appState,
           logger
         );
+
         const bool4 = handleRemovals(
           originalConfig.apis,
           newContent.apis,
@@ -142,7 +129,6 @@ function handleAdditions(
   );
 
   const toUpdate = newItems.length > 0;
-
   for (const newItem of newItems) {
     const appInterface = callback(newItem, logger);
     appState.addInterface(appInterface);
@@ -174,20 +160,21 @@ function createDbInterface(
   newItem: any,
   logger: vscode.OutputChannel
 ): wasm.Interface {
-  const dbType: wasm.DbType = wasm.dbTypeFromFriendlyUX(newItem.dbType);
-
+  const dbType: wasm.DbType = newItem.dbType;
   const database: wasm.Database = new wasm.Database(newItem.name, dbType, {});
 
   logger.appendLine(`[INFO] Adding Database Interface ${newItem.name}`);
 
-  return wasm.Interface.newDb(database);
+  const inter_ = wasm.Interface.newDb(database);
+
+  return inter_;
 }
 
 function createApiInterface(
   newItem: any,
   logger: vscode.OutputChannel
 ): wasm.Interface {
-  const apiType: wasm.ApiType = wasm.apiTypeFromFriendlyUX(newItem.apiType);
+  const apiType: wasm.ApiType = newItem.apiType;
 
   const api: wasm.Api = new wasm.Api(newItem.name, apiType, {});
 

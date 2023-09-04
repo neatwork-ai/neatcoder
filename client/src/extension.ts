@@ -54,9 +54,6 @@ export async function activate(context: vscode.ExtensionContext) {
   setupConfigWatcher(schemaWatchers, interfacesProvider, appState, logger);
   setupSrcFolderWatcher(logger); // TODO: Redo
 
-  // Store the watchers in the context so they can be disposed of later
-  // watchers.forEach((watcher) => context.subscriptions.push(watcher)); // TODO: redo
-
   // === Registration & Garbage Collection ===
 
   // The `register` methods return a disposable object. A disposable object is
@@ -88,23 +85,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.addDatastore", () => {
-      addInterface(
-        appState,
-        wasm.InterfaceType.Database,
-        interfacesProvider,
-        logger
-      );
+      addInterface(wasm.InterfaceType.Database, interfacesProvider, logger);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.addApi", () => {
-      addInterface(
-        appState,
-        wasm.InterfaceType.Api,
-        interfacesProvider,
-        logger
-      );
+      addInterface(wasm.InterfaceType.Api, interfacesProvider, logger);
     })
   );
 

@@ -62,6 +62,7 @@ function setupWatcherForInterface(
   appState: wasm.AppState,
   logger: vscode.OutputChannel
 ): fs.FSWatcher {
+  logger.appendLine("[INFO] Setting up schema watcher for " + name);
   // Your existing watcher setup logic here, but return the watcher
   const watcher = fs.watch(
     absolutePath,
@@ -140,6 +141,6 @@ function handleFileDelete(
 ) {
   const schemaName = getFilename(filename);
 
-  logger.appendLine(`[INFO] TCP: Removing Schema ${schemaName}`);
+  logger.appendLine(`[INFO] Removing Schema ${schemaName}`);
   appState.removeSchema(interfaceName, schemaName);
 }
