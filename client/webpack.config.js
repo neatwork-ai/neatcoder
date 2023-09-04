@@ -4,6 +4,7 @@
 
 const path = require('path');
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
 
 //@ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
@@ -38,7 +39,11 @@ const extensionConfig = {
             loader: 'ts-loader'
           }
         ]
-      }
+      },
+      {
+        test: /\.wasm$/,
+        type: 'webassembly/async',
+      },
     ]
   },
   devtool: 'nosources-source-map',
@@ -47,8 +52,18 @@ const extensionConfig = {
   },
   plugins: [
     new WasmPackPlugin({
-      crateDirectory: path.resolve(__dirname, "../crates/neatcoder")
-    })
+      crateDirectory: path.resolve(__dirname, "../crates/neatcoder"),
+      outDir: path.resolve(__dirname, "dist")
+    }),
+    new CopyPlugin({
+      patterns: [
+        { from: "pkg/neatcoder_bg.wasm" },
+        { from: "pkg/neatcoder.js" },
+      ],
+    }),
   ],
+  experiments: {
+    asyncWebAssembly: true,
+  },
 };
 module.exports = [ extensionConfig ];
