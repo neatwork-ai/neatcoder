@@ -2,9 +2,9 @@ import * as vscode from "vscode";
 import {
   getOrCreateConfigPath,
   getOrCreateDatastoreSchemaPath,
-} from "../utils";
-import { dbList } from "../models/mappings";
-import * as wasm from "../../pkg/neatcoder";
+} from "../../utils";
+import { dbList } from "../../models/mappings";
+import * as wasm from "../../../pkg/neatcoder";
 
 /**
  * Presents a quick pick list to the user to select or input a datastore type.
@@ -105,7 +105,7 @@ function handleDatastoreSelection(
         datastoreName,
         dbType,
         // undefined,
-        // undefined, // TODO
+        // undefined,
         {}
       );
       const dbInterface = wasm.Interface.newDb(db);

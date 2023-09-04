@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
-import * as wasm from "../../pkg/neatcoder";
-import { apiList } from "../models/mappings";
-import { getOrCreateApiSchemaPath, getOrCreateConfigPath } from "../utils";
+import * as wasm from "../../../pkg/neatcoder";
+import { apiList } from "../../models/mappings";
+import { getOrCreateApiSchemaPath, getOrCreateConfigPath } from "../../utils";
 
 /**
  * Presents a quick pick list to the user to select or input a datastore type.

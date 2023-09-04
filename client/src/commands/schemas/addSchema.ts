@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import InterfaceItem from "../providers/interfaceItem";
-import { getOrCreateConfigPath } from "../utils";
+import InterfaceItem from "../../providers/interfaceItem";
+import { getOrCreateConfigPath } from "../../utils";
 
 /**
  * Opens a file dialog to allow the user to select schema files.

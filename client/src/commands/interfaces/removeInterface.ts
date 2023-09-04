@@ -2,8 +2,8 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import * as rimraf from "rimraf"; // Used for recursive directory deletion
-import InterfaceItem from "../providers/interfaceItem";
-import { getConfig, getOrCreateConfigPath, getPath } from "../utils";
+import InterfaceItem from "../../providers/interfaceItem";
+import { getConfig, getOrCreateConfigPath, getPath } from "../../utils";
 
 export function removeInterface(
   item: InterfaceItem,
