@@ -15,22 +15,22 @@ use crate::{
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ScaffoldProject {
+pub struct ScaffoldParams {
     pub(crate) specs: String,
 }
 
 #[wasm_bindgen]
-impl ScaffoldProject {
+impl ScaffoldParams {
     #[wasm_bindgen(constructor)]
-    pub fn new(specs: String) -> ScaffoldProject {
-        ScaffoldProject { specs }
+    pub fn new(specs: String) -> ScaffoldParams {
+        ScaffoldParams { specs }
     }
 }
 
 pub async fn scaffold_project(
     client: &OpenAI,
     ai_params: &OpenAIParams,
-    client_params: ScaffoldProject,
+    client_params: ScaffoldParams,
     app_state: &AppState,
 ) -> Result<Value> {
     let mut prompts = Vec::new();

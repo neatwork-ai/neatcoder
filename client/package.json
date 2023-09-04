@@ -54,6 +54,10 @@
         "command": "extension.removeSchema",
         "title": "Remove Schema",
         "icon": "$(remove)"
+      },
+      {
+        "command": "extension.debugAppState",
+        "title": "Print AppState"
       }
     ],
     "viewsContainers": {
@@ -114,6 +118,11 @@
           "command": "extension.removeSchema",
           "when": "view == interfacesView && viewItem == fileItem",
           "group": "inline"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "extension.debugAppState"
         }
       ]
     }

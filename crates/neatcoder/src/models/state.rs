@@ -9,7 +9,7 @@ use crate::{
     endpoints::{
         execution_plan::{build_execution_plan, Files},
         scaffold_project::scaffold_project,
-        stream_code::{stream_code, CodeGen},
+        stream_code::{stream_code, CodeGenParams},
     },
     models::task_params::{TaskParams, TaskType},
     openai::{client::OpenAI, params::OpenAIParams},
@@ -270,7 +270,7 @@ impl AppState {
 
             let task_params = TaskParams::new_(
                 TaskType::CodeGen,
-                Box::new(CodeGen { filename: file_ }),
+                Box::new(CodeGenParams { filename: file_ }),
             )
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
 

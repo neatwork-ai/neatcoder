@@ -16,15 +16,15 @@ use crate::{
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct CodeGen {
+pub struct CodeGenParams {
     pub(crate) filename: String,
 }
 
 #[wasm_bindgen]
-impl CodeGen {
+impl CodeGenParams {
     #[wasm_bindgen(constructor)]
-    pub fn new(filename: String) -> CodeGen {
-        CodeGen { filename }
+    pub fn new(filename: String) -> CodeGenParams {
+        CodeGenParams { filename }
     }
 
     #[wasm_bindgen(getter, js_name = getFilename)]
@@ -37,13 +37,13 @@ pub async fn stream_code(
     app_state: &AppState,
     client: &OpenAI,
     ai_params: &OpenAIParams,
-    task_params: CodeGen,
+    task_params: CodeGenParams,
     codebase: HashMap<String, String>,
     callback: Function,
 ) -> Result<()> {
     let mut prompts = Vec::new();
 
-    let CodeGen { filename } = task_params;
+    let CodeGenParams { filename } = task_params;
 
     println!("[INFO] Running `CodeGen` Job: {}", filename);
 

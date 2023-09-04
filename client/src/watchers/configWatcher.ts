@@ -159,8 +159,8 @@ function createDbInterface(
   const database: wasm.Database = new wasm.Database(
     newItem.name,
     dbType,
-    newItem.port,
-    newItem.host,
+    // newItem.port, // TODO
+    // newItem.host,
     {}
   );
 

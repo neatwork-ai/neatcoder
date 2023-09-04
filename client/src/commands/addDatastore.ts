@@ -12,7 +12,7 @@ import * as wasm from "../../pkg/neatcoder";
  *
  * @returns {void}
  */
-export function addDatastore(): void {
+export function addDatastore(appState: wasm.AppState): void {
   {
     const quickPick = vscode.window.createQuickPick();
     quickPick.items = dbList.map((label) => ({ label }));
@@ -36,6 +36,7 @@ export function addDatastore(): void {
       }
     });
 
+    // Runs once the user proceeds by click enter or left-click with the mouse
     quickPick.onDidAccept(() => {
       let selectedDbType: string;
 
@@ -63,7 +64,7 @@ export function addDatastore(): void {
       const dbType = wasm.dbTypeFromFriendlyUX(selectedDbType);
 
       if (dbType) {
-        handleDatastoreSelection(dbType);
+        handleDatastoreSelection(appState, dbType);
         quickPick.dispose();
       }
     });
@@ -79,7 +80,10 @@ export function addDatastore(): void {
  * @param {DbType} dbType - The type of database selected by the user.
  * @returns {void}
  */
-function handleDatastoreSelection(dbType: wasm.DbType) {
+function handleDatastoreSelection(
+  appState: wasm.AppState,
+  dbType: wasm.DbType
+): void {
   // Prompt for the datastore name
   vscode.window
     .showInputBox({
@@ -96,6 +100,18 @@ function handleDatastoreSelection(dbType: wasm.DbType) {
         return;
       }
 
+      // Update Runtime State
+      const db = new wasm.Database(
+        datastoreName,
+        dbType,
+        // undefined,
+        // undefined, // TODO
+        {}
+      );
+      const dbInterface = wasm.Interface.newDb(db);
+      appState.addInterface(dbInterface);
+
+      // Persist state
       const configPath = getOrCreateConfigPath();
       getOrCreateDatastoreSchemaPath(datastoreName);
 

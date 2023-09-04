@@ -1,7 +1,7 @@
 use std::any::Any;
 
 use crate::endpoints::{
-    scaffold_project::ScaffoldProject, stream_code::CodeGen,
+    scaffold_project::ScaffoldParams, stream_code::CodeGenParams,
 };
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
@@ -25,8 +25,8 @@ pub enum TaskType {
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TaskParamsInner {
-    scaffold_project: Option<ScaffoldProject>,
-    stream_code: Option<CodeGen>,
+    scaffold_project: Option<ScaffoldParams>,
+    stream_code: Option<CodeGenParams>,
 }
 
 #[wasm_bindgen]
@@ -91,8 +91,7 @@ impl TaskParams {
     pub fn new_(task_type: TaskType, inner: Box<dyn Any>) -> Result<Self> {
         match task_type {
             TaskType::ScaffoldProject => {
-                if let Some(scaffold) = inner.downcast_ref::<ScaffoldProject>()
-                {
+                if let Some(scaffold) = inner.downcast_ref::<ScaffoldParams>() {
                     Ok(TaskParams {
                         task_type,
                         inner: TaskParamsInner {
@@ -112,7 +111,7 @@ impl TaskParams {
                 },
             }),
             TaskType::CodeGen => {
-                if let Some(code_gen) = inner.downcast_ref::<CodeGen>() {
+                if let Some(code_gen) = inner.downcast_ref::<CodeGenParams>() {
                     Ok(TaskParams {
                         task_type,
                         inner: TaskParamsInner {
@@ -127,7 +126,7 @@ impl TaskParams {
         }
     }
 
-    pub fn scaffold_project(self) -> Result<ScaffoldProject> {
+    pub fn scaffold_project(self) -> Result<ScaffoldParams> {
         match self.task_type {
             TaskType::ScaffoldProject => match self.inner.scaffold_project {
                 Some(scaffold_project) => Ok(scaffold_project),
@@ -141,7 +140,7 @@ impl TaskParams {
         }
     }
 
-    pub fn stream_code(self) -> Result<CodeGen> {
+    pub fn stream_code(self) -> Result<CodeGenParams> {
         match self.task_type {
             TaskType::CodeGen => match self.inner.stream_code {
                 Some(stream_code) => Ok(stream_code),

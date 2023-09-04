@@ -39,16 +39,16 @@ impl Database {
     pub fn new(
         name: String,
         db_type: DbType,
-        port: Option<usize>,
-        host: Option<String>,
+        // port: Option<usize>,
+        // host: Option<String>,
         schemas: &JsValue,
     ) -> Database {
         Database {
             name,
             db_type,
             custom_type: None,
-            port,
-            host,
+            port: None,
+            host: None,
             schemas: jsvalue_to_map(schemas),
         }
     }

@@ -9,7 +9,7 @@ import { getOrCreateApiSchemaPath, getOrCreateConfigPath } from "../utils";
  *
  * @returns {void}
  */
-export function addApi(): void {
+export function addApi(appState: wasm.AppState): void {
   {
     // The items to show in the quick pick list
     const quickPick = vscode.window.createQuickPick();
@@ -61,7 +61,7 @@ export function addApi(): void {
       const apiType = wasm.apiTypeFromFriendlyUX(selectedApiType);
 
       if (apiType) {
-        handleApiSelection(apiType);
+        handleApiSelection(appState, apiType);
         quickPick.dispose();
       }
     });
@@ -77,25 +77,34 @@ export function addApi(): void {
  * @param {ApiType} apiType - The type of API selected by the user.
  * @returns {void}
  */
-function handleApiSelection(apiType: wasm.ApiType) {
+function handleApiSelection(
+  appState: wasm.AppState,
+  apiType: wasm.ApiType
+): void {
   // Prompt for the datastore name
   vscode.window
     .showInputBox({
       prompt: "Enter the name of the API",
       placeHolder: "API name",
     })
-    .then((datastoreName) => {
-      if (datastoreName === undefined) {
+    .then((apiName) => {
+      if (apiName === undefined) {
         return; // User canceled the input box
       }
 
-      if (!datastoreName) {
+      if (!apiName) {
         vscode.window.showErrorMessage("API name cannot be empty!");
         return;
       }
 
+      // Update Runtime State
+      const api = new wasm.Api(apiName, apiType, undefined, undefined, {});
+      const apiInterface = wasm.Interface.newApi(api);
+      appState.addInterface(apiInterface);
+
+      // Persist state
       const configPath = getOrCreateConfigPath();
-      getOrCreateApiSchemaPath(datastoreName);
+      getOrCreateApiSchemaPath(apiName);
 
       // Read the config file
       vscode.workspace.fs.readFile(vscode.Uri.file(configPath)).then(
@@ -117,13 +126,13 @@ function handleApiSelection(apiType: wasm.ApiType) {
 
           // Modify paths
           config.paths.push({
-            name: datastoreName,
-            path: `.neat/apis/${datastoreName}`,
+            name: apiName,
+            path: `.neat/apis/${apiName}`,
           });
 
           // Modify apis (you can modify this based on additional inputs if required)
           config.apis.push({
-            name: datastoreName,
+            name: apiName,
             apiType: apiType, // This assumes that your selection from quick pick is the apiType
             // ... other properties like port and host can be added as needed
           });

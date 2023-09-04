@@ -16,7 +16,7 @@ export async function startPrompt(
 
     if (userInput !== undefined) {
       const taskType = wasm.TaskType.ScaffoldProject;
-      const taskPayload = new wasm.ScaffoldProject(userInput);
+      const taskPayload = new wasm.ScaffoldParams();
       const taskParams = new wasm.TaskParams(taskType, taskPayload);
 
       await appState.scaffoldProject(llmClient, llmParams, taskParams);

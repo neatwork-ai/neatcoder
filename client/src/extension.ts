@@ -88,11 +88,15 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addDatastore", addDatastore)
+    vscode.commands.registerCommand("extension.addDatastore", () => {
+      addDatastore(appState);
+    })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addApi", addApi)
+    vscode.commands.registerCommand("extension.addApi", () => {
+      addApi(appState);
+    })
   );
 
   context.subscriptions.push(
@@ -124,6 +128,23 @@ export async function activate(context: vscode.ExtensionContext) {
         removeSchema(item);
       }
     )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("extension.debugAppState", function () {
+      // vscode.window.showInformationMessage(
+      //   JSON.stringify(appState.specs, null, 2)
+      // );
+      // vscode.window.showInformationMessage(
+      //   JSON.stringify(appState.scaffold, null, 2)
+      // );
+      vscode.window.showInformationMessage(
+        JSON.stringify(appState.interfaces, null, 2)
+      );
+      // vscode.window.showInformationMessage(
+      //   JSON.stringify(appState.taskPool, null, 2)
+      // );
+    })
   );
 }
 

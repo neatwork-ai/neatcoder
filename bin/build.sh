@@ -10,7 +10,7 @@ fi
 cd crates/neatcoder
 
 # Compile the wasm library (assuming you're using wasm-pack)
-wasm-pack build --target nodejs
+wasm-pack build --target nodejs --dev
 
 # Check if compilation was successful
 if [ $? -ne 0 ]; then
