@@ -1,4 +1,4 @@
-const dbList: string[] = [
+export const dbList: string[] = [
   "ClickHouse",
   "DuckDb",
   "MS SQL",
@@ -36,7 +36,7 @@ const dbList: string[] = [
   "MarkLogic",
 ];
 
-const ApiList = [
+export const apiList = [
   "RESTful API",
   "SOAP API",
   "RPC API",

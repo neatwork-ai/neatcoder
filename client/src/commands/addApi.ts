@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as wasm from "../../pkg/neatcoder";
+import { apiList } from "../models/mappings";
 import { getOrCreateApiSchemaPath, getOrCreateConfigPath } from "../utils";
 
 /**
@@ -12,7 +13,7 @@ export function addApi(): void {
   {
     // The items to show in the quick pick list
     const quickPick = vscode.window.createQuickPick();
-    quickPick.items = ApiList.map((label) => ({ label }));
+    quickPick.items = apiList.map((label) => ({ label }));
     quickPick.placeholder = "Select or type a API type";
     quickPick.matchOnDescription = true;
     quickPick.matchOnDetail = true;
@@ -21,13 +22,13 @@ export function addApi(): void {
 
     // If the user types in the QuickPick box and the value doesn't match an item, show a "(custom)" option
     quickPick.onDidChangeValue((value) => {
-      if (ApiList.includes(value)) {
+      if (apiList.includes(value)) {
         customEntered = false;
-        quickPick.items = ApiList.map((item) => ({ label: item }));
+        quickPick.items = apiList.map((item) => ({ label: item }));
       } else {
         customEntered = true;
         quickPick.items = [
-          ...ApiList.map((item) => ({ label: item })),
+          ...apiList.map((item) => ({ label: item })),
           { label: `${value} (custom)` },
         ];
       }
@@ -38,7 +39,7 @@ export function addApi(): void {
 
       if (
         quickPick.selectedItems[0] &&
-        ApiList.includes(quickPick.selectedItems[0].label)
+        apiList.includes(quickPick.selectedItems[0].label)
       ) {
         customEntered = false;
         selectedApiType = quickPick.selectedItems[0].label;

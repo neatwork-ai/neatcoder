@@ -3,6 +3,7 @@ import {
   getOrCreateConfigPath,
   getOrCreateDatastoreSchemaPath,
 } from "../utils";
+import { dbList } from "../models/mappings";
 import * as wasm from "../../pkg/neatcoder";
 
 /**
