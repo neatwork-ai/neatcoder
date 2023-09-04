@@ -57,8 +57,20 @@ export function setupConfigWatcher(
         // Read the new content
         const newContentString = fs.readFileSync(fullPath, "utf-8");
         logger.appendLine(`b`);
+        // for (let i = 0; i < 1000000000000; i++) {
+        //   // Your code here
+        // }
+
         logger.appendLine(`[INFO] THE NEW CONFIG :${newContentString}`);
-        const newContent = JSON.parse(newContentString);
+        let newContent;
+
+        try {
+          newContent = JSON.parse(newContentString);
+        } catch (error) {
+          logger.appendLine(`Error parsing JSON: ${error}`);
+          return;
+        }
+
         logger.appendLine(`c`);
 
         // Compare and handle additions

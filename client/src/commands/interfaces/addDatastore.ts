@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as fs from "fs";
 import {
   getOrCreateConfigPath,
   getOrCreateDatastoreSchemaPath,
@@ -85,93 +86,81 @@ export function addDatastore(
  * @param {DbType} dbType - The type of database selected by the user.
  * @returns {void}
  */
-function handleDatastoreSelection(
+async function handleDatastoreSelection(
   appState: wasm.AppState,
   dbType: wasm.DbType,
   logger: vscode.OutputChannel
-): void {
-  // Prompt for the datastore name
-  vscode.window
-    .showInputBox({
+): Promise<void> {
+  try {
+    const datastoreName = await vscode.window.showInputBox({
       prompt: "Enter the name of the datastore",
       placeHolder: "Datastore name",
-    })
-    .then((datastoreName) => {
-      if (datastoreName === undefined) {
-        return; // User canceled the input box
-      }
-
-      if (!datastoreName) {
-        vscode.window.showErrorMessage("Datastore name cannot be empty!");
-        return;
-      }
-
-      // Update Runtime State
-      const db = new wasm.Database(
-        datastoreName,
-        dbType,
-        // undefined,
-        // undefined,
-        {}
-      );
-      const dbInterface = wasm.Interface.newDb(db);
-      appState.addInterface(dbInterface);
-
-      // Persist state
-      const configPath = getOrCreateConfigPath();
-      getOrCreateDatastoreSchemaPath(datastoreName);
-
-      // Read the config file
-      vscode.workspace.fs.readFile(vscode.Uri.file(configPath)).then(
-        (content) => {
-          let config = JSON.parse(content.toString());
-
-          // Ensure config is an object
-          if (!config) {
-            config = {};
-          }
-
-          // Ensure paths and apis properties exist and are arrays
-          if (!config.paths) {
-            config.paths = [];
-          }
-          if (!config.dbs) {
-            config.apis = [];
-          }
-
-          // Modify paths
-          logger.appendLine(`AAAA`);
-          config.paths.push({
-            name: datastoreName,
-            path: `.neat/dbs/${datastoreName}`,
-          });
-
-          // Modify dbs (you can modify this based on additional inputs if required)
-          logger.appendLine(`BBBB`);
-          config.dbs.push({
-            name: datastoreName,
-            dbType: dbType, // This assumes that your selection from quick pick is the dbType
-            // ... other properties like port and host can be added as needed
-          });
-
-          // Write back the modified config
-          const updatedContent = Buffer.from(JSON.stringify(config, null, 4)); // 4 spaces indentation
-          vscode.workspace.fs
-            .writeFile(vscode.Uri.file(configPath), updatedContent)
-            .then(
-              () => {
-                logger.appendLine("Config updated successfully!");
-              },
-              (error) => {
-                logger.appendLine("Config updated successfully!");
-              }
-            );
-        },
-        (error) => {
-          vscode.window.showErrorMessage(
-            `Failed to read config: ${error.message}`
-          );
-        }
-      );
     });
+    if (datastoreName === undefined) {
+      return; // User canceled the input box
+    }
+
+    if (!datastoreName) {
+      vscode.window.showErrorMessage("Datastore name cannot be empty!");
+      return;
+    }
+
+    // Update Runtime State
+    const db = new wasm.Database(
+      datastoreName,
+      dbType,
+      // undefined,
+      // undefined,
+      {}
+    );
+    const dbInterface = wasm.Interface.newDb(db);
+    appState.addInterface(dbInterface);
+
+    // Persist state
+    const configPath = getOrCreateConfigPath();
+    getOrCreateDatastoreSchemaPath(datastoreName);
+
+    const content = await vscode.workspace.fs.readFile(
+      vscode.Uri.file(configPath)
+    );
+    let config = JSON.parse(content.toString());
+
+    // Ensure config is an object
+    if (!config) {
+      config = {};
+    }
+
+    // Ensure paths and apis properties exist and are arrays
+    if (!config.paths) {
+      config.paths = [];
+    }
+    if (!config.dbs) {
+      config.apis = [];
+    }
+
+    // Modify paths
+    logger.appendLine(`AAAA`);
+    config.paths.push({
+      name: datastoreName,
+      path: `.neat/dbs/${datastoreName}`,
+    });
+
+    // Modify dbs (you can modify this based on additional inputs if required)
+    logger.appendLine(`BBBB`);
+    config.dbs.push({
+      name: datastoreName,
+      dbType: dbType, // This assumes that your selection from quick pick is the dbType
+      // ... other properties like port and host can be added as needed
+    });
+
+    const updatedContent = Buffer.from(JSON.stringify(config, null, 4)); // 4 spaces indentation
+    // await vscode.workspace.fs.writeFile(
+    //   vscode.Uri.file(configPath),
+    //   updatedContent
+    // );
+    fs.writeFileSync(configPath, updatedContent);
+    logger.appendLine("Config updated successfully!");
+  } catch (error) {
+    logger.appendLine(`Failed to update config: ${error}`);
+  }
 }
