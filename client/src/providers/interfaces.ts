@@ -3,6 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { InterfaceItem, ItemType } from "./interfaceItem";
 import { getOrCreateConfigPath } from "../utils";
+import * as wasm from "../../pkg/neatcoder";
 
 export type DbEntry = {
   name: string;
