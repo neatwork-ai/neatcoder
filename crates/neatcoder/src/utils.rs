@@ -15,9 +15,11 @@ pub fn map_to_jsvalue<K: Serialize, V: Serialize>(
 
 // Convert a JsValue back to a HashMap<String, String>
 pub fn jsvalue_to_map<T: DeserializeOwned>(
-    value: &JsValue,
+    value: JsValue,
 ) -> HashMap<String, T> {
-    serde_json::from_str::<HashMap<String, T>>(&value.as_string().unwrap())
+    // if value.is_null() // TODO
+    serde_wasm_bindgen::from_value(value)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
         .unwrap()
 }
 

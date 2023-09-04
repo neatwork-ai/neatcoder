@@ -36,7 +36,7 @@ impl Api {
         api_type: ApiType,
         port: Option<usize>,
         host: Option<String>,
-        schemas: &JsValue,
+        schemas: JsValue,
     ) -> Api {
         Api {
             name,
@@ -53,7 +53,7 @@ impl Api {
         custom_type: String,
         port: Option<usize>,
         host: Option<String>,
-        schemas: &JsValue,
+        schemas: JsValue,
     ) -> Api {
         Api {
             name,

@@ -41,7 +41,7 @@ impl Database {
         db_type: DbType,
         // port: Option<usize>,
         // host: Option<String>,
-        schemas: &JsValue,
+        schemas: JsValue,
     ) -> Database {
         Database {
             name,
@@ -59,7 +59,7 @@ impl Database {
         custom_type: String,
         port: Option<usize>,
         host: Option<String>,
-        schemas: &JsValue,
+        schemas: JsValue,
     ) -> Database {
         Database {
             name,

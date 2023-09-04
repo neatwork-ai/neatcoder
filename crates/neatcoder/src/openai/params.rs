@@ -124,7 +124,7 @@ impl OpenAIParams {
             None => None,
         };
 
-        let logit_bias = jsvalue_to_map::<BoundedFloat<Range100s>>(&logit_bias);
+        let logit_bias = jsvalue_to_map::<BoundedFloat<Range100s>>(logit_bias);
 
         Self {
             model,
@@ -202,7 +202,7 @@ impl OpenAIParams {
 
     #[wasm_bindgen(js_name = logicBias)]
     pub fn logit_bias(mut self, logit_bias: JsValue) -> Self {
-        let mut logit_bias = jsvalue_to_map::<f64>(&logit_bias);
+        let mut logit_bias = jsvalue_to_map::<f64>(logit_bias);
 
         let logit_bias = logit_bias
             .drain()

@@ -173,7 +173,7 @@ impl AppState {
                 .map_err(|e| Error::new(&e.to_string()).into());
         }
 
-        let interfaces = jsvalue_to_map::<Interface>(&interfaces);
+        let interfaces = jsvalue_to_map::<Interface>(interfaces);
         self.interfaces = interfaces;
 
         self.trigger_callbacks();
@@ -295,7 +295,7 @@ impl AppState {
             .stream_code()
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
-        let codebase = jsvalue_to_map::<String>(&codebase);
+        let codebase = jsvalue_to_map::<String>(codebase);
 
         stream_code(self, client, ai_params, task_params, codebase, callback)
             .await

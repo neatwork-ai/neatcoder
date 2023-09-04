@@ -88,7 +88,7 @@ impl Storage {
         file_type: FileType,
         storage_type: StorageType,
         region: Option<String>,
-        schemas: &JsValue,
+        schemas: JsValue,
     ) -> Storage {
         Storage {
             name,
