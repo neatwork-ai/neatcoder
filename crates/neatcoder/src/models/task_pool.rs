@@ -1,4 +1,7 @@
-use crate::{models::task_params::TaskParams, utils::map_to_jsvalue};
+use crate::{
+    models::task_params::TaskParams,
+    utils::{jsvalue_to_map, map_to_jsvalue},
+};
 
 use super::task::Task;
 use anyhow::Result;
@@ -17,7 +20,14 @@ pub struct TaskPool {
 
 #[wasm_bindgen]
 impl TaskPool {
-    pub fn new(counter: usize, todo: Todo, done: Done) -> Self {
+    #[wasm_bindgen(constructor)]
+    pub fn new(value: JsValue) -> TaskPool {
+        serde_wasm_bindgen::from_value(value)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .unwrap()
+    }
+
+    pub fn new_(counter: usize, todo: Todo, done: Done) -> Self {
         Self {
             counter,
             todo,
@@ -81,6 +91,15 @@ pub struct Pipeline {
 
 #[wasm_bindgen]
 impl Pipeline {
+    #[wasm_bindgen(constructor)]
+    pub fn new(tasks: JsValue, order: JsValue) -> Self {
+        Self {
+            tasks: jsvalue_to_map::<usize, Task>(tasks),
+            order: serde_wasm_bindgen::from_value(order)
+                .expect("Failed to cast to type `ScaffoldProject`"),
+        }
+    }
+
     pub fn empty() -> Self {
         Self {
             tasks: HashMap::new(),

@@ -19,9 +19,37 @@ export function readAppState(): wasm.AppState {
   const binaryData = fs.readFileSync(filePath);
 
   // Deserialize the data
-  const state = deserializeAppState(binaryData.buffer as ArrayBuffer);
+  const stateData = deserializeAppState(binaryData);
 
-  return state;
+  // Create a new AppState instance and populate it with the deserialized data
+  vscode.window.showInformationMessage(`Let's see.....${stateData}`);
+
+  // const todoPipeline = new wasm.Pipeline(
+  //   stateData.taskPool.todo.task,
+  //   stateData.taskPool.todo.order
+  // );
+  // const donePipeline = new wasm.Pipeline(
+  //   stateData.done.task,
+  //   stateData.done.order
+  // );
+
+  // const realTaskPool = new wasm.TaskPool(
+  //   stateData.taskPool.counter,
+  //   todoPipeline,
+  //   donePipeline
+  // );
+
+  // const realTaskPool = new wasm.TaskPool(stateData.taskPool);
+
+  const appState = new wasm.AppState(stateData);
+  // stateData.specs,
+  // stateData.scaffold,
+  // stateData.interfaces,
+
+  vscode.window.showInformationMessage(`AMAZING!: ${appState}`);
+
+  return appState;
+  // return wasm.AppState.empty(); TODO remove
 }
 
 function readDirectoryStructure(
@@ -45,7 +73,14 @@ function readDirectoryStructure(
 /// ===== Write ===== ///
 
 export function saveAppStateToFile(appState: wasm.AppState): void {
-  const payload = serializeAppState(appState);
+  const dataState = {
+    specs: appState.specs,
+    scaffold: appState.scaffold,
+    interfaces: appState.interfaces,
+    taskPool: appState.taskPool,
+  };
+
+  const payload = serializeAppState(dataState);
   saveFile(payload, ".neat/cache", "state");
 }
 
@@ -69,16 +104,22 @@ function saveFile(
 
 /// ===== Serialize / Deserialize ===== ///
 
-export function serializeAppState(data: wasm.AppState): ArrayBuffer {
+export function serializeAppState(data: any): ArrayBuffer {
   const jsonString = JSON.stringify(data);
-  const compressedData = pako.deflate(jsonString);
+  const compressedData = pako.gzip(jsonString);
   return compressedData.buffer as ArrayBuffer;
 }
 
-function deserializeAppState(buffer: ArrayBuffer): wasm.AppState {
-  const decompressedData = pako.inflate(new Uint8Array(buffer));
-  const jsonString = new TextDecoder().decode(decompressedData);
-  return JSON.parse(jsonString) as wasm.AppState;
+function deserializeAppState(buffer: ArrayBuffer): any {
+  try {
+    const decompressedData = pako.ungzip(new Uint8Array(buffer));
+    const jsonString = new TextDecoder().decode(decompressedData);
+    vscode.window.showInformationMessage(`DESR.....${jsonString}`);
+    return JSON.parse(jsonString);
+  } catch (e) {
+    vscode.window.showErrorMessage(`Decompression failed:, ${e}`);
+    throw e;
+  }
 }
 
 function serializeString(data: string): ArrayBuffer {

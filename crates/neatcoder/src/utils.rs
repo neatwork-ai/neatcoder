@@ -4,6 +4,7 @@ use parser::parser::json::AsJson;
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::hash::Hash;
 use wasm_bindgen::JsValue;
 
 // Convert a HashMap<String, String> to a JsValue
@@ -14,9 +15,9 @@ pub fn map_to_jsvalue<K: Serialize, V: Serialize>(
 }
 
 // Convert a JsValue back to a HashMap<String, String>
-pub fn jsvalue_to_map<T: DeserializeOwned>(
+pub fn jsvalue_to_map<K: DeserializeOwned + Eq + Hash, T: DeserializeOwned>(
     value: JsValue,
-) -> HashMap<String, T> {
+) -> HashMap<K, T> {
     // if value.is_null() // TODO
     serde_wasm_bindgen::from_value(value)
         .map_err(|e| JsValue::from_str(&e.to_string()))

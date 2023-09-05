@@ -80,14 +80,10 @@ pub struct AppState {
 #[wasm_bindgen]
 impl AppState {
     #[wasm_bindgen(constructor)]
-    pub fn new(specs: String, task_pool: TaskPool) -> Self {
-        Self {
-            listeners: Vec::new(),
-            specs: Some(specs),
-            scaffold: None,
-            interfaces: HashMap::new(),
-            task_pool,
-        }
+    pub fn new(value: JsValue) -> Self {
+        serde_wasm_bindgen::from_value(value)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .unwrap()
     }
 
     pub fn empty() -> Self {
@@ -163,7 +159,7 @@ impl AppState {
         self.task_pool.finish_task_by_id(task_id)
     }
 
-    #[wasm_bindgen(setter = setInterface)]
+    #[wasm_bindgen(setter = setInterfaces)]
     pub fn set_interfaces(
         &mut self,
         interfaces: JsValue,
@@ -173,7 +169,7 @@ impl AppState {
                 .map_err(|e| Error::new(&e.to_string()).into());
         }
 
-        let interfaces = jsvalue_to_map::<Interface>(interfaces);
+        let interfaces = jsvalue_to_map::<String, Interface>(interfaces);
         self.interfaces = interfaces;
 
         self.trigger_callbacks();
@@ -295,7 +291,7 @@ impl AppState {
             .stream_code()
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
-        let codebase = jsvalue_to_map::<String>(codebase);
+        let codebase = jsvalue_to_map::<String, String>(codebase);
 
         stream_code(self, client, ai_params, task_params, codebase, callback)
             .await
@@ -306,6 +302,21 @@ impl AppState {
 }
 
 impl AppState {
+    pub fn new_(
+        specs: Option<String>,
+        scaffold: Option<String>,
+        interfaces: HashMap<String, Interface>,
+        task_pool: TaskPool,
+    ) -> Self {
+        Self {
+            listeners: Vec::new(),
+            specs,
+            scaffold,
+            interfaces,
+            task_pool,
+        }
+    }
+
     fn add_schema_(
         &mut self,
         interface_name: String,
