@@ -1,9 +1,8 @@
 use anyhow::{anyhow, Result};
-use futures::StreamExt;
 use js_sys::Function;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     models::{interfaces::AsContext, state::AppState},
@@ -106,19 +105,19 @@ pub async fn stream_code(
 }
 
 pub async fn stream_rust(
-    client: &OpenAI,
-    ai_params: &OpenAIParams,
-    prompts: Vec<OpenAIMsg>,
-    callback: Function,
+    _client: &OpenAI,
+    _ai_params: &OpenAIParams,
+    _prompts: Vec<OpenAIMsg>,
+    _callback: Function,
 ) -> Result<()> {
     println!("[INFO] Initiating Stream");
 
-    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
+    // let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let mut chat_stream =
-        client.chat_stream(ai_params, &prompts, &[], &[]).await?;
+    // let mut chat_stream =
+    //     client.chat_stream(ai_params, &prompts, &[], &[]).await?;
 
-    let mut start_delimiter = false;
+    // let mut start_delimiter = false;
     todo!();
     // while let Some(item) = chat_stream.next().await {
     //     match item {
@@ -144,5 +143,5 @@ pub async fn stream_rust(
     //         Err(e) => eprintln!("Failed to receive token, with error: {e}"),
     //     }
     // }
-    Ok(())
+    // Ok(())
 }

@@ -127,6 +127,23 @@ pub enum ApiType {
     Custom,
 }
 
+impl Api {
+    pub fn new_(
+        name: String,
+        api_type: ApiType,
+        schemas: HashMap<String, SchemaFile>,
+    ) -> Api {
+        Api {
+            name,
+            api_type,
+            custom_type: None,
+            port: None,
+            host: None,
+            schemas,
+        }
+    }
+}
+
 impl AsContext for Api {
     fn add_context(&self, msg_sequence: &mut Vec<OpenAIMsg>) -> Result<()> {
         let mut main_prompt = format!(

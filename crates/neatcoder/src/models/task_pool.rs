@@ -120,6 +120,10 @@ impl Pipeline {
 }
 
 impl Pipeline {
+    pub fn new_(tasks: HashMap<usize, Task>, order: VecDeque<usize>) -> Self {
+        Self { tasks, order }
+    }
+
     pub fn push_front(&mut self, task: Task) {
         let task_id = task.id;
 

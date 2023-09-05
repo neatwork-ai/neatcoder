@@ -96,6 +96,23 @@ impl Database {
     }
 }
 
+impl Database {
+    pub fn new_(
+        name: String,
+        db_type: DbType,
+        schemas: HashMap<String, SchemaFile>,
+    ) -> Database {
+        Database {
+            name,
+            db_type,
+            custom_type: None,
+            port: None,
+            host: None,
+            schemas,
+        }
+    }
+}
+
 /// Enum documenting the type of Database/DataWarehouse interface.
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]

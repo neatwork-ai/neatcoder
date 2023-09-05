@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
+use web_sys::console;
 
 use crate::{
     endpoints::{
@@ -80,10 +81,27 @@ pub struct AppState {
 #[wasm_bindgen]
 impl AppState {
     #[wasm_bindgen(constructor)]
-    pub fn new(value: JsValue) -> Self {
-        serde_wasm_bindgen::from_value(value)
-            .map_err(|e| JsValue::from_str(&e.to_string()))
-            .unwrap()
+    pub fn new(value: JsValue) -> Result<AppState, JsValue> {
+        let json_string = &value.as_string();
+
+        match json_string {
+            None => {
+                let error_msg =
+                    format!("AppState JsValue is empty: {:?}", value);
+
+                console::error_1(&error_msg.as_str().into());
+
+                return Err(anyhow!(error_msg))
+                    .map_err(|e| JsValue::from_str(&e.to_string()));
+            }
+            Some(json_string) => {
+                let app_state: Result<AppState, _> =
+                    serde_json::from_str(&json_string)
+                        .map_err(|e| JsValue::from_str(&e.to_string()));
+
+                return app_state;
+            }
+        }
     }
 
     pub fn empty() -> Self {
@@ -396,6 +414,110 @@ impl AppState {
         for callback in &self.listeners {
             let this = JsValue::NULL;
             let _ = callback.call0(&this);
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use std::collections::VecDeque;
+
+    use crate::{
+        endpoints::scaffold_project::ScaffoldParams,
+        models::{
+            interfaces::{
+                apis::{Api, ApiType},
+                dbs::{Database, DbType},
+            },
+            task::Task,
+            task_pool::Pipeline,
+        },
+    };
+
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test]
+    pub fn app_state_deserialize() {
+        let mut interfaces = HashMap::new();
+        interfaces.insert(
+            String::from("MyDB"),
+            Interface::new_db(Database::new_(
+                String::from("MyDB"),
+                DbType::MySql,
+                HashMap::from([("MySchema".to_string(), "schema".to_string())]),
+            )),
+        );
+
+        interfaces.insert(
+            String::from("MyApi"),
+            Interface::new_api(Api::new_(
+                String::from("MyApi"),
+                ApiType::RestfulApi,
+                HashMap::from([("MySchema".to_string(), "schema".to_string())]),
+            )),
+        );
+
+        let task_1 = Task::new(
+            1,
+            "Task1",
+            TaskParams::new_(
+                TaskType::ScaffoldProject,
+                Box::new(ScaffoldParams::new(String::from("specs"))),
+            )
+            .unwrap(),
+        );
+        let task_2 = Task::new(
+            2,
+            "Task2",
+            TaskParams::new_(TaskType::BuildExecutionPlan, Box::new(0))
+                .unwrap(),
+        );
+        let task_3 = Task::new(
+            3,
+            "Task3",
+            TaskParams::new_(
+                TaskType::CodeGen,
+                Box::new(CodeGenParams::new(String::from("filename.rs"))),
+            )
+            .unwrap(),
+        );
+
+        let todo = Pipeline::new_(
+            HashMap::from([(3, task_3), (2, task_2)]),
+            VecDeque::from([3, 2]),
+        );
+
+        let done =
+            Pipeline::new_(HashMap::from([(1, task_1)]), VecDeque::from([1]));
+
+        let task_pool = TaskPool::new_(
+            3, // The number of tasks
+            todo, done,
+        );
+
+        let app_state = AppState::new_(
+            Some(String::from("specs")),
+            Some(String::from("scaffold")),
+            interfaces,
+            task_pool,
+        );
+
+        // Deserialized - Should be equal to:
+        // JsValue("{"specs":"specs","scaffold":"scaffold","interfaces":{"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}},"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","api_type":"RestfulApi","custom_type":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}}},"task_pool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","task_params":{"task_type":"BuildExecutionPlan","inner":{"scaffold_project":null,"stream_code":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","task_params":{"task_type":"CodeGen","inner":{"scaffold_project":null,"stream_code":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","task_params":{"task_type":"ScaffoldProject","inner":{"scaffold_project":{"specs":"specs"},"stream_code":null}},"status":"Todo"}},"order":[1]}}}")'
+        let actual =
+            JsValue::from_str(&serde_json::to_string(&app_state).unwrap());
+
+        let expected = JsValue::from_str(
+            r#"{"specs":"specs","scaffold":"scaffold","interfaces":{"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}},"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","api_type":"RestfulApi","custom_type":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}}},"task_pool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","task_params":{"task_type":"BuildExecutionPlan","inner":{"scaffold_project":null,"stream_code":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","task_params":{"task_type":"CodeGen","inner":{"scaffold_project":null,"stream_code":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","task_params":{"task_type":"ScaffoldProject","inner":{"scaffold_project":{"specs":"specs"},"stream_code":null}},"status":"Todo"}},"order":[1]}}}"#,
+        );
+
+        assert_eq!(actual, expected);
+
+        let app_state = AppState::new(actual);
+
+        if let Err(e) = app_state {
+            panic!("Failed to create AppState: {:?}", e);
         }
     }
 }

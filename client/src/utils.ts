@@ -22,7 +22,6 @@ export function readAppState(): wasm.AppState {
   const stateData = deserializeAppState(binaryData);
 
   // Create a new AppState instance and populate it with the deserialized data
-  vscode.window.showInformationMessage(`Let's see.....${stateData}`);
 
   // const todoPipeline = new wasm.Pipeline(
   //   stateData.taskPool.todo.task,
@@ -41,17 +40,25 @@ export function readAppState(): wasm.AppState {
 
   // const realTaskPool = new wasm.TaskPool(stateData.taskPool);
 
-  vscode.window.showInformationMessage(`StateData.....${stateData}`);
-  const appState = new wasm.AppState(stateData);
+  vscode.window.showInformationMessage(
+    `APP STATE!!: ${JSON.stringify(stateData)}`
+  );
+  try {
+    const appState = new wasm.AppState(stateData);
+    return appState;
+  } catch (e) {
+    vscode.window.showInformationMessage(`ERROR: ${e}`);
+    throw e;
+  }
 
   // stateData.specs,
   // stateData.scaffold,
   // stateData.interfaces,
 
-  // vscode.window.showInformationMessage(`AMAZING!: ${appState}`);
+  //
   //
   // return appState;
-  return wasm.AppState.empty(); //TODO remove
+  //TODO remove
 }
 
 function readDirectoryStructure(
@@ -116,7 +123,6 @@ function deserializeAppState(buffer: ArrayBuffer): any {
   try {
     const decompressedData = pako.ungzip(new Uint8Array(buffer));
     const jsonString = new TextDecoder().decode(decompressedData);
-    vscode.window.showInformationMessage(`DESR.....${jsonString}`);
     return JSON.parse(jsonString);
   } catch (e) {
     vscode.window.showErrorMessage(`Decompression failed:, ${e}`);

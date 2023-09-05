@@ -1,8 +1,6 @@
 use std::{fmt, ops::Deref};
 
 use anyhow::{anyhow, Result};
-use bytes::Bytes;
-use futures::Stream;
 use reqwest::Client;
 use serde_json::{json, Value};
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -93,10 +91,10 @@ impl OpenAI {
 
     pub async fn chat_stream(
         &self,
-        job: &OpenAIParams,
-        msgs: &[&OpenAIMsg],
-        funcs: &[&String],
-        stop_seq: &[String],
+        _job: &OpenAIParams,
+        _msgs: &[&OpenAIMsg],
+        _funcs: &[&String],
+        _stop_seq: &[String],
     ) -> Result<()> {
         // ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
         // let client = Client::new();
