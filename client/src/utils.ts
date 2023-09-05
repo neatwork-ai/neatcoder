@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
-import path = require("path");
-import pako = require("pako");
+import * as path from "path";
+import * as pako from "pako";
 import * as wasm from "../pkg/neatcoder";
 
 /// ===== Read ===== ///
@@ -41,15 +41,17 @@ export function readAppState(): wasm.AppState {
 
   // const realTaskPool = new wasm.TaskPool(stateData.taskPool);
 
+  vscode.window.showInformationMessage(`StateData.....${stateData}`);
   const appState = new wasm.AppState(stateData);
+
   // stateData.specs,
   // stateData.scaffold,
   // stateData.interfaces,
 
-  vscode.window.showInformationMessage(`AMAZING!: ${appState}`);
-
-  return appState;
-  // return wasm.AppState.empty(); TODO remove
+  // vscode.window.showInformationMessage(`AMAZING!: ${appState}`);
+  //
+  // return appState;
+  return wasm.AppState.empty(); //TODO remove
 }
 
 function readDirectoryStructure(
