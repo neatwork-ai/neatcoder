@@ -119,29 +119,30 @@ pub async fn stream_rust(
         client.chat_stream(ai_params, &prompts, &[], &[]).await?;
 
     let mut start_delimiter = false;
-    while let Some(item) = chat_stream.next().await {
-        match item {
-            Ok(bytes) => {
-                let token = std::str::from_utf8(&bytes)
-                    .expect("Failed to generate utf8 from bytes");
-                if !start_delimiter && ["```rust", "```"].contains(&token) {
-                    start_delimiter = true;
-                    continue;
-                } else if !start_delimiter {
-                    continue;
-                } else {
-                    if token == "```" {
-                        break;
-                    }
+    todo!();
+    // while let Some(item) = chat_stream.next().await {
+    //     match item {
+    //         Ok(bytes) => {
+    //             let token = std::str::from_utf8(&bytes)
+    //                 .expect("Failed to generate utf8 from bytes");
+    //             if !start_delimiter && ["```rust", "```"].contains(&token) {
+    //                 start_delimiter = true;
+    //                 continue;
+    //             } else if !start_delimiter {
+    //                 continue;
+    //             } else {
+    //                 if token == "```" {
+    //                     break;
+    //                 }
 
-                    // Call the JavaScript callback with the token
-                    let this = JsValue::NULL;
-                    let js_token = JsValue::from_str(&token);
-                    callback.call1(&this, &js_token).unwrap();
-                }
-            }
-            Err(e) => eprintln!("Failed to receive token, with error: {e}"),
-        }
-    }
+    //                 // Call the JavaScript callback with the token
+    //                 let this = JsValue::NULL;
+    //                 let js_token = JsValue::from_str(&token);
+    //                 callback.call1(&this, &js_token).unwrap();
+    //             }
+    //         }
+    //         Err(e) => eprintln!("Failed to receive token, with error: {e}"),
+    //     }
+    // }
     Ok(())
 }

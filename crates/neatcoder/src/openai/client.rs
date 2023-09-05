@@ -97,29 +97,32 @@ impl OpenAI {
         msgs: &[&OpenAIMsg],
         funcs: &[&String],
         stop_seq: &[String],
-    ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
-        let client = Client::new();
+    ) -> Result<()> {
+        // ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
+        // let client = Client::new();
 
-        // fill in your own data as needed
-        let req_body = self.request_body(job, msgs, funcs, stop_seq, true)?;
+        // // fill in your own data as needed
+        // let req_body = self.request_body(job, msgs, funcs, stop_seq, true)?;
 
-        let response = client
-            .post("https://api.openai.com/v1/chat/completions")
-            .header(
-                "Authorization",
-                format!(
-                    "Bearer {}",
-                    self.api_key.as_ref().expect("No API Keys provided")
-                ),
-            )
-            .header("Content-Type", "application/json")
-            .json(&req_body)
-            .send()
-            .await?;
+        // let response = client
+        //     .post("https://api.openai.com/v1/chat/completions")
+        //     .header(
+        //         "Authorization",
+        //         format!(
+        //             "Bearer {}",
+        //             self.api_key.as_ref().expect("No API Keys provided")
+        //         ),
+        //     )
+        //     .header("Content-Type", "application/json")
+        //     .json(&req_body)
+        //     .send()
+        //     .await?;
 
-        let stream = response.bytes_stream();
+        // let stream = response.bytes_stream();
 
-        return Ok(stream);
+        todo!();
+
+        // return Ok(stream);
     }
 
     fn request_body(
