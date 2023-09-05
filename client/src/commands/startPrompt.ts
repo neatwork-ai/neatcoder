@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as wasm from "./../../pkg";
+import { saveAppStateToFile } from "../utils";
 
 export async function startPrompt(
   llmClient: wasm.OpenAI,
@@ -17,9 +18,10 @@ export async function startPrompt(
     if (userInput !== undefined) {
       const taskType = wasm.TaskType.ScaffoldProject;
       const taskPayload = new wasm.ScaffoldParams(userInput);
-      const taskParams = new wasm.TaskParams(taskType, taskPayload);
+      const taskParams = new wasm.TaskParams(taskType, taskPayload); // TODO: THE ERROR IS HERE.
 
       await appState.scaffoldProject(llmClient, llmParams, taskParams);
+      saveAppStateToFile(appState);
 
       // Use the TCP client to send the command
       logger.appendLine(`[INFO] Sending InitPrompt command via TCP Socket`);

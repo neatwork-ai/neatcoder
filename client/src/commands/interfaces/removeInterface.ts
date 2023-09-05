@@ -5,10 +5,8 @@ import InterfaceItem from "../../providers/interfaceItem";
 import { getConfig, getOrCreateConfigPath, getPath } from "../../utils";
 import * as wasm from "../../../pkg/neatcoder";
 
-// TODO: We should remove the schema watcher
 export function removeInterface(
   item: InterfaceItem,
-  appState: wasm.AppState,
   logger: vscode.OutputChannel
 ) {
   if (!item) {
@@ -31,8 +29,6 @@ export function removeInterface(
   // intention is that by removing the interface first the schema watchers
   // should be garbage collected
   _deleteSchemas(schemasPathObj, interfaceName, logger);
-
-  appState.removeInterface(interfaceName);
 }
 
 function _deleteSchemas(

@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { InterfacesProvider } from "../providers/interfaces";
 import { setupSchemaWatchers } from "./schemaWatcher";
-import { getOrCreateConfigPath, getRoot } from "../utils";
+import { getOrCreateConfigPath, getRoot, saveAppStateToFile } from "../utils";
 import * as wasm from "../../pkg/neatcoder";
 
 let originalConfig: any;
@@ -94,6 +94,9 @@ export function setupConfigWatcher(
         const toUpdate = bool1 || bool2 || bool3 || bool4;
 
         if (toUpdate) {
+          // We persist changes here
+          saveAppStateToFile(appState);
+
           // Close the old schema watchers
           for (const key in schemaWatchers) {
             if (schemaWatchers.hasOwnProperty(key)) {
