@@ -219,8 +219,8 @@ impl AppState {
     }
 
     #[wasm_bindgen(js_name = finishTaskById)]
-    pub fn finish_task_by_id(&mut self, task_id: usize) -> Result<(), JsValue> {
-        self.task_pool.finish_task_by_id(task_id)
+    pub fn finish_task_by_id(&mut self, task_id: usize) {
+        self.task_pool.finish_task_by_id(task_id);
     }
 
     #[wasm_bindgen(setter = setInterfaces)]
@@ -578,7 +578,7 @@ pub mod tests {
         let done =
             Pipeline::new_(BTreeMap::from([(1, task_1)]), VecDeque::from([1]));
 
-        let task_pool = TaskPool::new_(
+        let task_pool = TaskPool::new(
             3, // The number of tasks
             todo, done,
         );
@@ -623,7 +623,7 @@ pub mod tests {
         let todo = Pipeline::new_(BTreeMap::new(), VecDeque::from([]));
         let done = Pipeline::new_(BTreeMap::new(), VecDeque::from([]));
 
-        let task_pool = TaskPool::new_(
+        let task_pool = TaskPool::new(
             0, // The number of tasks
             todo, done,
         );

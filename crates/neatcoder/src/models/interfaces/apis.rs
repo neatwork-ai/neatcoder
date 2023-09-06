@@ -1,8 +1,7 @@
 use crate::{
     models::interfaces::ISchemas,
     openai::msg::{GptRole, OpenAIMsg},
-    utils::{from_extern, to_extern},
-    JsError,
+    JsError, WasmType,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -39,7 +38,7 @@ impl Api {
         api_type: ApiType,
         schemas: ISchemas,
     ) -> Result<Api, JsError> {
-        let schemas = from_extern(schemas)?;
+        let schemas = BTreeMap::from_extern(schemas)?;
 
         Ok(Api {
             name,
@@ -58,7 +57,7 @@ impl Api {
         host: Option<String>,
         schemas: ISchemas,
     ) -> Result<Api, JsError> {
-        let schemas = from_extern(schemas)?;
+        let schemas = BTreeMap::from_extern(schemas)?;
 
         Ok(Api {
             name,
@@ -83,7 +82,7 @@ impl Api {
     // Get the schemas as ISchemas to return to JavaScript
     #[wasm_bindgen(getter)]
     pub fn schemas(&self) -> Result<ISchemas, JsError> {
-        to_extern::<ISchemas>(self.schemas.clone())
+        BTreeMap::to_extern(self.schemas.clone())
     }
 
     #[wasm_bindgen(getter)]

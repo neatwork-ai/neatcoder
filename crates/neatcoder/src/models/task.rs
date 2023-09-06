@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::task_params::TaskParams;
 
@@ -32,19 +32,17 @@ impl Task {
         }
     }
 
-    pub fn complete(&mut self) -> Result<(), JsValue> {
+    pub fn complete(&mut self) {
         self.status = TaskStatus::Done;
-
-        Ok(())
     }
 
-    #[wasm_bindgen(getter, js_name = name)]
-    pub fn get_name(&self) -> String {
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> String {
         self.name.clone()
     }
 
     #[wasm_bindgen(getter, js_name = taskParams)]
-    pub fn get_task_params(&self) -> TaskParams {
+    pub fn task_params(&self) -> TaskParams {
         self.task_params.clone()
     }
 }

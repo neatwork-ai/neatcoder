@@ -1,14 +1,10 @@
-use crate::{
-    models::task_params::TaskParams,
-    utils::{jsvalue_to_map, map_to_jsvalue},
-};
+use crate::{models::task_params::TaskParams, JsError, WasmType};
 
 use super::task::Task;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen::to_value;
 use std::collections::{BTreeMap, VecDeque};
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -22,13 +18,7 @@ pub struct TaskPool {
 #[wasm_bindgen]
 impl TaskPool {
     #[wasm_bindgen(constructor)]
-    pub fn new(value: JsValue) -> TaskPool {
-        serde_wasm_bindgen::from_value(value)
-            .map_err(|e| JsValue::from_str(&e.to_string()))
-            .unwrap()
-    }
-
-    pub fn new_(counter: usize, todo: Todo, done: Done) -> Self {
+    pub fn new(counter: usize, todo: Todo, done: Done) -> Self {
         Self {
             counter,
             todo,
@@ -53,35 +43,40 @@ impl TaskPool {
         task_id
     }
 
-    pub fn finish_task_by_id(&mut self, task_id: usize) -> Result<(), JsValue> {
+    pub fn finish_task_by_id(&mut self, task_id: usize) {
         let mut task = self
             .todo
             .remove(task_id)
             .expect("Could not find task in todo list");
 
-        task.complete()?;
+        task.complete();
 
         self.done.push_back(task);
-
-        Ok(())
     }
 
-    pub fn finish_task_by_order(&mut self) -> Result<(), JsValue> {
+    pub fn finish_task_by_order(&mut self) {
         let mut task = self
             .todo
             .pop_front()
             .expect("Could not find any task in the todo list");
 
-        task.complete()?;
+        task.complete();
 
         self.done.push_back(task);
-
-        Ok(())
     }
 }
 
 pub type Todo = Pipeline;
 pub type Done = Pipeline;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "Record<number, Task>")]
+    pub type ITasks;
+
+    #[wasm_bindgen(typescript_type = "Array<number>")]
+    pub type IOrder;
+}
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -94,12 +89,14 @@ pub struct Pipeline {
 #[wasm_bindgen]
 impl Pipeline {
     #[wasm_bindgen(constructor)]
-    pub fn new(tasks: JsValue, order: JsValue) -> Self {
-        Self {
-            tasks: jsvalue_to_map::<usize, Task>(tasks),
-            order: serde_wasm_bindgen::from_value(order)
-                .expect("Failed to cast to type `ScaffoldProject`"),
-        }
+    pub fn new(tasks: ITasks, order: IOrder) -> Result<Pipeline, JsError> {
+        let task_bm = BTreeMap::from_extern(tasks)?;
+        let order_bm = VecDeque::from_extern(order)?;
+
+        Ok(Self {
+            tasks: task_bm,
+            order: order_bm,
+        })
     }
 
     pub fn empty() -> Self {
@@ -109,15 +106,14 @@ impl Pipeline {
         }
     }
 
-    #[wasm_bindgen(getter, js_name = tasks)]
-    pub fn get_tasks(&self) -> JsValue {
-        map_to_jsvalue::<usize, Task>(&self.tasks)
+    #[wasm_bindgen(getter)]
+    pub fn tasks(&self) -> Result<ITasks, JsError> {
+        BTreeMap::to_extern(self.tasks.clone())
     }
 
-    #[wasm_bindgen(getter, js_name = order)]
-    pub fn get_order(&self) -> JsValue {
-        let vec: Vec<usize> = self.order.clone().into();
-        to_value(&vec).unwrap()
+    #[wasm_bindgen(getter)]
+    pub fn order(&self) -> Result<IOrder, JsError> {
+        VecDeque::to_extern(self.order.clone())
     }
 }
 
