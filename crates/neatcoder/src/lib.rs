@@ -1,6 +1,7 @@
 use js_sys::Reflect;
 use serde::de::DeserializeOwned;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::hash::Hash;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::console;
 
@@ -122,6 +123,74 @@ impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
         serde_wasm_bindgen::from_value(js_value).map_err(|e| {
             let error_msg = format!(
                 "Failed to convert {} JsValue to VecDeque<{}>: {:?}",
+                type_name,
+                std::any::type_name::<V>(),
+                e,
+            );
+            console::error_1(&JsValue::from_str(&error_msg));
+            JsValue::from_str(&error_msg)
+        })
+    }
+}
+
+// TODO: dedup implementation of BTreeMap/HashMap
+impl<
+        K: DeserializeOwned + Ord + Into<JsValue> + Clone + Hash,
+        V: Into<JsValue> + Clone,
+        ExternType: JsCast,
+    > WasmType<ExternType> for HashMap<K, V>
+where
+    V: DeserializeOwned,
+{
+    type RustType = HashMap<K, V>;
+
+    fn to_extern(rust_type: Self::RustType) -> Result<ExternType, JsError> {
+        // Create a new JavaScript object
+        let js_object = js_sys::Object::new();
+
+        // Set properties on the JavaScript object from the HashMap
+        for (key, value) in rust_type.iter() {
+            Reflect::set(
+                &js_object,
+                &key.clone().into(),
+                &value.clone().into(),
+            )
+            .map_err(|e| {
+                JsValue::from_str(&format!(
+                    "Failed to set property on JsValue: {:?}",
+                    e
+                ))
+            })?;
+        }
+
+        // Try to cast the JsValue to ExternType
+        // let ischemas: ExternType = js_object.dyn_into().map_err(|e| {
+        //     JsValue::from_str(&format!(
+        //         "Failed to cast Object `{:?}` to ExternType. Error: {:?}",
+        //         js_object, e
+        //     ))
+        // })?;
+
+        // Unchecked here can potentially lead to problems down the line.
+        // However somehow `js_object.dyn_into()` messes up the casting..
+        let extern_type = js_object.unchecked_into::<ExternType>();
+
+        Ok(extern_type)
+    }
+
+    fn from_extern(extern_type: ExternType) -> Result<Self::RustType, JsError> {
+        let type_name = std::any::type_name::<ExternType>();
+
+        let js_value = extern_type.dyn_into::<JsValue>().map_err(|_| {
+            JsValue::from_str(&format!(
+                "Failed to convert {} to JsValue",
+                type_name
+            ))
+        })?;
+
+        serde_wasm_bindgen::from_value(js_value).map_err(|e| {
+            let error_msg = format!(
+                "Failed to convert {} JsValue to HashMap<String, {}>: {:?}",
                 type_name,
                 std::any::type_name::<V>(),
                 e,

@@ -15,20 +15,13 @@ use crate::{
     },
     models::task_params::{TaskParams, TaskType},
     openai::{client::OpenAI, params::OpenAIParams},
-    utils::jsvalue_to_map,
 };
+use crate::{JsError, WasmType};
 
 use super::{
     interfaces::{Interface, SchemaFile},
     task_pool::TaskPool,
 };
-
-// TODO:
-// #[wasm_bindgen]
-// extern "C" {
-//     #[wasm_bindgen(typescript_type = "Record<string, Interface>")]
-//     pub type InterfacesRecord;
-// }
 
 // NOTE: We will need to perform the following improvements to the data model:
 //
@@ -171,7 +164,6 @@ impl AppState {
     // #[wasm_bindgen(typescript_type = "Record<string, Interface>")]
     #[wasm_bindgen(getter, js_name = interfaces)]
     pub fn get_interfaces(&self) -> JsValue {
-        // map_to_jsvalue::<String, Interface>(&self.interfaces)
         let obj = Object::new();
 
         for (key, value) in &self.interfaces {
@@ -227,13 +219,13 @@ impl AppState {
     pub fn set_interfaces(
         &mut self,
         interfaces: JsValue,
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), JsError> {
         if !self.interfaces.is_empty() {
             return Err(anyhow!("Data model already exists"))
                 .map_err(|e| Error::new(&e.to_string()).into());
         }
 
-        let interfaces = jsvalue_to_map::<String, Interface>(interfaces);
+        let interfaces = BTreeMap::from_extern(interfaces)?;
         self.interfaces = interfaces;
 
         self.trigger_callbacks();
@@ -247,7 +239,7 @@ impl AppState {
         interface_name: String,
         schema_name: String,
         schema: SchemaFile,
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), JsError> {
         self.trigger_callbacks();
 
         self.add_schema_(interface_name, schema_name, schema)
@@ -259,7 +251,7 @@ impl AppState {
         &mut self,
         interface_name: &str,
         schema_name: &str,
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), JsError> {
         self.trigger_callbacks();
 
         self.remove_schema_(interface_name, schema_name)
@@ -270,7 +262,7 @@ impl AppState {
     pub fn add_interface(
         &mut self,
         new_interface: Interface,
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), JsError> {
         self.trigger_callbacks();
 
         self.add_interface_(new_interface)
@@ -281,7 +273,7 @@ impl AppState {
     pub fn remove_interface(
         &mut self,
         interface_name: &str,
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), JsError> {
         self.trigger_callbacks();
 
         self.remove_interface_(interface_name)
@@ -294,7 +286,7 @@ impl AppState {
         client: &OpenAI,
         ai_params: &OpenAIParams,
         task_params: TaskParams,
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), JsError> {
         let task_params = task_params
             .scaffold_project()
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
@@ -316,7 +308,7 @@ impl AppState {
         &mut self,
         client: &OpenAI,
         ai_params: &OpenAIParams,
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), JsError> {
         let plan = build_execution_plan(client, ai_params, self)
             .await
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
@@ -350,12 +342,12 @@ impl AppState {
         task_params: TaskParams,
         codebase: JsValue,
         callback: Function,
-    ) -> Result<(), JsValue> {
+    ) -> Result<(), JsError> {
         let task_params = task_params
             .stream_code()
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
-        let codebase = jsvalue_to_map::<String, String>(codebase);
+        let codebase = BTreeMap::from_extern(codebase)?;
 
         stream_code(self, client, ai_params, task_params, codebase, callback)
             .await
