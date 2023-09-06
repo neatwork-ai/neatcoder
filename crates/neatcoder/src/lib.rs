@@ -104,7 +104,7 @@ impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
         }
 
         // Attempt to cast the JsValue (Array) to the ExternType
-        // We use unchecked_into here for the reasons mentioned in your BTreeMap implementation
+        // We use unchecked_into here for the reasons mentioned in the BTreeMap implementation
         let extern_type = js_array.unchecked_into::<ExternType>();
 
         Ok(extern_type)
