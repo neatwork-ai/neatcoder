@@ -15,13 +15,20 @@ use crate::{
     },
     models::task_params::{TaskParams, TaskType},
     openai::{client::OpenAI, params::OpenAIParams},
-    utils::{jsvalue_to_map, map_to_jsvalue},
+    utils::jsvalue_to_map,
 };
 
 use super::{
     interfaces::{Interface, SchemaFile},
     task_pool::TaskPool,
 };
+
+// TODO:
+// #[wasm_bindgen]
+// extern "C" {
+//     #[wasm_bindgen(typescript_type = "Record<string, Interface>")]
+//     pub type InterfacesRecord;
+// }
 
 // NOTE: We will need to perform the following improvements to the data model:
 //

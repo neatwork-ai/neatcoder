@@ -9,18 +9,11 @@ pub mod apis;
 pub mod dbs;
 pub mod storage;
 
-#[wasm_bindgen(typescript_custom_section)]
-const INTERFACE_TYPE: &'static str = r#"
-export interface Interface {
-    // Define the properties of your Interface type here
-}
-"#;
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "Record<string, Interface>")]
-    pub type InterfacesRecord;
-}
+// #[wasm_bindgen]
+// extern "C" {
+//     #[wasm_bindgen(typescript_type = "Record<string, string>")]
+//     pub type ISchemas;
+// }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
