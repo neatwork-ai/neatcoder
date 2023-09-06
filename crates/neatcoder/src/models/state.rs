@@ -23,19 +23,6 @@ use super::{
     task_pool::TaskPool,
 };
 
-#[wasm_bindgen(typescript_custom_section)]
-const INTERFACE_TYPE: &'static str = r#"
-export interface Interface {
-    // Define the properties of your Interface type here
-}
-"#;
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "Record<string, Interface>")]
-    pub type InterfacesRecord;
-}
-
 // NOTE: We will need to perform the following improvements to the data model:
 //
 // 1. The extension itself will be interactive, and will not rely solely on an
