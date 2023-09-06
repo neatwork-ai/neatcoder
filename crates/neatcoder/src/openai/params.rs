@@ -5,7 +5,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
     openai::utils::{BoundedFloat, Range100s},
-    utils::jsvalue_to_map,
+    utils::jsvalue_to_hmap,
 };
 
 use super::utils::{Bounded, Scale01, Scale100s, Scale22};
@@ -79,7 +79,7 @@ pub struct OpenAIParams {
     /// values like -100 or 100 should result in a ban or exclusive selection
     /// of the relevant token.
     pub(crate) logit_bias: HashMap<String, Scale100s>, // TODO: Add getter
-    /// A unique identifier representing your end-user, which can help OpenAI
+    /// A unique identifier representing the end-user, which can help OpenAI
     /// to monitor and detect abuse. You can read more at:
     /// https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids
     pub(crate) user: Option<String>,
@@ -125,7 +125,7 @@ impl OpenAIParams {
         };
 
         let logit_bias =
-            jsvalue_to_map::<String, BoundedFloat<Range100s>>(logit_bias);
+            jsvalue_to_hmap::<String, BoundedFloat<Range100s>>(logit_bias);
 
         Self {
             model,
@@ -182,7 +182,7 @@ impl OpenAIParams {
 
     #[wasm_bindgen(js_name = logicBias)]
     pub fn logit_bias(mut self, logit_bias: JsValue) -> Self {
-        let mut logit_bias = jsvalue_to_map::<String, f64>(logit_bias);
+        let mut logit_bias = jsvalue_to_hmap::<String, f64>(logit_bias);
 
         let logit_bias = logit_bias
             .drain()

@@ -9,6 +9,7 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[wasm_bindgen]
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TaskParams {
     pub task_type: TaskType,
     pub(crate) inner: TaskParamsInner,
@@ -24,6 +25,7 @@ pub enum TaskType {
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TaskParamsInner {
     scaffold_project: Option<ScaffoldParams>,
     stream_code: Option<CodeGenParams>,

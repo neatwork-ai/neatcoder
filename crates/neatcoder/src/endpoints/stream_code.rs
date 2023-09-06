@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use js_sys::Function;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
@@ -15,6 +15,7 @@ use crate::{
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct CodeGenParams {
     pub(crate) filename: String,
 }
@@ -37,7 +38,7 @@ pub async fn stream_code(
     client: &OpenAI,
     ai_params: &OpenAIParams,
     task_params: CodeGenParams,
-    codebase: HashMap<String, String>,
+    codebase: BTreeMap<String, String>,
     callback: Function,
 ) -> Result<()> {
     let mut prompts = Vec::new();
