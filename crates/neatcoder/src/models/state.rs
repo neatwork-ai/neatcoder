@@ -500,8 +500,7 @@ pub mod tests {
 
     //     // match app_state {
     //     //     Ok(app_state) => {
-    //     //         // Here you would check the fields of app_state to make sure they have the expected values.
-    //     //         // I cannot provide the exact code since I don't know the structure of your AppState type.
+    //     //         // Here we would check the fields of app_state to make sure they have the expected values.
     //     //     }
     //     //     Err(e) => {
     //     //         panic!("Failed to create AppState: {:?}", e);

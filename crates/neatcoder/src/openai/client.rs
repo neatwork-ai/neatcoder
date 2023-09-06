@@ -60,7 +60,6 @@ impl OpenAI {
     ) -> Result<Body> {
         let client = Client::new();
 
-        // fill in your own data as needed
         let req_body = self.request_body(job, msgs, funcs, stop_seq, false)?;
         println!("[DEBUG] Sending reqeust to OpenAI...");
         let res = client
@@ -99,7 +98,6 @@ impl OpenAI {
         // ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
         // let client = Client::new();
 
-        // // fill in your own data as needed
         // let req_body = self.request_body(job, msgs, funcs, stop_seq, true)?;
 
         // let response = client

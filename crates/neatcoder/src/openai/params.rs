@@ -79,7 +79,7 @@ pub struct OpenAIParams {
     /// values like -100 or 100 should result in a ban or exclusive selection
     /// of the relevant token.
     pub(crate) logit_bias: HashMap<String, Scale100s>, // TODO: Add getter
-    /// A unique identifier representing your end-user, which can help OpenAI
+    /// A unique identifier representing the end-user, which can help OpenAI
     /// to monitor and detect abuse. You can read more at:
     /// https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids
     pub(crate) user: Option<String>,
