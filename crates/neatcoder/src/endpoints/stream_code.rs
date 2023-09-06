@@ -27,8 +27,8 @@ impl CodeGenParams {
         CodeGenParams { filename }
     }
 
-    #[wasm_bindgen(getter, js_name = getFilename)]
-    pub fn get_filename(&self) -> String {
+    #[wasm_bindgen(getter, js_name = filename)]
+    pub fn filename(&self) -> String {
         self.filename.clone()
     }
 }
@@ -37,7 +37,7 @@ pub async fn stream_code(
     app_state: &AppState,
     client: &OpenAI,
     ai_params: &OpenAIParams,
-    task_params: CodeGenParams,
+    task_params: &CodeGenParams,
     codebase: BTreeMap<String, String>,
     callback: Function,
 ) -> Result<()> {

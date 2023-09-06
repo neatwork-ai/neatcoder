@@ -32,13 +32,21 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   // TODO
-  let db = new wasm.Database("yoh", 1, {});
-  let db2 = new wasm.Database("yoh", 1, {
-    key1: "schema2",
-    key2: "schema2",
-  });
+  // let paramsInner = new wasm.TaskParamsInner()
+  // let taskParams = new wasm.TaskParams();
+  // let task = new wasm.Task(1, "MyTask");
 
-  vscode.window.showInformationMessage(JSON.stringify(db2.schemas, null, 2));
+  //   pub struct Task {
+  //     pub id: usize,
+  //     pub(crate) name: String,
+  //     pub(crate) task_params: TaskParams,
+  //     pub status: TaskStatus,
+  // }
+
+  // let pipe = new wasm.Pipeline();
+
+  // vscode.window.showInformationMessage(JSON.stringify(db2.schemas, null, 2));
+  // vscode.window.showInformationMessage(JSON.stringify(api2.schemas, null, 2));
 
   // Read or Initialize Application state
   let appState = readAppState();

@@ -31,7 +31,7 @@ impl ScaffoldParams {
 pub async fn scaffold_project(
     client: &OpenAI,
     ai_params: &OpenAIParams,
-    client_params: ScaffoldParams,
+    client_params: &ScaffoldParams,
     app_state: &AppState,
 ) -> Result<Value> {
     let mut prompts = Vec::new();

@@ -288,7 +288,8 @@ impl AppState {
         task_params: TaskParams,
     ) -> Result<(), JsError> {
         let task_params = task_params
-            .scaffold_project()
+            .scaffold_project_()
+            .ok_or("No ScaffoldProject field. This error should not occur.")
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
         let scaffold_json =
@@ -344,7 +345,8 @@ impl AppState {
         callback: Function,
     ) -> Result<(), JsError> {
         let task_params = task_params
-            .stream_code()
+            .stream_code_()
+            .ok_or("No StreamCode field. This error should not occur.")
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
         let codebase = BTreeMap::from_extern(codebase)?;

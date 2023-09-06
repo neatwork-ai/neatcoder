@@ -39,7 +39,7 @@ export async function startJob(
 
   if (taskType === wasm.TaskType.CodeGen) {
     // If a new file should be created (or overwritten)
-    const filePath: string = taskView.task.taskParams.streamCode.getFilename();
+    const filePath: string = taskView.task.taskParams.streamCode!.filename;
     const tokenWriter = fs.createWriteStream(filePath, { flags: "w" });
 
     const directoryPath = path.dirname(filePath);
