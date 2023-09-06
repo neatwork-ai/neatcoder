@@ -1,7 +1,8 @@
 use crate::{
     models::interfaces::ISchemas,
     openai::msg::{GptRole, OpenAIMsg},
-    utils::{from_extern, jsvalue_to_map, map_to_jsvalue, to_extern},
+    utils::{from_extern, to_extern},
+    JsError,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -9,7 +10,7 @@ use std::{
     collections::BTreeMap,
     fmt::{self, Display},
 };
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::{AsContext, SchemaFile};
 
@@ -37,7 +38,7 @@ impl Api {
         name: String,
         api_type: ApiType,
         schemas: ISchemas,
-    ) -> Result<Api, JsValue> {
+    ) -> Result<Api, JsError> {
         let schemas = from_extern(schemas)?;
 
         Ok(Api {
@@ -56,7 +57,7 @@ impl Api {
         port: Option<usize>,
         host: Option<String>,
         schemas: ISchemas,
-    ) -> Result<Api, JsValue> {
+    ) -> Result<Api, JsError> {
         let schemas = from_extern(schemas)?;
 
         Ok(Api {
@@ -69,28 +70,30 @@ impl Api {
         })
     }
 
-    #[wasm_bindgen(getter, js_name = name)]
-    pub fn get_name(&self) -> String {
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> String {
         self.name.clone()
     }
 
+    #[wasm_bindgen(setter)]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
     // Get the schemas as ISchemas to return to JavaScript
-    #[wasm_bindgen(getter, js_name = schemas)]
-    pub fn get_schemas(&self) -> Result<ISchemas, JsValue> {
+    #[wasm_bindgen(getter)]
+    pub fn schemas(&self) -> Result<ISchemas, JsError> {
         to_extern::<ISchemas>(self.schemas.clone())
     }
 
-    #[wasm_bindgen(getter, js_name = host)]
-    pub fn get_host(&self) -> JsValue {
-        match &self.host {
-            Some(s) => JsValue::from_str(s),
-            None => JsValue::NULL,
-        }
+    #[wasm_bindgen(getter)]
+    pub fn host(&self) -> Option<String> {
+        self.host.clone()
     }
 
-    #[wasm_bindgen(getter, js_name = apiType)]
-    pub fn get_api_type(&self) -> ApiType {
-        self.api_type
+    #[wasm_bindgen(setter)]
+    pub fn set_host(&mut self, host: Option<String>) {
+        self.host = host;
     }
 }
 

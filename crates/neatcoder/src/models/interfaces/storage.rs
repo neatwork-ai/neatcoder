@@ -1,6 +1,7 @@
 use crate::{
     openai::msg::{GptRole, OpenAIMsg},
-    utils::{jsvalue_to_map, map_to_jsvalue},
+    utils::{from_extern, to_extern},
+    JsError,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -8,9 +9,9 @@ use std::{
     collections::BTreeMap,
     fmt::{self, Display},
 };
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
 
-use super::{AsContext, SchemaFile};
+use super::{AsContext, ISchemas, SchemaFile};
 
 /// Struct documenting a Data storage interface. This refers to more raw storage
 /// solutions that usually provide a direct interface to a file or object-store
@@ -82,42 +83,56 @@ pub enum FileType {
     Xml,
 }
 
+#[wasm_bindgen]
 impl Storage {
     // Create a new Storage instance from JavaScript
+    #[wasm_bindgen(constructor)]
     pub fn new(
         name: String,
         file_type: FileType,
         storage_type: StorageType,
         region: Option<String>,
-        schemas: JsValue,
-    ) -> Storage {
-        Storage {
+        schemas: ISchemas,
+    ) -> Result<Storage, JsError> {
+        let schemas = from_extern(schemas)?;
+
+        Ok(Storage {
             name,
             file_type,
             storage_type,
             custom_file_type: None,
             custom_storage_type: None,
-            schemas: jsvalue_to_map(schemas),
+            schemas,
             region,
-        }
+        })
     }
 
     // TODO: New Custom method
 
-    // Get the schemas as a JsValue to return to JavaScript
-    pub fn schemas(&self) -> JsValue {
-        map_to_jsvalue(&self.schemas)
+    // Get the schemas as ISchemas to return to JavaScript
+    #[wasm_bindgen(getter)]
+    pub fn schemas(&self) -> Result<ISchemas, JsError> {
+        to_extern::<ISchemas>(self.schemas.clone())
     }
 
+    #[wasm_bindgen(getter)]
     pub fn name(&self) -> String {
         self.name.clone()
     }
 
-    pub fn region(&self) -> JsValue {
-        match &self.region {
-            Some(s) => JsValue::from_str(s),
-            None => JsValue::NULL,
-        }
+    #[wasm_bindgen(setter)]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn region(&self) -> Option<String> {
+        self.region.clone()
+    }
+
+    #[wasm_bindgen(setter)]
+    pub fn set_region(&mut self, host: Option<String>) {
+        self.region = host;
     }
 }
 

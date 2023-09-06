@@ -1,5 +1,5 @@
 use self::{apis::Api, dbs::Database, storage::Storage};
-use crate::{openai::msg::OpenAIMsg, utils::map_to_jsvalue};
+use crate::{openai::msg::OpenAIMsg, JsError};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -13,9 +13,6 @@ pub mod storage;
 extern "C" {
     #[wasm_bindgen(typescript_type = "Record<string, string>")]
     pub type ISchemas;
-
-    #[wasm_bindgen(typescript_type = "string")]
-    pub type TsString;
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -50,17 +47,26 @@ impl Interface {
         }
     }
 
-    #[wasm_bindgen(getter, js_name = interface)]
-    pub fn get_interface(&self) -> JsValue {
+    #[wasm_bindgen(getter)]
+    pub fn interface(&self) -> JsValue {
         match &self.interface_type {
-            InterfaceType::Database => self.inner.get_database(),
-            InterfaceType::Storage => self.inner.get_storage(),
-            InterfaceType::Api => self.inner.get_api(),
+            InterfaceType::Database => {
+                let inner = self.inner.database().unwrap();
+                JsValue::from_str(&serde_json::to_string(&inner).unwrap())
+            }
+            InterfaceType::Storage => {
+                let inner = self.inner.storage().unwrap();
+                JsValue::from_str(&serde_json::to_string(&inner).unwrap())
+            }
+            InterfaceType::Api => {
+                let inner = self.inner.api().unwrap();
+                JsValue::from_str(&serde_json::to_string(&inner).unwrap())
+            }
         }
     }
 
     #[wasm_bindgen(getter, js_name = interfaceType)]
-    pub fn get_interface_type(&self) -> InterfaceType {
+    pub fn interface_type(&self) -> InterfaceType {
         self.interface_type
     }
 }
@@ -103,28 +109,19 @@ impl InterfaceInner {
         }
     }
 
-    #[wasm_bindgen(getter, js_name = database)]
-    pub fn get_database(&self) -> JsValue {
-        match &self.database {
-            Some(database) => database.clone().into(),
-            None => JsValue::NULL,
-        }
+    #[wasm_bindgen(getter)]
+    pub fn database(&self) -> Option<Database> {
+        self.database.clone()
     }
 
-    #[wasm_bindgen(getter, js_name = storage)]
-    pub fn get_storage(&self) -> JsValue {
-        match &self.storage {
-            Some(storage) => storage.clone().into(),
-            None => JsValue::NULL,
-        }
+    #[wasm_bindgen(getter)]
+    pub fn storage(&self) -> Option<Storage> {
+        self.storage.clone()
     }
 
-    #[wasm_bindgen(getter, js_name = api)]
-    pub fn get_api(&self) -> JsValue {
-        match &self.api {
-            Some(api) => api.clone().into(),
-            None => JsValue::NULL,
-        }
+    #[wasm_bindgen(getter)]
+    pub fn api(&self) -> Option<Api> {
+        self.api.clone()
     }
 }
 
@@ -189,8 +186,8 @@ impl AsContext for Interface {
 
 #[wasm_bindgen]
 impl Interface {
-    #[wasm_bindgen(getter, js_name = name)]
-    pub fn get_name(&self) -> String {
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> String {
         match self.interface_type {
             InterfaceType::Database => {
                 self.inner.database.as_ref().unwrap().name.clone()
@@ -202,19 +199,19 @@ impl Interface {
         }
     }
 
-    #[wasm_bindgen(getter, js_name = schemas)]
-    pub fn get_schemas(&mut self) -> JsValue {
+    #[wasm_bindgen(getter)]
+    pub fn schemas(&self) -> Result<ISchemas, JsError> {
         let schemas = match self.interface_type {
             InterfaceType::Database => {
-                &self.inner.database.as_mut().unwrap().schemas
+                self.inner.database.as_ref().unwrap().schemas()
             }
             InterfaceType::Storage => {
-                &self.inner.storage.as_mut().unwrap().schemas
+                self.inner.storage.as_ref().unwrap().schemas()
             }
-            InterfaceType::Api => &self.inner.api.as_mut().unwrap().schemas,
+            InterfaceType::Api => self.inner.api.as_ref().unwrap().schemas(),
         };
 
-        map_to_jsvalue(schemas)
+        schemas
     }
 
     #[wasm_bindgen(js_name = insertSchema)]

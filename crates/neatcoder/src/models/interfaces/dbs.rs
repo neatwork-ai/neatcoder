@@ -11,7 +11,7 @@ use std::{
     collections::BTreeMap,
     fmt::{self, Display},
 };
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 /// Struct documenting a Database/DataWarehouse interface. This refers to Database
 /// storage solutions or to more classic Data Warehousing solutions such as
@@ -75,28 +75,30 @@ impl Database {
         })
     }
 
-    #[wasm_bindgen(getter, js_name = name)]
-    pub fn get_name(&self) -> String {
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> String {
         self.name.clone()
     }
 
+    #[wasm_bindgen(setter)]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
     // Get the schemas as a ISchemas to return to JavaScript
-    #[wasm_bindgen(getter, js_name = schemas)]
-    pub fn get_schemas(&self) -> Result<ISchemas, JsError> {
+    #[wasm_bindgen(getter)]
+    pub fn schemas(&self) -> Result<ISchemas, JsError> {
         to_extern::<ISchemas>(self.schemas.clone())
     }
 
-    #[wasm_bindgen(getter, js_name = host)]
-    pub fn get_host(&self) -> JsValue {
-        match &self.host {
-            Some(s) => JsValue::from_str(s),
-            None => JsValue::NULL,
-        }
+    #[wasm_bindgen(getter)]
+    pub fn host(&self) -> Option<String> {
+        self.host.clone()
     }
 
-    #[wasm_bindgen(getter, js_name = dbType)]
-    pub fn get_db_type(&self) -> DbType {
-        self.db_type
+    #[wasm_bindgen(setter)]
+    pub fn set_host(&mut self, host: Option<String>) {
+        self.host = host;
     }
 }
 
