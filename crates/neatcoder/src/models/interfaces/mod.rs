@@ -9,11 +9,14 @@ pub mod apis;
 pub mod dbs;
 pub mod storage;
 
-// #[wasm_bindgen]
-// extern "C" {
-//     #[wasm_bindgen(typescript_type = "Record<string, string>")]
-//     pub type ISchemas;
-// }
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "Record<string, string>")]
+    pub type ISchemas;
+
+    #[wasm_bindgen(typescript_type = "string")]
+    pub type TsString;
+}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]

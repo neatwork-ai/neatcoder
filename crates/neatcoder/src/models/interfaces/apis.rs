@@ -1,6 +1,7 @@
 use crate::{
+    models::interfaces::ISchemas,
     openai::msg::{GptRole, OpenAIMsg},
-    utils::{jsvalue_to_map, map_to_jsvalue},
+    utils::{from_extern, jsvalue_to_map, map_to_jsvalue, to_extern},
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -35,18 +36,18 @@ impl Api {
     pub fn new(
         name: String,
         api_type: ApiType,
-        // port: Option<usize>,
-        // host: Option<String>,
-        schemas: JsValue,
-    ) -> Api {
-        Api {
+        schemas: ISchemas,
+    ) -> Result<Api, JsValue> {
+        let schemas = from_extern(schemas)?;
+
+        Ok(Api {
             name,
             api_type,
             custom_type: None,
             port: None,
             host: None,
-            schemas: jsvalue_to_map(schemas),
-        }
+            schemas,
+        })
     }
 
     pub fn new_custom(
@@ -54,16 +55,18 @@ impl Api {
         custom_type: String,
         port: Option<usize>,
         host: Option<String>,
-        schemas: JsValue,
-    ) -> Api {
-        Api {
+        schemas: ISchemas,
+    ) -> Result<Api, JsValue> {
+        let schemas = from_extern(schemas)?;
+
+        Ok(Api {
             name,
             api_type: ApiType::Custom,
             custom_type: Some(custom_type),
             port,
             host,
-            schemas: jsvalue_to_map(schemas),
-        }
+            schemas,
+        })
     }
 
     #[wasm_bindgen(getter, js_name = name)]
@@ -71,10 +74,10 @@ impl Api {
         self.name.clone()
     }
 
-    // Get the schemas as a JsValue to return to JavaScript
+    // Get the schemas as ISchemas to return to JavaScript
     #[wasm_bindgen(getter, js_name = schemas)]
-    pub fn get_schemas(&self) -> JsValue {
-        map_to_jsvalue(&self.schemas)
+    pub fn get_schemas(&self) -> Result<ISchemas, JsValue> {
+        to_extern::<ISchemas>(self.schemas.clone())
     }
 
     #[wasm_bindgen(getter, js_name = host)]

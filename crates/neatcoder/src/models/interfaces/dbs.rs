@@ -1,7 +1,9 @@
 use super::{AsContext, SchemaFile};
 use crate::{
+    models::interfaces::ISchemas,
     openai::msg::{GptRole, OpenAIMsg},
     utils::{from_extern, to_extern},
+    JsError,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -10,12 +12,6 @@ use std::{
     fmt::{self, Display},
 };
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "Record<string, string>")]
-    pub type ISchemas;
-}
 
 /// Struct documenting a Database/DataWarehouse interface. This refers to Database
 /// storage solutions or to more classic Data Warehousing solutions such as
@@ -46,7 +42,7 @@ impl Database {
         name: String,
         db_type: DbType,
         schemas: ISchemas,
-    ) -> Result<Database, JsValue> {
+    ) -> Result<Database, JsError> {
         let schemas = from_extern(schemas)?;
 
         Ok(Database {
@@ -66,7 +62,7 @@ impl Database {
         port: Option<usize>,
         host: Option<String>,
         schemas: ISchemas,
-    ) -> Result<Database, JsValue> {
+    ) -> Result<Database, JsError> {
         let schemas = from_extern(schemas)?;
 
         Ok(Database {
@@ -84,9 +80,9 @@ impl Database {
         self.name.clone()
     }
 
-    // Get the schemas as a JsValue to return to JavaScript
+    // Get the schemas as a ISchemas to return to JavaScript
     #[wasm_bindgen(getter, js_name = schemas)]
-    pub fn get_schemas(&self) -> Result<ISchemas, JsValue> {
+    pub fn get_schemas(&self) -> Result<ISchemas, JsError> {
         to_extern::<ISchemas>(self.schemas.clone())
     }
 
