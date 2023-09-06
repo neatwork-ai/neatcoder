@@ -3,19 +3,31 @@ use anyhow::{anyhow, Result};
 use parser::parser::json::AsJson;
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use wasm_bindgen::JsValue;
 
-// Convert a HashMap<String, String> to a JsValue
+// Convert a BTreeMap<String, String> to a JsValue
 pub fn map_to_jsvalue<K: Serialize, V: Serialize>(
-    map: &HashMap<K, V>,
+    map: &BTreeMap<K, V>,
 ) -> JsValue {
     JsValue::from_str(&serde_json::to_string(&map).unwrap())
 }
 
-// Convert a JsValue back to a HashMap<String, String>
-pub fn jsvalue_to_map<K: DeserializeOwned + Eq + Hash, T: DeserializeOwned>(
+// Convert a JsValue back to a BTreeMap<String, String>
+pub fn jsvalue_to_map<
+    K: DeserializeOwned + Eq + Hash + Ord,
+    T: DeserializeOwned,
+>(
+    value: JsValue,
+) -> BTreeMap<K, T> {
+    // if value.is_null() // TODO
+    serde_wasm_bindgen::from_value(value)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .unwrap()
+}
+
+pub fn jsvalue_to_hmap<K: DeserializeOwned + Eq + Hash, T: DeserializeOwned>(
     value: JsValue,
 ) -> HashMap<K, T> {
     // if value.is_null() // TODO

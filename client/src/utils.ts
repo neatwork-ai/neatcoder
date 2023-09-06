@@ -43,8 +43,10 @@ export function readAppState(): wasm.AppState {
   vscode.window.showInformationMessage(
     `APP STATE!!: ${JSON.stringify(stateData)}`
   );
+
+  const stringifiedData = JSON.stringify(stateData, null, 2);
   try {
-    const appState = new wasm.AppState(stateData);
+    const appState = new wasm.AppState(stringifiedData);
     return appState;
   } catch (e) {
     vscode.window.showInformationMessage(`ERROR: ${e}`);
@@ -82,14 +84,7 @@ function readDirectoryStructure(
 /// ===== Write ===== ///
 
 export function saveAppStateToFile(appState: wasm.AppState): void {
-  const dataState = {
-    specs: appState.specs,
-    scaffold: appState.scaffold,
-    interfaces: appState.interfaces,
-    taskPool: appState.taskPool,
-  };
-
-  const payload = serializeAppState(dataState);
+  const payload = serializeAppState(appState);
   saveFile(payload, ".neat/cache", "state");
 }
 
@@ -113,8 +108,15 @@ function saveFile(
 
 /// ===== Serialize / Deserialize ===== ///
 
-export function serializeAppState(data: any): ArrayBuffer {
-  const jsonString = JSON.stringify(data);
+export function serializeAppState(appState: wasm.AppState): ArrayBuffer {
+  const data = {
+    specs: appState.specs,
+    scaffold: appState.scaffold,
+    interfaces: appState.interfaces,
+    taskPool: appState.taskPool,
+  };
+
+  const jsonString = JSON.stringify(data, null, 2);
   const compressedData = pako.gzip(jsonString);
   return compressedData.buffer as ArrayBuffer;
 }

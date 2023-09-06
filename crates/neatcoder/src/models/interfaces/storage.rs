@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     fmt::{self, Display},
 };
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
@@ -19,6 +19,7 @@ use super::{AsContext, SchemaFile};
 /// data-lake that utilizes `parquet` files or `ndjson` files.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[wasm_bindgen]
+#[serde(rename_all = "camelCase")]
 pub struct Storage {
     pub(crate) name: String,
     pub file_type: FileType,
@@ -28,7 +29,7 @@ pub struct Storage {
     /// Field that is only present when the type chose is a custom one
     custom_storage_type: Option<String>,
     pub(crate) region: Option<String>,
-    pub(crate) schemas: HashMap<String, SchemaFile>,
+    pub(crate) schemas: BTreeMap<String, SchemaFile>,
 }
 
 /// Enum documenting the type of data storages.

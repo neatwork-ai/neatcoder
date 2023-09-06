@@ -6,7 +6,7 @@ use crate::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     fmt::{self, Display},
 };
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
@@ -30,7 +30,7 @@ pub struct Database {
     custom_type: Option<String>,
     pub port: Option<usize>,
     pub(crate) host: Option<String>,
-    pub(crate) schemas: HashMap<String, SchemaFile>,
+    pub(crate) schemas: BTreeMap<String, SchemaFile>,
 }
 
 #[wasm_bindgen]
@@ -100,7 +100,7 @@ impl Database {
     pub fn new_(
         name: String,
         db_type: DbType,
-        schemas: HashMap<String, SchemaFile>,
+        schemas: BTreeMap<String, SchemaFile>,
     ) -> Database {
         Database {
             name,

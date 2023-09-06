@@ -5,6 +5,7 @@ use super::task_params::TaskParams;
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Task {
     pub id: usize,
     pub(crate) name: String,

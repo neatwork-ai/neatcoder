@@ -5,7 +5,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
     openai::utils::{BoundedFloat, Range100s},
-    utils::jsvalue_to_map,
+    utils::jsvalue_to_hmap,
 };
 
 use super::utils::{Bounded, Scale01, Scale100s, Scale22};
@@ -125,7 +125,7 @@ impl OpenAIParams {
         };
 
         let logit_bias =
-            jsvalue_to_map::<String, BoundedFloat<Range100s>>(logit_bias);
+            jsvalue_to_hmap::<String, BoundedFloat<Range100s>>(logit_bias);
 
         Self {
             model,
@@ -182,7 +182,7 @@ impl OpenAIParams {
 
     #[wasm_bindgen(js_name = logicBias)]
     pub fn logit_bias(mut self, logit_bias: JsValue) -> Self {
-        let mut logit_bias = jsvalue_to_map::<String, f64>(logit_bias);
+        let mut logit_bias = jsvalue_to_hmap::<String, f64>(logit_bias);
 
         let logit_bias = logit_bias
             .drain()

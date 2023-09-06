@@ -2,7 +2,7 @@ use self::{apis::Api, dbs::Database, storage::Storage};
 use crate::{openai::msg::OpenAIMsg, utils::map_to_jsvalue};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 pub mod apis;
@@ -58,6 +58,7 @@ impl Interface {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[wasm_bindgen]
+#[serde(rename_all = "camelCase")]
 pub struct InterfaceInner {
     pub(crate) database: Option<Database>,
     pub(crate) storage: Option<Storage>,
@@ -221,7 +222,7 @@ impl Interface {
 }
 
 impl Interface {
-    fn schemas_mut(&mut self) -> &mut HashMap<String, SchemaFile> {
+    fn schemas_mut(&mut self) -> &mut BTreeMap<String, SchemaFile> {
         match self.interface_type {
             InterfaceType::Database => {
                 &mut self.inner.database.as_mut().unwrap().schemas

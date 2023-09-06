@@ -7,11 +7,12 @@ use super::task::Task;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TaskPool {
     pub counter: usize,
     pub(crate) todo: Todo,
@@ -84,8 +85,9 @@ pub type Done = Pipeline;
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Pipeline {
-    pub(crate) tasks: HashMap<usize, Task>,
+    pub(crate) tasks: BTreeMap<usize, Task>,
     pub(crate) order: VecDeque<usize>,
 }
 
@@ -102,7 +104,7 @@ impl Pipeline {
 
     pub fn empty() -> Self {
         Self {
-            tasks: HashMap::new(),
+            tasks: BTreeMap::new(),
             order: VecDeque::new(),
         }
     }
@@ -120,7 +122,7 @@ impl Pipeline {
 }
 
 impl Pipeline {
-    pub fn new_(tasks: HashMap<usize, Task>, order: VecDeque<usize>) -> Self {
+    pub fn new_(tasks: BTreeMap<usize, Task>, order: VecDeque<usize>) -> Self {
         Self { tasks, order }
     }
 
@@ -190,7 +192,7 @@ impl Pipeline {
 }
 
 pub struct PipelineIterator {
-    tasks: HashMap<usize, Task>,
+    tasks: BTreeMap<usize, Task>,
     order: VecDeque<usize>,
 }
 
@@ -206,7 +208,7 @@ impl Iterator for PipelineIterator {
 
 impl Pipeline {
     pub fn drain(&mut self) -> PipelineIterator {
-        let tasks = std::mem::replace(&mut self.tasks, HashMap::new());
+        let tasks = std::mem::replace(&mut self.tasks, BTreeMap::new());
         let order = std::mem::replace(&mut self.order, VecDeque::new());
 
         PipelineIterator { tasks, order }

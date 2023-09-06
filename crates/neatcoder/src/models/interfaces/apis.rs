@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     fmt::{self, Display},
 };
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
@@ -18,6 +18,7 @@ use super::{AsContext, SchemaFile};
 // TODO: We can increase the configurations here such as SSL stuff, etc.
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Api {
     pub(crate) name: String,
     pub api_type: ApiType,
@@ -25,7 +26,7 @@ pub struct Api {
     custom_type: Option<String>,
     pub port: Option<usize>,
     pub(crate) host: Option<String>,
-    pub(crate) schemas: HashMap<String, SchemaFile>,
+    pub(crate) schemas: BTreeMap<String, SchemaFile>,
 }
 
 #[wasm_bindgen]
@@ -131,7 +132,7 @@ impl Api {
     pub fn new_(
         name: String,
         api_type: ApiType,
-        schemas: HashMap<String, SchemaFile>,
+        schemas: BTreeMap<String, SchemaFile>,
     ) -> Api {
         Api {
             name,
