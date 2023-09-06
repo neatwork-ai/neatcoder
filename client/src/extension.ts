@@ -31,6 +31,23 @@ export async function activate(context: vscode.ExtensionContext) {
     return;
   }
 
+  // TODO
+  let db = new wasm.Database("yoh", 1, {});
+  let db2 = new wasm.Database("yoh", 1, {
+    key1: "schema2",
+    key2: "schema2",
+  });
+
+  let some: Record<string, string> = db2.schemas;
+  db2.host = "myHost";
+  let some2 = JSON.stringify(db2.host, null, 2);
+
+  vscode.window.showInformationMessage(`Ths host is ${some2}`);
+  // vscode.window.showInformationMessage(JSON.stringify(db2.schemas, null, 2));
+
+  // console.log(db.schemas);
+  console.log("The DB is: " + JSON.stringify(some, null, 2));
+
   // Read or Initialize Application state
   let appState = readAppState();
   let llmClient = new wasm.OpenAI("TODO");
