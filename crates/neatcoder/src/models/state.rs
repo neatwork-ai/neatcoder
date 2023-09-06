@@ -425,7 +425,7 @@ impl AppState {
     }
 
     pub fn add_interface_(&mut self, new_interface: Interface) -> Result<()> {
-        let interface_name = new_interface.get_name();
+        let interface_name = new_interface.name();
 
         if self.interfaces.contains_key(&interface_name) {
             // TODO: We need proper error escallation and communication with the client
