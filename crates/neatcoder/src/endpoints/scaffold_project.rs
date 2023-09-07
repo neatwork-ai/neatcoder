@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use js_sys::JsString;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -25,6 +26,11 @@ impl ScaffoldParams {
     #[wasm_bindgen(constructor)]
     pub fn new(specs: String) -> ScaffoldParams {
         ScaffoldParams { specs }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn specs(&self) -> JsString {
+        self.specs.clone().into()
     }
 }
 

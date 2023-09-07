@@ -42,6 +42,6 @@ pub fn jsvalue_to_hmap<K: DeserializeOwned + Eq + Hash, T: DeserializeOwned>(
     value: JsValue,
 ) -> HashMap<K, T> {
     serde_wasm_bindgen::from_value(value)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(|e| JsError::from_str(&e.to_string()))
         .unwrap()
 }

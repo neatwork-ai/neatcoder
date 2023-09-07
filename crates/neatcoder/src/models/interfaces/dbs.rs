@@ -5,6 +5,7 @@ use crate::{
     JsError, WasmType,
 };
 use anyhow::Result;
+use js_sys::JsString;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -75,8 +76,8 @@ impl Database {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn name(&self) -> String {
-        self.name.clone()
+    pub fn name(&self) -> JsString {
+        self.name.clone().into()
     }
 
     #[wasm_bindgen(setter)]
@@ -91,8 +92,11 @@ impl Database {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn host(&self) -> Option<String> {
-        self.host.clone()
+    pub fn host(&self) -> Option<JsString> {
+        match &self.host {
+            Some(host) => Some(host.clone().into()),
+            None => None,
+        }
     }
 
     #[wasm_bindgen(setter)]

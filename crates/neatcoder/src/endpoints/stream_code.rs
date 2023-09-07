@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use js_sys::Function;
+use js_sys::{Function, JsString};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -27,9 +27,9 @@ impl CodeGenParams {
         CodeGenParams { filename }
     }
 
-    #[wasm_bindgen(getter, js_name = filename)]
-    pub fn filename(&self) -> String {
-        self.filename.clone()
+    #[wasm_bindgen(getter)]
+    pub fn filename(&self) -> JsString {
+        self.filename.clone().into()
     }
 }
 

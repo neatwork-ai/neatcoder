@@ -3,6 +3,7 @@ use crate::{
     JsError, WasmType,
 };
 use anyhow::Result;
+use js_sys::JsString;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -115,8 +116,8 @@ impl Storage {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn name(&self) -> String {
-        self.name.clone()
+    pub fn name(&self) -> JsString {
+        self.name.clone().into()
     }
 
     #[wasm_bindgen(setter)]
@@ -125,8 +126,11 @@ impl Storage {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn region(&self) -> Option<String> {
-        self.region.clone()
+    pub fn region(&self) -> Option<JsString> {
+        match &self.region {
+            Some(region) => Some(region.clone().into()),
+            None => None,
+        }
     }
 
     #[wasm_bindgen(setter)]

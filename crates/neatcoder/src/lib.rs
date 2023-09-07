@@ -133,6 +133,51 @@ impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
     }
 }
 
+// TODO: dedup implementation of Vec/VecDeque
+impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
+    WasmType<ExternType> for Vec<V>
+{
+    type RustType = Vec<V>;
+
+    fn to_extern(rust_type: Self::RustType) -> Result<ExternType, JsError> {
+        // Create a new JavaScript array
+        let js_array = js_sys::Array::new();
+
+        // Add elements from the Vec to the JavaScript array
+        for value in rust_type.iter() {
+            js_array.push(&value.clone().into());
+        }
+
+        // Attempt to cast the JsValue (Array) to the ExternType
+        // We use unchecked_into here for the reasons mentioned in the BTreeMap implementation
+        let extern_type = js_array.unchecked_into::<ExternType>();
+
+        Ok(extern_type)
+    }
+
+    fn from_extern(extern_type: ExternType) -> Result<Self::RustType, JsError> {
+        let type_name = std::any::type_name::<ExternType>();
+
+        let js_value = extern_type.dyn_into::<JsValue>().map_err(|_| {
+            JsValue::from_str(&format!(
+                "Failed to convert {} to JsValue",
+                type_name
+            ))
+        })?;
+
+        serde_wasm_bindgen::from_value(js_value).map_err(|e| {
+            let error_msg = format!(
+                "Failed to convert {} JsValue to Vec<{}>: {:?}",
+                type_name,
+                std::any::type_name::<V>(),
+                e,
+            );
+            console::error_1(&JsValue::from_str(&error_msg));
+            JsValue::from_str(&error_msg)
+        })
+    }
+}
+
 // TODO: dedup implementation of BTreeMap/HashMap
 impl<
         K: DeserializeOwned + Ord + Into<JsValue> + Clone + Hash,

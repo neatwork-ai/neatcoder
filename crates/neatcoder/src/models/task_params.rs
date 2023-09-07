@@ -64,7 +64,7 @@ impl TaskParamsInner {
     ) -> Result<TaskParamsInner, JsValue> {
         if scaffold_project.is_some() && stream_code.is_some() {
             return Err(anyhow!("Cannot accept multiple parameter types."))
-                .map_err(|e| JsValue::from_str(&e.to_string()));
+                .map_err(|e| JsError::from_str(&e.to_string()));
         }
         Ok(Self {
             scaffold_project,
