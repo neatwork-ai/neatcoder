@@ -2,7 +2,6 @@ import { Position, TextDocument, window } from "vscode";
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import * as wasm from "../../pkg/neatcoder";
 
 export async function streamCode(
   token: string,

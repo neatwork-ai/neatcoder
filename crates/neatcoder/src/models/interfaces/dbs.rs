@@ -1,15 +1,16 @@
 use super::{AsContext, SchemaFile};
 use crate::{
+    models::interfaces::ISchemas,
     openai::msg::{GptRole, OpenAIMsg},
-    utils::{jsvalue_to_map, map_to_jsvalue},
+    JsError, WasmType,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     fmt::{self, Display},
 };
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 /// Struct documenting a Database/DataWarehouse interface. This refers to Database
 /// storage solutions or to more classic Data Warehousing solutions such as
@@ -30,7 +31,7 @@ pub struct Database {
     custom_type: Option<String>,
     pub port: Option<usize>,
     pub(crate) host: Option<String>,
-    pub(crate) schemas: HashMap<String, SchemaFile>,
+    pub(crate) schemas: BTreeMap<String, SchemaFile>,
 }
 
 #[wasm_bindgen]
@@ -39,18 +40,18 @@ impl Database {
     pub fn new(
         name: String,
         db_type: DbType,
-        // port: Option<usize>,
-        // host: Option<String>,
-        schemas: JsValue,
-    ) -> Database {
-        Database {
+        schemas: ISchemas,
+    ) -> Result<Database, JsError> {
+        let schemas = BTreeMap::from_extern(schemas)?;
+
+        Ok(Database {
             name,
             db_type,
             custom_type: None,
             port: None,
             host: None,
-            schemas: jsvalue_to_map(schemas),
-        }
+            schemas,
+        })
     }
 
     #[wasm_bindgen(js_name = newCustom)]
@@ -59,40 +60,61 @@ impl Database {
         custom_type: String,
         port: Option<usize>,
         host: Option<String>,
-        schemas: JsValue,
-    ) -> Database {
-        Database {
+        schemas: ISchemas,
+    ) -> Result<Database, JsError> {
+        let schemas = BTreeMap::from_extern(schemas)?;
+
+        Ok(Database {
             name,
             db_type: DbType::Custom,
             custom_type: Some(custom_type),
             port,
             host,
-            schemas: jsvalue_to_map(schemas),
-        }
+            schemas,
+        })
     }
 
-    #[wasm_bindgen(getter, js_name = name)]
-    pub fn get_name(&self) -> String {
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> String {
         self.name.clone()
     }
 
-    // Get the schemas as a JsValue to return to JavaScript
-    #[wasm_bindgen(getter, js_name = schemas)]
-    pub fn get_schemas(&self) -> JsValue {
-        map_to_jsvalue(&self.schemas)
+    #[wasm_bindgen(setter)]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
-    #[wasm_bindgen(getter, js_name = host)]
-    pub fn get_host(&self) -> JsValue {
-        match &self.host {
-            Some(s) => JsValue::from_str(s),
-            None => JsValue::NULL,
+    // Get the schemas as a ISchemas to return to JavaScript
+    #[wasm_bindgen(getter)]
+    pub fn schemas(&self) -> Result<ISchemas, JsError> {
+        BTreeMap::to_extern(self.schemas.clone())
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn host(&self) -> Option<String> {
+        self.host.clone()
+    }
+
+    #[wasm_bindgen(setter)]
+    pub fn set_host(&mut self, host: Option<String>) {
+        self.host = host;
+    }
+}
+
+impl Database {
+    pub fn new_(
+        name: String,
+        db_type: DbType,
+        schemas: BTreeMap<String, SchemaFile>,
+    ) -> Database {
+        Database {
+            name,
+            db_type,
+            custom_type: None,
+            port: None,
+            host: None,
+            schemas,
         }
-    }
-
-    #[wasm_bindgen(getter, js_name = dbType)]
-    pub fn get_db_type(&self) -> DbType {
-        self.db_type
     }
 }
 

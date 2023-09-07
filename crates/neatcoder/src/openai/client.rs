@@ -1,8 +1,6 @@
 use std::{fmt, ops::Deref};
 
 use anyhow::{anyhow, Result};
-use bytes::Bytes;
-use futures::Stream;
 use reqwest::Client;
 use serde_json::{json, Value};
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -62,7 +60,6 @@ impl OpenAI {
     ) -> Result<Body> {
         let client = Client::new();
 
-        // fill in your own data as needed
         let req_body = self.request_body(job, msgs, funcs, stop_seq, false)?;
         println!("[DEBUG] Sending reqeust to OpenAI...");
         let res = client
@@ -93,33 +90,35 @@ impl OpenAI {
 
     pub async fn chat_stream(
         &self,
-        job: &OpenAIParams,
-        msgs: &[&OpenAIMsg],
-        funcs: &[&String],
-        stop_seq: &[String],
-    ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
-        let client = Client::new();
+        _job: &OpenAIParams,
+        _msgs: &[&OpenAIMsg],
+        _funcs: &[&String],
+        _stop_seq: &[String],
+    ) -> Result<()> {
+        // ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
+        // let client = Client::new();
 
-        // fill in your own data as needed
-        let req_body = self.request_body(job, msgs, funcs, stop_seq, true)?;
+        // let req_body = self.request_body(job, msgs, funcs, stop_seq, true)?;
 
-        let response = client
-            .post("https://api.openai.com/v1/chat/completions")
-            .header(
-                "Authorization",
-                format!(
-                    "Bearer {}",
-                    self.api_key.as_ref().expect("No API Keys provided")
-                ),
-            )
-            .header("Content-Type", "application/json")
-            .json(&req_body)
-            .send()
-            .await?;
+        // let response = client
+        //     .post("https://api.openai.com/v1/chat/completions")
+        //     .header(
+        //         "Authorization",
+        //         format!(
+        //             "Bearer {}",
+        //             self.api_key.as_ref().expect("No API Keys provided")
+        //         ),
+        //     )
+        //     .header("Content-Type", "application/json")
+        //     .json(&req_body)
+        //     .send()
+        //     .await?;
 
-        let stream = response.bytes_stream();
+        // let stream = response.bytes_stream();
 
-        return Ok(stream);
+        todo!();
+
+        // return Ok(stream);
     }
 
     fn request_body(

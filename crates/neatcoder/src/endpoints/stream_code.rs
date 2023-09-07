@@ -1,9 +1,8 @@
 use anyhow::{anyhow, Result};
-use futures::StreamExt;
 use js_sys::Function;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use std::collections::BTreeMap;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     models::{interfaces::AsContext, state::AppState},
@@ -16,6 +15,7 @@ use crate::{
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct CodeGenParams {
     pub(crate) filename: String,
 }
@@ -38,7 +38,7 @@ pub async fn stream_code(
     client: &OpenAI,
     ai_params: &OpenAIParams,
     task_params: CodeGenParams,
-    codebase: HashMap<String, String>,
+    codebase: BTreeMap<String, String>,
     callback: Function,
 ) -> Result<()> {
     let mut prompts = Vec::new();
@@ -106,42 +106,43 @@ pub async fn stream_code(
 }
 
 pub async fn stream_rust(
-    client: &OpenAI,
-    ai_params: &OpenAIParams,
-    prompts: Vec<OpenAIMsg>,
-    callback: Function,
+    _client: &OpenAI,
+    _ai_params: &OpenAIParams,
+    _prompts: Vec<OpenAIMsg>,
+    _callback: Function,
 ) -> Result<()> {
     println!("[INFO] Initiating Stream");
 
-    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
+    // let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let mut chat_stream =
-        client.chat_stream(ai_params, &prompts, &[], &[]).await?;
+    // let mut chat_stream =
+    //     client.chat_stream(ai_params, &prompts, &[], &[]).await?;
 
-    let mut start_delimiter = false;
-    while let Some(item) = chat_stream.next().await {
-        match item {
-            Ok(bytes) => {
-                let token = std::str::from_utf8(&bytes)
-                    .expect("Failed to generate utf8 from bytes");
-                if !start_delimiter && ["```rust", "```"].contains(&token) {
-                    start_delimiter = true;
-                    continue;
-                } else if !start_delimiter {
-                    continue;
-                } else {
-                    if token == "```" {
-                        break;
-                    }
+    // let mut start_delimiter = false;
+    todo!();
+    // while let Some(item) = chat_stream.next().await {
+    //     match item {
+    //         Ok(bytes) => {
+    //             let token = std::str::from_utf8(&bytes)
+    //                 .expect("Failed to generate utf8 from bytes");
+    //             if !start_delimiter && ["```rust", "```"].contains(&token) {
+    //                 start_delimiter = true;
+    //                 continue;
+    //             } else if !start_delimiter {
+    //                 continue;
+    //             } else {
+    //                 if token == "```" {
+    //                     break;
+    //                 }
 
-                    // Call the JavaScript callback with the token
-                    let this = JsValue::NULL;
-                    let js_token = JsValue::from_str(&token);
-                    callback.call1(&this, &js_token).unwrap();
-                }
-            }
-            Err(e) => eprintln!("Failed to receive token, with error: {e}"),
-        }
-    }
-    Ok(())
+    //                 // Call the JavaScript callback with the token
+    //                 let this = JsValue::NULL;
+    //                 let js_token = JsValue::from_str(&token);
+    //                 callback.call1(&this, &js_token).unwrap();
+    //             }
+    //         }
+    //         Err(e) => eprintln!("Failed to receive token, with error: {e}"),
+    //     }
+    // }
+    // Ok(())
 }

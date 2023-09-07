@@ -1,7 +1,11 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { getFilename, getOrCreateConfigPath } from "../utils";
+import {
+  getFilename,
+  getOrCreateConfigPath,
+  saveAppStateToFile,
+} from "../utils";
 import { InterfacesProvider } from "../providers/interfaces";
 import * as wasm from "../../pkg/neatcoder";
 
@@ -109,6 +113,8 @@ function handleNewFile(
   const schemaName = getFilename(filePath);
 
   appState.addSchema(interfaceName, schemaName, schema);
+  saveAppStateToFile(appState);
+
   logger.appendLine(`[INFO] Adding Schema ${schemaName}`);
 }
 

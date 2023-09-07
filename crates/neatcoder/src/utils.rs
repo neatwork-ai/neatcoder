@@ -1,27 +1,11 @@
 use crate::openai::{client::OpenAI, msg::OpenAIMsg, params::OpenAIParams};
 use anyhow::{anyhow, Result};
 use parser::parser::json::AsJson;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::hash::Hash;
 use wasm_bindgen::JsValue;
-
-// Convert a HashMap<String, String> to a JsValue
-pub fn map_to_jsvalue<K: Serialize, V: Serialize>(
-    map: &HashMap<K, V>,
-) -> JsValue {
-    JsValue::from_str(&serde_json::to_string(&map).unwrap())
-}
-
-// Convert a JsValue back to a HashMap<String, String>
-pub fn jsvalue_to_map<T: DeserializeOwned>(
-    value: JsValue,
-) -> HashMap<String, T> {
-    // if value.is_null() // TODO
-    serde_wasm_bindgen::from_value(value)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
-        .unwrap()
-}
 
 pub async fn write_json(
     client: &OpenAI,
@@ -51,4 +35,13 @@ pub async fn write_json(
             }
         }
     }
+}
+
+// TODO: This function is on life support and it will be removed in the next serde generalisatoin cycles.
+pub fn jsvalue_to_hmap<K: DeserializeOwned + Eq + Hash, T: DeserializeOwned>(
+    value: JsValue,
+) -> HashMap<K, T> {
+    serde_wasm_bindgen::from_value(value)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .unwrap()
 }

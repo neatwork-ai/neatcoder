@@ -103,7 +103,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.removeInterface",
       (item: InterfaceItem) => {
-        removeInterface(item, appState, logger);
+        removeInterface(item, logger);
       }
     )
   );

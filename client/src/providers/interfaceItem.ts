@@ -22,7 +22,6 @@ export class InterfaceItem extends vscode.TreeItem {
     this.type = type;
     this.parent = parent;
     // Set the description to the interface type
-    // this.description = "FML";
     this.description = description;
 
     if (this.type === ItemType.database) {
