@@ -26,7 +26,7 @@ const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
 export async function activate(context: vscode.ExtensionContext) {
   if (!vscode.workspace.workspaceFolders) {
     vscode.window.showErrorMessage(
-      "Please open a workspace folder before using this extension."
+      "Please open a workspace folder before using this extension.",
     );
     return;
   }
@@ -66,37 +66,43 @@ export async function activate(context: vscode.ExtensionContext) {
   // array of disposables. When the extension is deactivated
   // everything in `context.subscriptions` will be disposed of automatically.
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("jobQueueView", jobQueueProvider)
+    vscode.window.registerTreeDataProvider("jobQueueView", jobQueueProvider),
   );
 
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("auditTrailView", auditTrailProvider)
+    vscode.window.registerTreeDataProvider(
+      "auditTrailView",
+      auditTrailProvider,
+    ),
   );
 
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("interfacesView", interfacesProvider)
+    vscode.window.registerTreeDataProvider(
+      "interfacesView",
+      interfacesProvider,
+    ),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.startPrompt", () => {
       startPrompt(llmClient, llmParams, appState, logger);
-    })
+    }),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.addDatastore", () => {
       addInterface(wasm.InterfaceType.Database, interfacesProvider, logger);
-    })
+    }),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.addApi", () => {
       addInterface(wasm.InterfaceType.Api, interfacesProvider, logger);
-    })
+    }),
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addSchema", addSchema)
+    vscode.commands.registerCommand("extension.addSchema", addSchema),
   );
 
   context.subscriptions.push(
@@ -104,8 +110,8 @@ export async function activate(context: vscode.ExtensionContext) {
       "extension.removeInterface",
       (item: InterfaceItem) => {
         removeInterface(item, logger);
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
@@ -113,8 +119,8 @@ export async function activate(context: vscode.ExtensionContext) {
       "extension.startJob",
       (taskView: TaskView) => {
         startJob(taskView, llmClient, llmParams, appState, logger);
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
@@ -122,8 +128,8 @@ export async function activate(context: vscode.ExtensionContext) {
       "extension.removeSchema",
       (item: InterfaceItem) => {
         removeSchema(item);
-      }
-    )
+      },
+    ),
   );
 
   context.subscriptions.push(
@@ -135,12 +141,12 @@ export async function activate(context: vscode.ExtensionContext) {
       //   JSON.stringify(appState.scaffold, null, 2)
       // );
       vscode.window.showInformationMessage(
-        JSON.stringify(appState.interfaces, null, 2)
+        JSON.stringify(appState.interfaces, null, 2),
       );
       // vscode.window.showInformationMessage(
       //   JSON.stringify(appState.taskPool, null, 2)
       // );
-    })
+    }),
   );
 }
 

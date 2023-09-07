@@ -60,7 +60,7 @@ export class InterfacesProvider
                 wasm.dbTypeToFriendlyUX(Number(db.dbType)),
                 null,
                 vscode.TreeItemCollapsibleState.Collapsed,
-                ItemType.database
+                ItemType.database,
               );
             })
           : [];
@@ -72,7 +72,7 @@ export class InterfacesProvider
                 wasm.apiTypeToFriendlyUX(Number(api.apiType)),
                 null,
                 vscode.TreeItemCollapsibleState.Collapsed,
-                ItemType.api
+                ItemType.api,
               );
             })
           : [];
@@ -84,7 +84,7 @@ export class InterfacesProvider
           root,
           ".neat",
           "dbs",
-          element.label
+          element.label,
         );
         const files = fs.readdirSync(interfaceFolderPath);
 
@@ -95,9 +95,9 @@ export class InterfacesProvider
               "", // No description for files, you can add if needed
               element.label,
               vscode.TreeItemCollapsibleState.None,
-              ItemType.file
+              ItemType.file,
             );
-          })
+          }),
         );
       } else if (element.type === ItemType.api) {
         // If an InterfaceItem representing an API is provided, return its files
@@ -105,7 +105,7 @@ export class InterfacesProvider
           root,
           ".neat",
           "apis",
-          element.label
+          element.label,
         );
         const files = fs.readdirSync(interfaceFolderPath);
 
@@ -116,9 +116,9 @@ export class InterfacesProvider
               "", // No description for files, you can add if needed
               element.label,
               vscode.TreeItemCollapsibleState.None,
-              ItemType.file
+              ItemType.file,
             );
-          })
+          }),
         );
       }
     }

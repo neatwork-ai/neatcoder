@@ -5,7 +5,7 @@ import * as path from "path";
 
 export async function streamCode(
   token: string,
-  activeTextDocument: TextDocument
+  activeTextDocument: TextDocument,
 ): Promise<void> {
   // Here, we append the word to the opened document
   // TODO: No need to continuously open the text document...
@@ -29,7 +29,7 @@ export async function scanSourceFolder(): Promise<Record<string, string>> {
 
   if (!fs.existsSync(srcFolderPath)) {
     vscode.window.showErrorMessage(
-      `'src' folder does not exist in the current workspace.`
+      `'src' folder does not exist in the current workspace.`,
     );
     return {};
   }

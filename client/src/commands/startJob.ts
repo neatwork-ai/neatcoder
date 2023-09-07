@@ -16,7 +16,7 @@ export async function startJob(
   llmClient: wasm.OpenAI,
   llmParams: wasm.OpenAIParams,
   appState: wasm.AppState,
-  logger: OutputChannel
+  logger: OutputChannel,
 ): Promise<void> {
   const taskId = taskView.task.id;
   const taskType = taskView.task.taskParams.task_type; // TODO: change to camelCase
@@ -29,7 +29,7 @@ export async function startJob(
     await appState.scaffoldProject(
       llmClient,
       llmParams,
-      taskView.task.taskParams
+      taskView.task.taskParams,
     );
   }
 
@@ -63,7 +63,7 @@ export async function startJob(
       codebase,
       (token: string) => {
         streamCode(token, activeTextDocument);
-      }
+      },
     );
   }
 }

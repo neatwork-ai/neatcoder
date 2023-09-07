@@ -41,7 +41,7 @@ export function readAppState(): wasm.AppState {
   // const realTaskPool = new wasm.TaskPool(stateData.taskPool);
 
   vscode.window.showInformationMessage(
-    `APP STATE!!: ${JSON.stringify(stateData)}`
+    `APP STATE!!: ${JSON.stringify(stateData)}`,
   );
 
   const stringifiedData = JSON.stringify(stateData, null, 2);
@@ -65,7 +65,7 @@ export function readAppState(): wasm.AppState {
 
 function readDirectoryStructure(
   dir: string,
-  current: Record<string, string>
+  current: Record<string, string>,
 ): void {
   const files = fs.readdirSync(dir);
 
@@ -91,7 +91,7 @@ export function saveAppStateToFile(appState: wasm.AppState): void {
 function saveFile(
   payload: ArrayBuffer,
   folder: string,
-  filename: string
+  filename: string,
 ): void {
   const root = getRoot();
 
@@ -121,7 +121,7 @@ export function serializeAppState(appState: wasm.AppState): ArrayBuffer {
   return compressedData.buffer as ArrayBuffer;
 }
 
-function deserializeAppState(buffer: ArrayBuffer): any {
+export function deserializeAppState(buffer: ArrayBuffer): any {
   try {
     const decompressedData = pako.ungzip(new Uint8Array(buffer));
     const jsonString = new TextDecoder().decode(decompressedData);
@@ -177,7 +177,7 @@ export function getConfig(): any {
     // Write the default config to the file
     fs.writeFileSync(configPath, JSON.stringify(config, null, 4));
     vscode.window.showInformationMessage(
-      `Configuration file created at ${configPath}`
+      `Configuration file created at ${configPath}`,
     );
   } else {
     const configContent = fs.readFileSync(configPath, "utf-8");
@@ -221,7 +221,7 @@ export function getOrCreateConfigPath(): string {
     // Write the default config to the file
     fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 4));
     vscode.window.showInformationMessage(
-      `Configuration file created at ${configPath}`
+      `Configuration file created at ${configPath}`,
     );
   }
 
@@ -247,7 +247,7 @@ export function getOrCreateApiSchemaPath(apiName: string): string {
 
 export function getOrCreateSchemasPath(
   interfaceName: string,
-  folderName: string
+  folderName: string,
 ): string {
   const root = getRoot();
   const schemasPath = path.join(root, `.neat/${folderName}`, interfaceName);

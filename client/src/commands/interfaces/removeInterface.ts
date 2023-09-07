@@ -7,7 +7,7 @@ import * as wasm from "../../../pkg/neatcoder";
 
 export function removeInterface(
   item: InterfaceItem,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ) {
   if (!item) {
     vscode.window.showErrorMessage("Please select an interface to remove.");
@@ -19,7 +19,7 @@ export function removeInterface(
 
   // We need to get the variable before removing the interface from the config
   const schemasPathObj = config.paths.find(
-    (entry: any) => entry.name === interfaceName
+    (entry: any) => entry.name === interfaceName,
   );
 
   _removeInterface(config, interfaceName);
@@ -34,15 +34,15 @@ export function removeInterface(
 function _deleteSchemas(
   schemasPathObj: any,
   interfaceName: string,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ): void {
   if (!schemasPathObj) {
     // TODO: Incorrect because the folder still exists..
     logger.appendLine(
-      `[WARN] No folder found for the interface ${interfaceName} schemas.`
+      `[WARN] No folder found for the interface ${interfaceName} schemas.`,
     );
     vscode.window.showInformationMessage(
-      `Interface named ${interfaceName} removed successfully.`
+      `Interface named ${interfaceName} removed successfully.`,
     );
     return;
   }
@@ -57,7 +57,7 @@ function _deleteSchemas(
   }
 
   vscode.window.showInformationMessage(
-    `Interface named ${interfaceName} removed successfully.`
+    `Interface named ${interfaceName} removed successfully.`,
   );
 }
 
@@ -68,7 +68,7 @@ function _removeInterface(config: any, interfaceName: string) {
 
   // Remove interface from paths
   config.paths = config.paths.filter(
-    (entry: any) => entry.name !== interfaceName
+    (entry: any) => entry.name !== interfaceName,
   );
 
   let configPath = getOrCreateConfigPath();

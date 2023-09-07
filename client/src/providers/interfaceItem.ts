@@ -15,7 +15,7 @@ export class InterfaceItem extends vscode.TreeItem {
     public readonly description: string, // if empty then it's a file
     public readonly parent: string | null,
     collapsibleState: vscode.TreeItemCollapsibleState,
-    type: ItemType
+    type: ItemType,
   ) {
     super(label, collapsibleState);
 

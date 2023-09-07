@@ -29,7 +29,7 @@ export async function addSchema(item: InterfaceItem): Promise<void> {
 
     if (!destinationPath) {
       vscode.window.showErrorMessage(
-        `Path not found for database: ${item.label}`
+        `Path not found for database: ${item.label}`,
       );
       return;
     }
@@ -63,7 +63,7 @@ function getDestinationPath(dbName: string, root: string): string | null {
  */
 async function copyFilesToDestination(
   files: vscode.Uri[],
-  destination: string
+  destination: string,
 ) {
   for (const file of files) {
     const destFilePath = path.join(destination, path.basename(file.fsPath));

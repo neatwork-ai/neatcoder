@@ -21,7 +21,7 @@ export function setupConfigWatcher(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
   appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ) {
   if (!vscode.workspace.workspaceFolders) {
     return;
@@ -65,7 +65,7 @@ export function setupConfigWatcher(
           newContent.dbs,
           appState,
           logger,
-          createDbInterface
+          createDbInterface,
         );
 
         const bool2 = handleAdditions(
@@ -73,7 +73,7 @@ export function setupConfigWatcher(
           newContent.apis,
           appState,
           logger,
-          createApiInterface
+          createApiInterface,
         );
 
         // Compare and handle removals
@@ -81,14 +81,14 @@ export function setupConfigWatcher(
           originalConfig.dbs,
           newContent.dbs,
           appState,
-          logger
+          logger,
         );
 
         const bool4 = handleRemovals(
           originalConfig.apis,
           newContent.apis,
           appState,
-          logger
+          logger,
         );
 
         const toUpdate = bool1 || bool2 || bool3 || bool4;
@@ -109,7 +109,7 @@ export function setupConfigWatcher(
             schemaWatchers,
             interfacesProvider,
             appState,
-            logger
+            logger,
           );
         }
 
@@ -125,10 +125,10 @@ function handleAdditions(
   updated: any[],
   appState: wasm.AppState,
   logger: vscode.OutputChannel,
-  callback: (newItem: any, logger: vscode.OutputChannel) => any
+  callback: (newItem: any, logger: vscode.OutputChannel) => any,
 ): Boolean {
   const newItems = updated.filter(
-    (item) => !original.some((origItem) => origItem.name === item.name)
+    (item) => !original.some((origItem) => origItem.name === item.name),
   );
 
   const toUpdate = newItems.length > 0;
@@ -143,10 +143,10 @@ function handleRemovals(
   original: any[],
   updated: any[],
   appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ): Boolean {
   const removedItems = original.filter(
-    (item) => !updated.some((updatedItem) => updatedItem.name === item.name)
+    (item) => !updated.some((updatedItem) => updatedItem.name === item.name),
   );
 
   const toUpdate = removedItems.length > 0;
@@ -161,7 +161,7 @@ function handleRemovals(
 
 function createDbInterface(
   newItem: any,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ): wasm.Interface {
   const dbType: wasm.DbType = newItem.dbType;
   const database: wasm.Database = new wasm.Database(newItem.name, dbType, {});
@@ -175,7 +175,7 @@ function createDbInterface(
 
 function createApiInterface(
   newItem: any,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ): wasm.Interface {
   const apiType: wasm.ApiType = newItem.apiType;
 

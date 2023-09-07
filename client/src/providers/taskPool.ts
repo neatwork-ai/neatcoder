@@ -15,7 +15,10 @@ export class TaskPoolProvider implements vscode.TreeDataProvider<TaskView> {
 
   logger: vscode.OutputChannel;
 
-  constructor(private appState: wasm.AppState, logger: vscode.OutputChannel) {
+  constructor(
+    private appState: wasm.AppState,
+    logger: vscode.OutputChannel,
+  ) {
     this.logger = logger;
 
     // Bind the event listeners

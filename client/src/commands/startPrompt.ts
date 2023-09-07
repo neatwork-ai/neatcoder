@@ -6,7 +6,7 @@ export async function startPrompt(
   llmClient: wasm.OpenAI,
   llmParams: wasm.OpenAIParams,
   appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ): Promise<void> {
   {
     const userInput = await vscode.window.showInputBox({

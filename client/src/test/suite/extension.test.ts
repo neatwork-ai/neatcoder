@@ -8,31 +8,31 @@ import * as vscode from "vscode";
 // import * as myExtension from '../../extension';
 
 suite("Extension Test Suite", () => {
-	vscode.window.showInformationMessage("Start all tests.");
+  vscode.window.showInformationMessage("Start all tests.");
 
-	test("Sample test", () => {
-		assert.strictEqual(-1, [1, 2, 3].indexOf(5));
-		assert.strictEqual(-1, [1, 2, 3].indexOf(0));
-	});
+  test("Sample test", () => {
+    assert.strictEqual(-1, [1, 2, 3].indexOf(5));
+    assert.strictEqual(-1, [1, 2, 3].indexOf(0));
+  });
 
-	test("Test appData Serialization/Deserialization", () => {
-		const stateData = {
-			"specs": null,
-			"scaffold": null,
-			"interfaces": {},
-			"taskPool": {
-				"counter": 0,
-				"todo": {
-					"tasks": {},
-					"order": []
-				},
-				"done": {
-					"tasks": {},
-					"order": []
-				}
-			}
-		};
-		const appState = new wasm.AppState(stateData);
-		console.log(appState);
-	});
+  test("Test appData Serialization/Deserialization", () => {
+    const stateData = {
+      specs: null,
+      scaffold: null,
+      interfaces: {},
+      taskPool: {
+        counter: 0,
+        todo: {
+          tasks: {},
+          order: [],
+        },
+        done: {
+          tasks: {},
+          order: [],
+        },
+      },
+    };
+    const appState = new wasm.AppState(stateData);
+    console.log(appState);
+  });
 });

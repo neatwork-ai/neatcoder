@@ -10,7 +10,7 @@ import { writeHeapSnapshot } from "v8";
  */
 export async function createFile(
   fileName: string,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ): Promise<void> {
   // Check if there are workspace folders
   if (!workspace.workspaceFolders || workspace.workspaceFolders.length === 0) {

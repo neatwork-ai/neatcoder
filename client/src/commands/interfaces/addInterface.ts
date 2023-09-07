@@ -14,7 +14,7 @@ import { InterfacesProvider } from "../../providers/interfaces";
 export function addInterface(
   interfaceType: wasm.InterfaceType,
   interfacesProvider: InterfacesProvider,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ): void {
   {
     const list = getList(interfaceType);
@@ -63,7 +63,7 @@ export function addInterface(
       if (selectedType.endsWith(" (custom)")) {
         selectedType = selectedType.substring(
           0,
-          selectedType.lastIndexOf(" (custom)")
+          selectedType.lastIndexOf(" (custom)"),
         );
       }
 
@@ -74,7 +74,7 @@ export function addInterface(
         interfaceType,
         selectedType,
         interfacesProvider,
-        logger
+        logger,
       );
       quickPick.dispose();
     });
@@ -95,7 +95,7 @@ async function handleSelection(
   interfaceType: wasm.InterfaceType,
   selectedType: string,
   interfacesProvider: InterfacesProvider,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ): Promise<void> {
   try {
     const interfaceName = await vscode.window.showInputBox({
@@ -115,7 +115,7 @@ async function handleSelection(
     const configPath = getOrCreateConfigPath();
 
     const content = await vscode.workspace.fs.readFile(
-      vscode.Uri.file(configPath)
+      vscode.Uri.file(configPath),
     );
     let config = JSON.parse(content.toString());
 
@@ -177,7 +177,7 @@ function _writeInterface(
   logger: vscode.OutputChannel,
   interfaceName: string,
   interfaceType: wasm.InterfaceType,
-  selectedType: string
+  selectedType: string,
 ): void {
   const folderName =
     interfaceType === wasm.InterfaceType.Api

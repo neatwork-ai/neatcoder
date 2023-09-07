@@ -21,17 +21,17 @@ export function removeSchema(item: InterfaceItem) {
   const parentInterfaceName = item.parent;
   if (!parentInterfaceName) {
     vscode.window.showErrorMessage(
-      `Could not identify parent interface for schema ${schemaName}.`
+      `Could not identify parent interface for schema ${schemaName}.`,
     );
     return;
   }
 
   const interfacePathObj = config.paths.find(
-    (entry: any) => entry.name === parentInterfaceName
+    (entry: any) => entry.name === parentInterfaceName,
   );
   if (!interfacePathObj) {
     vscode.window.showErrorMessage(
-      `Interface named ${parentInterfaceName} not found in config.`
+      `Interface named ${parentInterfaceName} not found in config.`,
     );
     return;
   }
@@ -42,7 +42,7 @@ export function removeSchema(item: InterfaceItem) {
 
   if (!fs.existsSync(schemaFilePath)) {
     vscode.window.showErrorMessage(
-      `Schema file not found at ${schemaFilePath}`
+      `Schema file not found at ${schemaFilePath}`,
     );
     return;
   }
@@ -51,6 +51,6 @@ export function removeSchema(item: InterfaceItem) {
   fs.unlinkSync(schemaFilePath);
 
   vscode.window.showInformationMessage(
-    `Schema named ${schemaName} removed successfully.`
+    `Schema named ${schemaName} removed successfully.`,
   );
 }

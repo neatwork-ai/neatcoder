@@ -20,7 +20,7 @@ export function setupSchemaWatchers(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
   appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ) {
   if (!vscode.workspace.workspaceFolders) {
     return [];
@@ -52,7 +52,7 @@ export function setupSchemaWatchers(
           absolutePath,
           interfacesProvider,
           appState,
-          logger
+          logger,
         );
       }
     });
@@ -64,7 +64,7 @@ function setupWatcherForInterface(
   absolutePath: string,
   interfacesProvider: InterfacesProvider,
   appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ): fs.FSWatcher {
   logger.appendLine("[INFO] Setting up schema watcher for " + name);
   // Your existing watcher setup logic here, but return the watcher
@@ -97,7 +97,7 @@ function setupWatcherForInterface(
           handleFileEdit(name, fullPath, appState, logger);
         }
       }
-    }
+    },
   );
 
   return watcher;
@@ -107,7 +107,7 @@ function handleNewFile(
   interfaceName: string,
   filePath: string,
   appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ) {
   const schema = fs.readFileSync(filePath, "utf8");
   const schemaName = getFilename(filePath);
@@ -129,7 +129,7 @@ function handleFileEdit(
   interfaceName: string,
   filePath: string,
   appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ) {
   const schema = fs.readFileSync(filePath, "utf8");
   const schemaName = getFilename(filePath);
@@ -143,7 +143,7 @@ function handleFileDelete(
   interfaceName: string,
   filename: string,
   appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  logger: vscode.OutputChannel,
 ) {
   const schemaName = getFilename(filename);
 
