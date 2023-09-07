@@ -88,35 +88,11 @@ impl AppState {
             &format!("AppState JsValue is: {:?}", value).as_str().into(),
         );
 
-        let json_string = &value.as_string();
+        let app_state: Result<AppState, _> =
+            serde_wasm_bindgen::from_value(value)
+                .map_err(|e| JsValue::from_str(&e.to_string()));
 
-        console::error_1(
-            &format!("AppState JsValue Converted: {:?}", json_string)
-                .as_str()
-                .into(),
-        );
-
-        match json_string {
-            None => {
-                let error_msg = format!(
-                    "Unable to parse AppState JsValue to string: {:?}",
-                    value
-                );
-
-                // console::error_1(&error_msg.as_str().into());
-
-                return Err(anyhow!(error_msg))
-                    .map_err(|e| JsValue::from_str(&e.to_string()));
-            }
-            Some(json_string) => {
-                console::log_1(&"We made it boys".into());
-                let app_state: Result<AppState, _> =
-                    serde_json::from_str(&json_string)
-                        .map_err(|e| JsValue::from_str(&e.to_string()));
-
-                return app_state;
-            }
-        }
+        return app_state;
     }
 
     pub fn empty() -> Self {
@@ -665,7 +641,7 @@ pub mod tests {
 
         let app_state = AppState::new_(None, None, interfaces, task_pool);
 
-        let actual =
+        let _actual =
             JsValue::from_str(&serde_json::to_string(&app_state).unwrap());
 
         let expected = JsValue::from_str(
