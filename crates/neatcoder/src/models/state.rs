@@ -80,7 +80,7 @@ pub struct AppState {
 
 #[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(typescript_type = "Record<string, Interfaces>")]
+    #[wasm_bindgen(typescript_type = "Record<string, Interface>")]
     pub type IInterfaces;
 
     #[wasm_bindgen(typescript_type = "Record<string, string>")]
@@ -93,27 +93,20 @@ extern "C" {
 #[wasm_bindgen]
 impl AppState {
     #[wasm_bindgen(constructor)]
-    pub fn new(value: JsValue) -> Result<AppState, JsValue> {
-        let json_string = &value.as_string();
-
-        match json_string {
-            None => {
-                let error_msg = format!(
-                    "Unable to parse AppState JsValue to string: {:?}",
-                    value
-                );
-
-                return Err(anyhow!(error_msg))
-                    .map_err(|e| JsError::from_str(&e.to_string()));
-            }
-            Some(json_string) => {
-                let app_state: Result<AppState, _> =
-                    serde_json::from_str(&json_string)
-                        .map_err(|e| JsError::from_str(&e.to_string()));
-
-                return app_state;
-            }
-        }
+    pub fn new(
+        specs: Option<String>,
+        scaffold: Option<String>,
+        interfaces: IInterfaces,
+        task_pool: TaskPool,
+    ) -> Result<AppState, JsValue> {
+        let interfaces = BTreeMap::from_extern(interfaces)?;
+        Ok(Self {
+            listeners: Vec::new(),
+            specs,
+            scaffold,
+            interfaces,
+            task_pool,
+        })
     }
 
     #[wasm_bindgen(js_name = castToString)]
@@ -473,24 +466,40 @@ pub mod tests {
 
     #[wasm_bindgen_test]
     pub fn test_app_state_new() {
-        let json_value = JsValue::from_str(
-            r#"{"specs":null,"scaffold":null,"interfaces":"{"aaa":{"
-            interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
-            ClickHouse","customType":null,"port":null,"host":null,"schemas":{}}},"
-            storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":
-            {},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
-            // original //
-            // r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\
-            // ":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"
-            // ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":
-            // {}}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"
-            // tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
-        );
+        let json = r#"{
+            "specs":null,
+            "scaffold":null,
+            "interfaces":{
+                "aaa":{
+                    "interfaceType":"Database",
+                    "inner":{
+                        "database":{
+                            "name":"aaa",
+                            "dbType":"ClickHouse",
+                            "customType":null,
+                            "port":null,
+                            "host":null,
+                            "schemas":{}
+                        }
+                    },
+                    "storage":null,
+                    "api":null
+                }
+            },
+            "taskPool":{
+                "counter":0,
+                "todo":{
+                    "tasks":{},
+                    "order":[]
+                },
+                "done":{
+                    "tasks":{},
+                    "order":[]
+                }
+            }
+        }"#;
 
-        let app_state = AppState::new(json_value);
-
-        // let js_value: JsValue = JsValue::from_str(js_value_string);
-        // panic!("{:?}", js_value);
+        let app_state = AppState::cast_from_string(json.to_string());
 
         if let Err(e) = app_state {
             panic!("Failed to create AppState: {:?}", e);
@@ -569,32 +578,18 @@ pub mod tests {
             task_pool,
         );
 
-        // Deserialized - Should be equal to:
-        // JsValue("{"specs":"specs","scaffold":"scaffold","interfaces":{"MyDB":
-        // {"interfaceType":"Database","inner":{"database":{"name":"MyDB","
-        // dbType":"MySql","customType":null,"port":null,"host":null,"schemas":
-        // {"MySchema":"schema"}},"storage":null,"api":null}},"MyApi":{"
-        // interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"
-        // name":"MyApi","api_type":"RestfulApi","custom_type":null,"port":null,
-        // "host":null,"schemas":{"MySchema":"schema"}}}}},"task_pool":{"
-        // counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","task_params":
-        // {"task_type":"BuildExecutionPlan","inner":{"scaffold_project":null,"
-        // stream_code":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","
-        // task_params":{"task_type":"CodeGen","inner":{"scaffold_project":null,
-        // "stream_code":{"filename":"filename.rs"}}},"status":"Todo"}},"order":
-        // [3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","task_params":{"
-        // task_type":"ScaffoldProject","inner":{"scaffold_project":{"specs":"
-        // specs"},"stream_code":null}},"status":"Todo"}},"order":[1]}}}")'
-        let actual =
-            JsValue::from_str(&serde_json::to_string(&app_state).unwrap());
+        let actual = AppState::cast_to_string(&app_state)
+            .unwrap()
+            .as_string()
+            .unwrap();
 
-        let expected = JsValue::from_str(
+        let expected = String::from(
             r#"{"specs":"specs","scaffold":"scaffold","interfaces":{"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","apiType":"RestfulApi","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}},"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}}},"taskPool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","taskParams":{"taskType":"BuildExecutionPlan","inner":{"scaffoldProject":null,"streamCode":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","taskParams":{"taskType":"CodeGen","inner":{"scaffoldProject":null,"streamCode":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","taskParams":{"taskType":"ScaffoldProject","inner":{"scaffoldProject":{"specs":"specs"},"streamCode":null}},"status":"Todo"}},"order":[1]}}}"#,
         );
 
         assert_eq!(actual, expected);
 
-        let app_state = AppState::new(actual);
+        let app_state = AppState::cast_from_string(actual);
 
         if let Err(e) = app_state {
             panic!("Failed to create AppState: {:?}", e);
@@ -623,16 +618,18 @@ pub mod tests {
 
         let app_state = AppState::new_(None, None, interfaces, task_pool);
 
-        let _actual =
-            JsValue::from_str(&serde_json::to_string(&app_state).unwrap());
+        let _actual = AppState::cast_to_string(&app_state)
+            .unwrap()
+            .as_string()
+            .unwrap();
 
-        let expected = JsValue::from_str(
+        let expected = String::from(
             r#"{"specs":null,"scaffold":null,"interfaces":{"aaa":{"interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage":null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
         );
 
-        // assert_eq!(actual, expected);
+        assert_eq!(actual, expected);
 
-        let app_state = AppState::new(expected);
+        let app_state = AppState::cast_from_string(expected);
 
         if let Err(e) = app_state {
             panic!("Failed to create AppState: {:?}", e);

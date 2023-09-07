@@ -2,8 +2,8 @@ use js_sys::Reflect;
 use serde::de::DeserializeOwned;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::hash::Hash;
+use utils::log_err;
 use wasm_bindgen::{JsCast, JsValue};
-use web_sys::console;
 
 pub mod conf;
 pub mod endpoints;
@@ -83,7 +83,7 @@ where
                 std::any::type_name::<V>(),
                 e,
             );
-            console::error_1(&JsValue::from_str(&error_msg));
+            log_err(&error_msg);
             JsValue::from_str(&error_msg)
         })
     }
@@ -127,7 +127,7 @@ impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
                 std::any::type_name::<V>(),
                 e,
             );
-            console::error_1(&JsValue::from_str(&error_msg));
+            log_err(&error_msg);
             JsValue::from_str(&error_msg)
         })
     }
@@ -172,7 +172,7 @@ impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
                 std::any::type_name::<V>(),
                 e,
             );
-            console::error_1(&JsValue::from_str(&error_msg));
+            log_err(&error_msg);
             JsValue::from_str(&error_msg)
         })
     }
@@ -240,7 +240,7 @@ where
                 std::any::type_name::<V>(),
                 e,
             );
-            console::error_1(&JsValue::from_str(&error_msg));
+            log_err(&error_msg);
             JsValue::from_str(&error_msg)
         })
     }

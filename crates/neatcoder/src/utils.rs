@@ -7,6 +7,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::hash::Hash;
 use wasm_bindgen::JsValue;
+use web_sys::console;
 
 pub async fn write_json(
     client: &OpenAI,
@@ -16,23 +17,23 @@ pub async fn write_json(
     let mut retries = 3;
 
     loop {
-        println!("[INFO] Prompting the LLM...");
+        log("[INFO] Prompting the LLM...");
         let answer = client.chat(ai_params, prompts, &[], &[]).await?;
 
         match answer.as_str().strip_json() {
             Ok(result) => {
-                println!("[INFO] Received LLM answer...");
+                log("[INFO] Received LLM answer...");
                 break Ok((answer, result));
             }
             Err(e) => {
-                println!("Failed to parse json: \n{}", e);
+                log(&format!("Failed to parse json: \n{}", e));
                 retries -= 1;
 
                 if retries <= 0 {
                     return Err(anyhow!("Failed to parse json."));
                 }
 
-                println!("Retrying...");
+                log("Retrying...");
             }
         }
     }
@@ -45,4 +46,12 @@ pub fn jsvalue_to_hmap<K: DeserializeOwned + Eq + Hash, T: DeserializeOwned>(
     serde_wasm_bindgen::from_value(value)
         .map_err(|e| JsError::from_str(&e.to_string()))
         .unwrap()
+}
+
+pub fn log(msg: &str) {
+    console::log_1(&JsValue::from_str(msg));
+}
+
+pub fn log_err(msg: &str) {
+    console::error_1(&JsValue::from_str(&msg));
 }
