@@ -10,6 +10,7 @@ import * as path from "path";
 import { TaskView } from "../models/task";
 import * as wasm from "../../pkg/neatcoder";
 import { scanSourceFolder, streamCode } from "./streamCode";
+import { makeRequest } from "../httpClient";
 
 export async function startJob(
   taskView: TaskView,
@@ -29,12 +30,13 @@ export async function startJob(
     await appState.scaffoldProject(
       llmClient,
       llmParams,
-      taskView.task.taskParams
+      taskView.task.taskParams,
+      makeRequest
     );
   }
 
   if (taskType === wasm.TaskType.BuildExecutionPlan) {
-    await appState.buildExecutionPlan(llmClient, llmParams);
+    await appState.buildExecutionPlan(llmClient, llmParams, makeRequest);
   }
 
   if (taskType === wasm.TaskType.CodeGen) {

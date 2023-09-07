@@ -269,16 +269,22 @@ impl AppState {
         client: &OpenAI,
         ai_params: &OpenAIParams,
         task_params: TaskParams,
+        request_callback: &Function,
     ) -> Result<(), JsError> {
         let task_params = task_params
             .scaffold_project_()
             .ok_or("No ScaffoldProject field. This error should not occur.")
             .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-        let scaffold_json =
-            scaffold_project(client, ai_params, task_params, self)
-                .await
-                .map_err(|e| JsError::from_str(&e.to_string()))?;
+        let scaffold_json = scaffold_project(
+            client,
+            ai_params,
+            task_params,
+            self,
+            request_callback,
+        )
+        .await
+        .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         self.scaffold = Some(scaffold_json.to_string());
 
@@ -292,10 +298,12 @@ impl AppState {
         &mut self,
         client: &OpenAI,
         ai_params: &OpenAIParams,
+        request_callback: &Function,
     ) -> Result<(), JsError> {
-        let plan = build_execution_plan(client, ai_params, self)
-            .await
-            .map_err(|e| JsError::from_str(&e.to_string()))?;
+        let plan =
+            build_execution_plan(client, ai_params, self, request_callback)
+                .await
+                .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         let files = Files::from_schedule(&plan)
             .map_err(|e| JsError::from_str(&e.to_string()))?;

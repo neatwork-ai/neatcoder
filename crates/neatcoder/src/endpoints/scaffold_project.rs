@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use js_sys::JsString;
+use js_sys::{Function, JsString};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -39,6 +39,7 @@ pub async fn scaffold_project(
     ai_params: &OpenAIParams,
     client_params: &ScaffoldParams,
     app_state: &AppState,
+    request_callback: &Function,
 ) -> Result<Value> {
     let mut prompts = Vec::new();
 
@@ -68,7 +69,8 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let (_, scaffold_json) = write_json(client, &ai_params, &prompts).await?;
+    let (_, scaffold_json) =
+        write_json(client, &ai_params, &prompts, request_callback).await?;
 
     Ok(scaffold_json)
 }

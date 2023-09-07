@@ -14,10 +14,17 @@ import { setupSrcFolderWatcher } from "./watchers/sourceWatcher";
 import { removeInterface } from "./commands/interfaces/removeInterface";
 import { removeSchema } from "./commands/schemas/removeSchema";
 import InterfaceItem from "./providers/interfaceItem";
-import * as wasm from "./../pkg";
+import * as wasm from "./../pkg/neatcoder";
 import { readAppState } from "./utils";
 import { TaskView } from "./models/task";
 import { addInterface } from "./commands/interfaces/addInterface";
+
+import fetch from "node-fetch";
+import { Headers, Request } from "node-fetch";
+
+(global as any).fetch = fetch;
+(global as any).Headers = Headers;
+(global as any).Request = Request;
 
 let configWatcher: fs.FSWatcher | undefined;
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
@@ -34,7 +41,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Read or Initialize Application state
   let appState = readAppState();
   let llmClient = new wasm.OpenAI("TODO");
-  let llmParams = wasm.OpenAIParams.empty(0);
+  let llmParams = wasm.OpenAIParams.empty(wasm.OpenAIModels.Gpt35Turbo16k);
 
   // Create the output channel for logging
   let logger = vscode.window.createOutputChannel("Neatcoder");
@@ -128,18 +135,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.debugAppState", function () {
-      // vscode.window.showInformationMessage(
-      //   JSON.stringify(appState.specs, null, 2)
-      // );
-      // vscode.window.showInformationMessage(
-      //   JSON.stringify(appState.scaffold, null, 2)
-      // );
-      vscode.window.showInformationMessage(
-        JSON.stringify(appState.interfaces, null, 2)
-      );
-      // vscode.window.showInformationMessage(
-      //   JSON.stringify(appState.taskPool, null, 2)
-      // );
+      vscode.window.showInformationMessage(JSON.stringify(appState, null, 2));
     })
   );
 }

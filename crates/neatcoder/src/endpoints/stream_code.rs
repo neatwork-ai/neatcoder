@@ -11,6 +11,7 @@ use crate::{
         msg::{GptRole, OpenAIMsg},
         params::OpenAIParams,
     },
+    utils::log,
 };
 
 #[wasm_bindgen]
@@ -45,7 +46,7 @@ pub async fn stream_code(
 
     let CodeGenParams { filename } = task_params;
 
-    println!("[INFO] Running `CodeGen` Job: {}", filename);
+    log(&format!("[INFO] Running `CodeGen` Job: {}", filename));
 
     if app_state.scaffold.is_none() {
         return Err(anyhow!("No project scaffold config available.."));
@@ -111,7 +112,7 @@ pub async fn stream_rust(
     _prompts: Vec<OpenAIMsg>,
     _callback: Function,
 ) -> Result<()> {
-    println!("[INFO] Initiating Stream");
+    log("[INFO] Initiating Stream");
 
     // let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 

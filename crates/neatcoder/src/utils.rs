@@ -1,6 +1,7 @@
 use crate::openai::{client::OpenAI, msg::OpenAIMsg, params::OpenAIParams};
 use crate::JsError;
 use anyhow::{anyhow, Result};
+use js_sys::Function;
 use parser::parser::json::AsJson;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -13,12 +14,17 @@ pub async fn write_json(
     client: &OpenAI,
     ai_params: &OpenAIParams,
     prompts: &Vec<&OpenAIMsg>,
+    request_callback: &Function,
 ) -> Result<(String, Value)> {
     let mut retries = 3;
 
     loop {
         log("[INFO] Prompting the LLM...");
-        let answer = client.chat(ai_params, prompts, &[], &[]).await?;
+
+        let chat = client
+            .chat_raw(request_callback, ai_params, prompts, &[], &[])
+            .await?;
+        let answer = chat.choices.first().unwrap().message.content.clone();
 
         match answer.as_str().strip_json() {
             Ok(result) => {

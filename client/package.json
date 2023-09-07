@@ -140,6 +140,7 @@
   },
   "devDependencies": {
     "@types/chai": "^4.3.6",
+    "@types/eventsource": "^1.1.11",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.2.5",
@@ -162,6 +163,8 @@
   },
   "dependencies": {
     "@wasm-tool/wasm-pack-plugin": "^1.7.0",
+    "eventsource": "^2.0.2",
+    "node-fetch": "^3.3.2",
     "pako": "^2.1.0",
     "rimraf": "^5.0.1",
     "ws": "^8.13.0"

@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use js_sys::Function;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, Value};
 use std::{
@@ -13,18 +14,19 @@ use crate::{
         msg::{GptRole, OpenAIMsg},
         params::OpenAIParams,
     },
-    utils::write_json,
+    utils::{log, write_json},
 };
 
 pub async fn build_execution_plan(
     client: &OpenAI,
     params: &OpenAIParams,
     app_state: &AppState,
+    request_callback: &Function,
 ) -> Result<Value> {
     let mut prompts = Vec::new();
 
     if app_state.interfaces.is_empty() {
-        println!("[INFO] No Interfaces detected. Proceeding...");
+        log("[INFO] No Interfaces detected. Proceeding...");
     }
 
     let api_description = &app_state.specs.as_ref().unwrap();
@@ -72,9 +74,10 @@ Use the following schema:
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let (answer, tasks) = write_json(client, params, &prompts).await?;
+    let (answer, tasks) =
+        write_json(client, params, &prompts, request_callback).await?;
 
-    println!("[DEBUG] LLM: {}", answer);
+    log(&format!("[DEBUG] LLM: {}", answer));
 
     Ok(tasks)
 }
@@ -120,7 +123,7 @@ impl Files {
             if file.ends_with(".rs") {
                 true
             } else {
-                println!("[WARN] Filtered out: {}", file);
+                log(&format!("[WARN] Filtered out: {}", file));
                 false
             }
         });

@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
-import * as wasm from "./../../pkg";
+import * as wasm from "./../../pkg/neatcoder";
 import { saveAppStateToFile } from "../utils";
+import { makeRequest } from "../httpClient";
 
 export async function startPrompt(
   llmClient: wasm.OpenAI,
@@ -16,14 +17,7 @@ export async function startPrompt(
     });
 
     if (userInput !== undefined) {
-      const taskType = wasm.TaskType.ScaffoldProject;
-
-      const taskPayload = new wasm.TaskParamsInner(
-        new wasm.ScaffoldParams(userInput)
-      );
-      const taskParams = new wasm.TaskParams(taskType, taskPayload);
-
-      await appState.scaffoldProject(llmClient, llmParams, taskParams);
+      await scaffold(llmClient, llmParams, appState, userInput);
       saveAppStateToFile(appState);
 
       // Use the TCP client to send the command
@@ -31,5 +25,53 @@ export async function startPrompt(
     } else {
       vscode.window.showErrorMessage("Unable to parse prompt.");
     }
+  }
+}
+
+async function scaffold(
+  llmClient: wasm.OpenAI,
+  llmParams: wasm.OpenAIParams,
+  appState: wasm.AppState,
+  userInput: string
+) {
+  const taskType = wasm.TaskType.ScaffoldProject;
+
+  const taskPayload = new wasm.TaskParamsInner(
+    new wasm.ScaffoldParams(userInput)
+  );
+  const taskParams = new wasm.TaskParams(taskType, taskPayload);
+
+  try {
+    await appState.scaffoldProject(
+      llmClient,
+      llmParams,
+      taskParams,
+      makeRequest
+    );
+  } catch (error) {
+    console.error("Error occurred:", error);
+  }
+}
+
+async function schedule(
+  llmClient: wasm.OpenAI,
+  llmParams: wasm.OpenAIParams,
+  appState: wasm.AppState,
+  userInput: string
+) {
+  const taskType = wasm.TaskType.BuildExecutionPlan;
+
+  const taskPayload = new wasm.TaskParamsInner();
+  const taskParams = new wasm.TaskParams(taskType, taskPayload);
+
+  try {
+    await appState.scaffoldProject(
+      llmClient,
+      llmParams,
+      taskParams,
+      makeRequest
+    );
+  } catch (error) {
+    console.error("Error occurred:", error);
   }
 }
