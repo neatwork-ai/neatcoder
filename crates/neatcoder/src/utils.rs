@@ -1,4 +1,5 @@
 use crate::openai::{client::OpenAI, msg::OpenAIMsg, params::OpenAIParams};
+use crate::JsError;
 use anyhow::{anyhow, Result};
 use parser::parser::json::AsJson;
 use serde::de::DeserializeOwned;

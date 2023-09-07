@@ -1,7 +1,8 @@
 use std::any::Any;
 
-use crate::endpoints::{
-    scaffold_project::ScaffoldParams, stream_code::CodeGenParams,
+use crate::{
+    endpoints::{scaffold_project::ScaffoldParams, stream_code::CodeGenParams},
+    JsError,
 };
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
