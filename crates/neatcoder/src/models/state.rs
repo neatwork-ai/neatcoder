@@ -4,7 +4,6 @@ use js_sys::{Error, Function};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
-use web_sys::console;
 
 use crate::{
     endpoints::{
@@ -95,15 +94,42 @@ extern "C" {
 impl AppState {
     #[wasm_bindgen(constructor)]
     pub fn new(value: JsValue) -> Result<AppState, JsValue> {
-        console::error_1(
-            &format!("AppState JsValue is: {:?}", value).as_str().into(),
-        );
+        let json_string = &value.as_string();
 
-        let app_state: Result<AppState, _> =
-            serde_wasm_bindgen::from_value(value)
-                .map_err(|e| JsValue::from_str(&e.to_string()));
+        match json_string {
+            None => {
+                let error_msg = format!(
+                    "Unable to parse AppState JsValue to string: {:?}",
+                    value
+                );
 
-        return app_state;
+                return Err(anyhow!(error_msg))
+                    .map_err(|e| JsError::from_str(&e.to_string()));
+            }
+            Some(json_string) => {
+                let app_state: Result<AppState, _> =
+                    serde_json::from_str(&json_string)
+                        .map_err(|e| JsError::from_str(&e.to_string()));
+
+                return app_state;
+            }
+        }
+    }
+
+    #[wasm_bindgen(js_name = castToString)]
+    pub fn cast_to_string(&self) -> Result<JsString, JsError> {
+        let json = serde_json::to_string(self)
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
+
+        Ok(json.into())
+    }
+
+    #[wasm_bindgen(js_name = castFromString)]
+    pub fn cast_from_string(json: String) -> Result<AppState, JsError> {
+        let app_state = serde_json::from_str(&json)
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
+
+        Ok(app_state)
     }
 
     pub fn empty() -> Self {
@@ -115,18 +141,6 @@ impl AppState {
             task_pool: TaskPool::empty(),
         }
     }
-
-    // // This is here to help in the storing process
-    // #[wasm_bindgen(getter, js_name = makeCopy)]
-    // pub fn make_copy(&self) -> Self {
-    //     Self {
-    //         listeners: Vec::new(),
-    //         specs: None,
-    //         scaffold: None,
-    //         interfaces: BTreeMap::new(),
-    //         task_pool: TaskPool::empty(),
-    //     }
-    // }
 
     pub fn subscribe(&mut self, callback: &js_sys::Function) {
         self.listeners.push(callback.clone());
@@ -457,65 +471,31 @@ pub mod tests {
     use super::*;
     use wasm_bindgen_test::*;
 
-    // #[wasm_bindgen_test]
-    // pub fn test_app_state_new() {
-    //     let json_value = JsValue::from_str(
-    //         r#"{"specs":null,"scaffold":null,"interfaces":"{"aaa":{"
-    // interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
-    // ClickHouse","customType":null,"port":null,"host":null,"schemas":{}}},"
-    // storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":
-    // {},"order":[]},"done":{"tasks":{},"order":[]}}}"#,         //
-    // opriginal //
-    // r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\
-    // ":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"
-    // ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":
-    // {}}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"
-    // tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,     );
+    #[wasm_bindgen_test]
+    pub fn test_app_state_new() {
+        let json_value = JsValue::from_str(
+            r#"{"specs":null,"scaffold":null,"interfaces":"{"aaa":{"
+            interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
+            ClickHouse","customType":null,"port":null,"host":null,"schemas":{}}},"
+            storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":
+            {},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
+            // original //
+            // r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\
+            // ":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"
+            // ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":
+            // {}}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"
+            // tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
+        );
 
-    //     //  OK:
-    // "{"interfaces":{"MyDB":{"interfaceType":"Database","inner":{"database":{"
-    // name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"
-    // schemas":{"MySchema":"schema"}},"storage":null,"api":null}},"MyApi":{"
-    // interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"
-    // name":"MyApi","api_type":"RestfulApi","custom_type":null,"port":null,"
-    // host":null,"schemas":{"MySchema":"schema"}}}}},"task_pool":{"counter":3,"
-    // todo":{"tasks":{"2":{"id":2,"name":"Task2","task_params":{"task_type":"
-    // BuildExecutionPlan","inner":{"scaffold_project":null,"stream_code":
-    // null}},"status":"Todo"},"3":{"id":3,"name":"Task3","task_params":{"
-    // task_type":"CodeGen","inner":{"scaffold_project":null,"stream_code":{"
-    // filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"
-    // tasks":{"1":{"id":1,"name":"Task1","task_params":{"task_type":"
-    // ScaffoldProject","inner":{"scaffold_project":{"specs":"specs"},"
-    // stream_code":null}},"status":"Todo"}},"order":[1]}}}")'     // NOK:
-    // "{"interfaces":"{"aaa":{"interfaceType":"Database","inner":{"database":{"
-    // name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":
-    // null,"schemas":{}}},"storage\":null,\"api\":null}}}","taskPool":{"
-    // counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":
-    // []}}}"#,
+        let app_state = AppState::new(json_value);
 
-    //     let app_state = AppState::new(json_value);
+        // let js_value: JsValue = JsValue::from_str(js_value_string);
+        // panic!("{:?}", js_value);
 
-    //     if let Err(e) = app_state {
-    //         panic!("Failed to create AppState: {:?}", e);
-    //     }
-
-    //     // let js_value: JsValue = JsValue::from_str(js_value_string);
-    //     // // panic!("{:?}", js_value);
-
-    //     // // let app_state = AppState::new(js_value);
-    //     // let app_state: Result<AppState, _> =
-    //     //     serde_json::from_str(js_value_string);
-
-    //     // match app_state {
-    //     //     Ok(app_state) => {
-    //     //         // Here we would check the fields of app_state to make
-    // sure they have the expected values.     //     }
-    //     //     Err(e) => {
-    //     //         panic!("Failed to create AppState: {:?}", e);
-    //     //         // eprintln!("Failed to create AppState: {:?}", e);
-    //     //     }
-    //     // }
-    // }
+        if let Err(e) = app_state {
+            panic!("Failed to create AppState: {:?}", e);
+        }
+    }
 
     #[wasm_bindgen_test]
     pub fn app_state_deserialize() {
@@ -674,47 +654,18 @@ pub mod tests {
         assert_eq!(actual, expected);
     }
 
-    // #[wasm_bindgen_test]
-    // pub fn gradcefully_handles_stringified_objects() {
-    //     let expected = JsValue::from_str(
-    //         r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"
-    // interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"
-    // dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\
-    // "schemas\":{}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,
-    // "todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
-    //     );
+    #[wasm_bindgen_test]
+    pub fn gracefully_handles_stringified_objects() {
+        let expected = JsValue::from_str(
+            r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"
+    interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"
+    dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\
+    "schemas\":{}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,
+    "todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
+        );
 
-    //     if expected.as_string().is_none() {
-    //         panic!("Upsie")
-    //     }
-    // }
+        if expected.as_string().is_none() {
+            panic!("Upsie")
+        }
+    }
 }
-
-// APP STATE!!:
-// {"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\":\"
-// Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"ClickHouse\
-// ",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":{}},\"storage\"
-// :null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":{},"order":
-// []},"done":{"tasks":{},"order":[]}}} ERROR: invalid type: string
-// "{\"aaa\":{\"interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\
-// "aaa\",\"dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":
-// null,\"schemas\":{}},\"storage\":null,\"api\":null}}}", expected a map at
-// line 1 column 250
-
-// left:  `JsValue("{"specs":null,"scaffold":null,"interfaces":{"aaa":{"
-// interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
-// ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage"
-// :null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"
-// done":{"tasks":{},"order":[]}}}")`,
-// right: `JsValue("{"specs":null,"scaffold":null,"interfaces":{\"aaa\":{\"
-// interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"
-// dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"
-// schemas\":{}},\"storage\":null,\"api\":null}}},"taskPool":{"counter":0,"todo"
-// :{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}")`'
-
-// right: `JsValue("{"specs":null,"scaffold":null,"interfaces":{"aaa":{"
-// interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
-// ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage"
-// :null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"
-// done":{"tasks":{},"order":[]}}}")`',
-// crates/neatcoder/src/models/state.rs:610:9

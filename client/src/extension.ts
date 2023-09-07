@@ -31,23 +31,6 @@ export async function activate(context: vscode.ExtensionContext) {
     return;
   }
 
-  // TODO
-  // let paramsInner = new wasm.TaskParamsInner()
-  // let taskParams = new wasm.TaskParams();
-  // let task = new wasm.Task(1, "MyTask");
-
-  //   pub struct Task {
-  //     pub id: usize,
-  //     pub(crate) name: String,
-  //     pub(crate) task_params: TaskParams,
-  //     pub status: TaskStatus,
-  // }
-
-  // let pipe = new wasm.Pipeline();
-
-  // vscode.window.showInformationMessage(JSON.stringify(db2.schemas, null, 2));
-  // vscode.window.showInformationMessage(JSON.stringify(api2.schemas, null, 2));
-
   // Read or Initialize Application state
   let appState = readAppState();
   let llmClient = new wasm.OpenAI("TODO");
