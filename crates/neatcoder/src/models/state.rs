@@ -618,7 +618,7 @@ pub mod tests {
 
         let app_state = AppState::new_(None, None, interfaces, task_pool);
 
-        let _actual = AppState::cast_to_string(&app_state)
+        let actual = AppState::cast_to_string(&app_state)
             .unwrap()
             .as_string()
             .unwrap();
