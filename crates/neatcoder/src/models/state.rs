@@ -31,11 +31,11 @@ use super::{
 // as a chat app like Slack, in which each message can have a Thread or we can
 // generalise it further to something more intricate.
 //
-// 2. This struct is storing static application data such as `scaffold`, `codebase`.
-// we will need to find a way to make the application state dynamic such that it reflects the
-// current state of the codebase at any given time. We should also consider if
-// have the field `codebase` makes sense here, because we can also access the codebase
-// via the Language Server on the client side.
+// 2. This struct is storing static application data such as `scaffold`,
+// `codebase`. we will need to find a way to make the application state dynamic
+// such that it reflects the current state of the codebase at any given time. We
+// should also consider if have the field `codebase` makes sense here, because
+// we can also access the codebase via the Language Server on the client side.
 //
 /// Acts as a shared application data (i.e. shared state). It contains
 /// information related to the initial prompt, the scaffold of the project, its
@@ -74,8 +74,8 @@ pub struct AppState {
     ///   }
     /// ```
     pub(crate) scaffold: Option<String>,
-    /// Vector of strings containing the interface config files (e.g. SQL DLLs, etc.)
-    /// The BTreeMap represents BTreeMap<Interface Name, Interface>
+    /// Vector of strings containing the interface config files (e.g. SQL DLLs,
+    /// etc.) The BTreeMap represents BTreeMap<Interface Name, Interface>
     pub(crate) interfaces: BTreeMap<String, Interface>,
     pub(crate) task_pool: TaskPool,
 }
@@ -88,35 +88,11 @@ impl AppState {
             &format!("AppState JsValue is: {:?}", value).as_str().into(),
         );
 
-        let json_string = &value.as_string();
+        let app_state: Result<AppState, _> =
+            serde_wasm_bindgen::from_value(value)
+                .map_err(|e| JsValue::from_str(&e.to_string()));
 
-        console::error_1(
-            &format!("AppState JsValue Converted: {:?}", json_string)
-                .as_str()
-                .into(),
-        );
-
-        match json_string {
-            None => {
-                let error_msg = format!(
-                    "Unable to parse AppState JsValue to string: {:?}",
-                    value
-                );
-
-                // console::error_1(&error_msg.as_str().into());
-
-                return Err(anyhow!(error_msg))
-                    .map_err(|e| JsValue::from_str(&e.to_string()));
-            }
-            Some(json_string) => {
-                console::log_1(&"We made it boys".into());
-                let app_state: Result<AppState, _> =
-                    serde_json::from_str(&json_string)
-                        .map_err(|e| JsValue::from_str(&e.to_string()));
-
-                return app_state;
-            }
-        }
+        return app_state;
     }
 
     pub fn empty() -> Self {
@@ -380,7 +356,8 @@ impl AppState {
         schema: SchemaFile,
     ) -> Result<()> {
         if !self.interfaces.contains_key(&interface_name) {
-            // TODO: We need proper error escallation and communication with the client
+            // TODO: We need proper error escallation and communication with the
+            // client
             eprintln!("[ERROR] The interface does not exist. Please create an interface first.");
 
             return Err(anyhow!("Interface does not exist"));
@@ -401,7 +378,8 @@ impl AppState {
         schema_name: &str,
     ) -> Result<()> {
         if !self.interfaces.contains_key(interface_name) {
-            // TODO: We need proper error escallation and communication with the client
+            // TODO: We need proper error escallation and communication with the
+            // client
             eprintln!("[ERROR] The interface does not exist.");
 
             return Err(anyhow!("Interface does not exist"));
@@ -420,7 +398,8 @@ impl AppState {
         let interface_name = new_interface.name();
 
         if self.interfaces.contains_key(&interface_name) {
-            // TODO: We need proper error escallation and communication with the client
+            // TODO: We need proper error escallation and communication with the
+            // client
             eprintln!("[ERROR] The interface already exists. Skipping.");
 
             return Err(anyhow!("Interface already exists"));
@@ -434,7 +413,8 @@ impl AppState {
 
     pub fn remove_interface_(&mut self, interface_name: &str) -> Result<()> {
         if !self.interfaces.contains_key(interface_name) {
-            // TODO: We need proper error escallation and communication with the client
+            // TODO: We need proper error escallation and communication with the
+            // client
             eprintln!("[ERROR] The interface does not exist. Skipping.");
 
             return Err(anyhow!("Interface does not exist"));
@@ -478,12 +458,38 @@ pub mod tests {
     // #[wasm_bindgen_test]
     // pub fn test_app_state_new() {
     //     let json_value = JsValue::from_str(
-    //         r#"{"specs":null,"scaffold":null,"interfaces":"{"aaa":{"interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":null,"schemas":{}}},"storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
-    //         // opriginal // r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":{}}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
-    //     );
+    //         r#"{"specs":null,"scaffold":null,"interfaces":"{"aaa":{"
+    // interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
+    // ClickHouse","customType":null,"port":null,"host":null,"schemas":{}}},"
+    // storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":
+    // {},"order":[]},"done":{"tasks":{},"order":[]}}}"#,         //
+    // opriginal //
+    // r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\
+    // ":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"
+    // ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":
+    // {}}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"
+    // tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,     );
 
-    //     //  OK: "{"interfaces":{"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}},"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","api_type":"RestfulApi","custom_type":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}}},"task_pool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","task_params":{"task_type":"BuildExecutionPlan","inner":{"scaffold_project":null,"stream_code":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","task_params":{"task_type":"CodeGen","inner":{"scaffold_project":null,"stream_code":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","task_params":{"task_type":"ScaffoldProject","inner":{"scaffold_project":{"specs":"specs"},"stream_code":null}},"status":"Todo"}},"order":[1]}}}")'
-    //     // NOK: "{"interfaces":"{"aaa":{"interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":null,"schemas":{}}},"storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
+    //     //  OK:
+    // "{"interfaces":{"MyDB":{"interfaceType":"Database","inner":{"database":{"
+    // name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"
+    // schemas":{"MySchema":"schema"}},"storage":null,"api":null}},"MyApi":{"
+    // interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"
+    // name":"MyApi","api_type":"RestfulApi","custom_type":null,"port":null,"
+    // host":null,"schemas":{"MySchema":"schema"}}}}},"task_pool":{"counter":3,"
+    // todo":{"tasks":{"2":{"id":2,"name":"Task2","task_params":{"task_type":"
+    // BuildExecutionPlan","inner":{"scaffold_project":null,"stream_code":
+    // null}},"status":"Todo"},"3":{"id":3,"name":"Task3","task_params":{"
+    // task_type":"CodeGen","inner":{"scaffold_project":null,"stream_code":{"
+    // filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"
+    // tasks":{"1":{"id":1,"name":"Task1","task_params":{"task_type":"
+    // ScaffoldProject","inner":{"scaffold_project":{"specs":"specs"},"
+    // stream_code":null}},"status":"Todo"}},"order":[1]}}}")'     // NOK:
+    // "{"interfaces":"{"aaa":{"interfaceType":"Database","inner":{"database":{"
+    // name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":
+    // null,"schemas":{}}},"storage\":null,\"api\":null}}}","taskPool":{"
+    // counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":
+    // []}}}"#,
 
     //     let app_state = AppState::new(json_value);
 
@@ -500,8 +506,8 @@ pub mod tests {
 
     //     // match app_state {
     //     //     Ok(app_state) => {
-    //     //         // Here we would check the fields of app_state to make sure they have the expected values.
-    //     //     }
+    //     //         // Here we would check the fields of app_state to make
+    // sure they have the expected values.     //     }
     //     //     Err(e) => {
     //     //         panic!("Failed to create AppState: {:?}", e);
     //     //         // eprintln!("Failed to create AppState: {:?}", e);
@@ -582,7 +588,21 @@ pub mod tests {
         );
 
         // Deserialized - Should be equal to:
-        // JsValue("{"specs":"specs","scaffold":"scaffold","interfaces":{"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}},"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","api_type":"RestfulApi","custom_type":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}}},"task_pool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","task_params":{"task_type":"BuildExecutionPlan","inner":{"scaffold_project":null,"stream_code":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","task_params":{"task_type":"CodeGen","inner":{"scaffold_project":null,"stream_code":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","task_params":{"task_type":"ScaffoldProject","inner":{"scaffold_project":{"specs":"specs"},"stream_code":null}},"status":"Todo"}},"order":[1]}}}")'
+        // JsValue("{"specs":"specs","scaffold":"scaffold","interfaces":{"MyDB":
+        // {"interfaceType":"Database","inner":{"database":{"name":"MyDB","
+        // dbType":"MySql","customType":null,"port":null,"host":null,"schemas":
+        // {"MySchema":"schema"}},"storage":null,"api":null}},"MyApi":{"
+        // interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"
+        // name":"MyApi","api_type":"RestfulApi","custom_type":null,"port":null,
+        // "host":null,"schemas":{"MySchema":"schema"}}}}},"task_pool":{"
+        // counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","task_params":
+        // {"task_type":"BuildExecutionPlan","inner":{"scaffold_project":null,"
+        // stream_code":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","
+        // task_params":{"task_type":"CodeGen","inner":{"scaffold_project":null,
+        // "stream_code":{"filename":"filename.rs"}}},"status":"Todo"}},"order":
+        // [3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","task_params":{"
+        // task_type":"ScaffoldProject","inner":{"scaffold_project":{"specs":"
+        // specs"},"stream_code":null}},"status":"Todo"}},"order":[1]}}}")'
         let actual =
             JsValue::from_str(&serde_json::to_string(&app_state).unwrap());
 
@@ -621,12 +641,11 @@ pub mod tests {
 
         let app_state = AppState::new_(None, None, interfaces, task_pool);
 
-        let actual =
+        let _actual =
             JsValue::from_str(&serde_json::to_string(&app_state).unwrap());
 
         let expected = JsValue::from_str(
-            r#"{"specs":null,"scaffold":null,"interfaces":{\"aaa\":{\"interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":{}},\"storage\":null,\"api\":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
-            // r#"{"specs":null,"scaffold":null,"interfaces":{"aaa":{"interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage":null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
+            r#"{"specs":null,"scaffold":null,"interfaces":{"aaa":{"interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage":null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
         );
 
         // assert_eq!(actual, expected);
@@ -656,7 +675,11 @@ pub mod tests {
     // #[wasm_bindgen_test]
     // pub fn gradcefully_handles_stringified_objects() {
     //     let expected = JsValue::from_str(
-    //         r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":{}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
+    //         r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"
+    // interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"
+    // dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\
+    // "schemas\":{}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,
+    // "todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
     //     );
 
     //     if expected.as_string().is_none() {
@@ -665,10 +688,31 @@ pub mod tests {
     // }
 }
 
-// APP STATE!!: {"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":{}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}
-// ERROR: invalid type: string "{\"aaa\":{\"interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":{}},\"storage\":null,\"api\":null}}}", expected a map at line 1 column 250
+// APP STATE!!:
+// {"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\":\"
+// Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"ClickHouse\
+// ",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":{}},\"storage\"
+// :null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":{},"order":
+// []},"done":{"tasks":{},"order":[]}}} ERROR: invalid type: string
+// "{\"aaa\":{\"interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\
+// "aaa\",\"dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":
+// null,\"schemas\":{}},\"storage\":null,\"api\":null}}}", expected a map at
+// line 1 column 250
 
-// left:  `JsValue("{"specs":null,"scaffold":null,"interfaces":{"aaa":{"interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage":null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}")`,
-// right: `JsValue("{"specs":null,"scaffold":null,"interfaces":{\"aaa\":{\"interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":{}},\"storage\":null,\"api\":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}")`'
+// left:  `JsValue("{"specs":null,"scaffold":null,"interfaces":{"aaa":{"
+// interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
+// ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage"
+// :null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"
+// done":{"tasks":{},"order":[]}}}")`,
+// right: `JsValue("{"specs":null,"scaffold":null,"interfaces":{\"aaa\":{\"
+// interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"
+// dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"
+// schemas\":{}},\"storage\":null,\"api\":null}}},"taskPool":{"counter":0,"todo"
+// :{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}")`'
 
-// right: `JsValue("{"specs":null,"scaffold":null,"interfaces":{"aaa":{"interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage":null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}")`', crates/neatcoder/src/models/state.rs:610:9
+// right: `JsValue("{"specs":null,"scaffold":null,"interfaces":{"aaa":{"
+// interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
+// ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage"
+// :null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"
+// done":{"tasks":{},"order":[]}}}")`',
+// crates/neatcoder/src/models/state.rs:610:9
