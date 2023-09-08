@@ -1,8 +1,7 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::json;
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct OpenAIMsg {
     pub role: GptRole,
     pub content: String,
@@ -35,20 +34,6 @@ impl OpenAIMsg {
             role: GptRole::Assistant,
             content: String::from(content),
         }
-    }
-}
-
-impl Serialize for OpenAIMsg {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let msg = json!({
-            "role": self.role.as_str(),
-            "content": self.content,
-        });
-
-        msg.serialize(serializer)
     }
 }
 

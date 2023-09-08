@@ -18,6 +18,7 @@ export async function startPrompt(
 
     if (userInput !== undefined) {
       await scaffold(llmClient, llmParams, appState, userInput);
+      await schedule(llmClient, llmParams, appState);
       saveAppStateToFile(appState);
 
       // Use the TCP client to send the command
@@ -56,21 +57,10 @@ async function scaffold(
 async function schedule(
   llmClient: wasm.OpenAI,
   llmParams: wasm.OpenAIParams,
-  appState: wasm.AppState,
-  userInput: string
+  appState: wasm.AppState
 ) {
-  const taskType = wasm.TaskType.BuildExecutionPlan;
-
-  const taskPayload = new wasm.TaskParamsInner();
-  const taskParams = new wasm.TaskParams(taskType, taskPayload);
-
   try {
-    await appState.scaffoldProject(
-      llmClient,
-      llmParams,
-      taskParams,
-      makeRequest
-    );
+    await appState.buildExecutionPlan(llmClient, llmParams, makeRequest);
   } catch (error) {
     console.error("Error occurred:", error);
   }
