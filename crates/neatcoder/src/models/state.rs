@@ -382,7 +382,9 @@ impl AppState {
         );
 
         // Replaces the existing interface if any
-        interface.insert_schema(schema_name, schema);
+        interface
+            .insert_schema(schema_name, schema)
+            .map_err(|e| anyhow!("{:?}", e))?;
 
         Ok(())
     }
@@ -393,11 +395,7 @@ impl AppState {
         schema_name: &str,
     ) -> Result<()> {
         if !self.interfaces.contains_key(interface_name) {
-            // TODO: We need proper error escallation and communication with the
-            // client
-            eprintln!("[ERROR] The interface does not exist.");
-
-            return Err(anyhow!("Interface does not exist"));
+            return Err(anyhow!("[ERROR] The interface does not exist."));
         }
 
         // Safe to unwrap due to previous check
@@ -406,7 +404,9 @@ impl AppState {
         );
 
         // Replaces the existing interface if any
-        interface.remove_schema(schema_name);
+        interface
+            .remove_schema(schema_name)
+            .map_err(|e| anyhow!("{:?}", e))?;
 
         Ok(())
     }
