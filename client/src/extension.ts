@@ -14,17 +14,18 @@ import { setupSrcFolderWatcher } from "./watchers/sourceWatcher";
 import { removeInterface } from "./commands/interfaces/removeInterface";
 import { removeSchema } from "./commands/schemas/removeSchema";
 import InterfaceItem from "./providers/interfaceItem";
-import * as wasm from "./../pkg/neatcoder";
-import { readAppState } from "./utils";
 import { TaskView } from "./models/task";
 import { addInterface } from "./commands/interfaces/addInterface";
+import * as wasm from "./../pkg/neatcoder";
 
+// TODO: Remove
 import fetch from "node-fetch";
 import { Headers, Request } from "node-fetch";
-
+import { AppStateManager } from "./appStateManager";
 (global as any).fetch = fetch;
 (global as any).Headers = Headers;
 (global as any).Request = Request;
+//
 
 let configWatcher: fs.FSWatcher | undefined;
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
@@ -38,27 +39,32 @@ export async function activate(context: vscode.ExtensionContext) {
     return;
   }
 
-  // Read or Initialize Application state
-  let appState = readAppState();
-  let llmClient = new wasm.OpenAI("TODO");
-  let llmParams = wasm.OpenAIParams.empty(wasm.OpenAIModels.Gpt35Turbo16k);
-
   // Create the output channel for logging
   let logger = vscode.window.createOutputChannel("Neatcoder");
   logger.appendLine("[INFO] Extension Name: Neatcoder");
 
   // === Init Providers ===
 
-  const jobQueueProvider = new TaskPoolProvider(appState, logger);
-  const auditTrailProvider = new TasksCompletedProvider(appState, logger);
+  const jobQueueProvider = new TaskPoolProvider(logger);
+  const auditTrailProvider = new TasksCompletedProvider(logger);
   const interfacesProvider = new InterfacesProvider();
+
+  // Read or Initialize Application state
+
+  let appManager = new AppStateManager(
+    logger,
+    jobQueueProvider,
+    auditTrailProvider
+  );
+  let llmClient = new wasm.OpenAI("TODO");
+  let llmParams = wasm.OpenAIParams.empty(wasm.OpenAIModels.Gpt35Turbo16k);
 
   // === Setup File Watchers ===
 
   // Setup File Watcher which checks for changes in the `.neat` and
   // communicates them to the server if relevant
-  setupSchemaWatchers(schemaWatchers, interfacesProvider, appState, logger);
-  setupConfigWatcher(schemaWatchers, interfacesProvider, appState, logger);
+  setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager, logger);
+  setupConfigWatcher(schemaWatchers, interfacesProvider, appManager, logger);
   setupSrcFolderWatcher(logger);
 
   // === Registration & Garbage Collection ===
@@ -86,7 +92,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.startPrompt", () => {
-      startPrompt(llmClient, llmParams, appState, logger);
+      startPrompt(llmClient, llmParams, appManager, logger);
     })
   );
 
@@ -119,7 +125,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.startJob",
       (taskView: TaskView) => {
-        startJob(taskView, llmClient, llmParams, appState, logger);
+        startJob(taskView, llmClient, llmParams, appManager, logger);
       }
     )
   );
@@ -131,14 +137,6 @@ export async function activate(context: vscode.ExtensionContext) {
         removeSchema(item);
       }
     )
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand("extension.debugAppState", function () {
-      const jsonString = appState.castToString();
-      vscode.window.showInformationMessage(jsonString);
-      logger.appendLine(jsonString);
-    })
   );
 }
 

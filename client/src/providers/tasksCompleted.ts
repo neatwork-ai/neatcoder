@@ -6,7 +6,7 @@ import * as wasm from "../../pkg/neatcoder";
 export class TasksCompletedProvider
   implements vscode.TreeDataProvider<TaskView>
 {
-  private tasks: TaskView[] = [];
+  tasks: TaskView[] = [];
 
   private _onDidChangeTreeData: vscode.EventEmitter<
     TaskView | undefined | null | void
@@ -17,24 +17,8 @@ export class TasksCompletedProvider
 
   logger: vscode.OutputChannel;
 
-  constructor(private appState: wasm.AppState, logger: vscode.OutputChannel) {
+  constructor(logger: vscode.OutputChannel) {
     this.logger = logger;
-
-    // Bind the event listeners
-    this.appState.subscribe(() => {
-      this.handleUpdateTasksCompleted(this.logger);
-    });
-  }
-
-  // Event handler
-  private handleUpdateTasksCompleted(logger: vscode.OutputChannel): void {
-    const tasksDone: wasm.Task[] = this.appState.getDoneTasks();
-
-    // Update the local task list
-    this.tasks = toTaskView(tasksDone);
-
-    // Maybe refresh the view if you're using this.tasks to display something in VSCode
-    this.refresh();
   }
 
   refresh(): void {
