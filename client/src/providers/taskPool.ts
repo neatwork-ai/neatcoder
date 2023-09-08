@@ -18,21 +18,40 @@ export class TaskPoolProvider implements vscode.TreeDataProvider<TaskView> {
   constructor(private appState: wasm.AppState, logger: vscode.OutputChannel) {
     this.logger = logger;
 
+    // TODO: remove
+    const taskType = wasm.TaskType.ScaffoldProject;
+    const taskPayload = new wasm.TaskParamsInner(
+      new wasm.ScaffoldParams("debugging")
+    );
+    const taskParams = new wasm.TaskParams(taskType, taskPayload);
+
+    const task = new wasm.Task(1, "debugging", taskParams);
+    const dumyTask = new TaskView("debugging", task);
+    this.tasks = [dumyTask];
+
     // Bind the event listeners
     this.appState.subscribe(() => {
+      vscode.window.showInformationMessage(`Detected AppState change..`);
+
       this.handleUpdateTaskPool(this.logger);
     });
   }
 
   // Event handler
   private handleUpdateTaskPool(logger: vscode.OutputChannel): void {
-    const tasksTodo: wasm.Task[] = this.appState.getTodoTasks();
+    try {
+      const tasksTodo: wasm.Task[] = this.appState.getTodoTasks();
 
-    // Update the local task list
-    this.tasks = toTaskView(tasksTodo);
+      vscode.window.showInformationMessage(`Here are the TODOs ${tasksTodo}`);
 
-    // Maybe refresh the view if you're using this.tasks to display something in VSCode
-    this.refresh();
+      // Update the local task list
+      this.tasks = toTaskView(tasksTodo);
+
+      // Maybe refresh the view if you're using this.tasks to display something in VSCode
+      this.refresh();
+    } catch (error) {
+      console.error("Error handling TaskPool update:", error);
+    }
   }
 
   refresh(): void {

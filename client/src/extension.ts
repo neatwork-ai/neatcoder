@@ -59,7 +59,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // communicates them to the server if relevant
   setupSchemaWatchers(schemaWatchers, interfacesProvider, appState, logger);
   setupConfigWatcher(schemaWatchers, interfacesProvider, appState, logger);
-  setupSrcFolderWatcher(logger); // TODO: Redo
+  setupSrcFolderWatcher(logger);
 
   // === Registration & Garbage Collection ===
 
@@ -135,7 +135,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.debugAppState", function () {
-      vscode.window.showInformationMessage(JSON.stringify(appState, null, 2));
+      const jsonString = appState.castToString();
+      vscode.window.showInformationMessage(jsonString);
+      logger.appendLine(jsonString);
     })
   );
 }

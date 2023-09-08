@@ -276,6 +276,8 @@ impl AppState {
             .ok_or("No ScaffoldProject field. This error should not occur.")
             .map_err(|e| JsError::from_str(&e.to_string()))?;
 
+        self.specs = Some(task_params.specs.clone());
+
         let scaffold_json = scaffold_project(
             client,
             ai_params,
@@ -288,7 +290,15 @@ impl AppState {
 
         self.scaffold = Some(scaffold_json.to_string());
 
-        self.trigger_callbacks();
+        // self.trigger_callbacks();
+
+        let listeners = self.listeners.clone();
+
+        // Notify listeners
+        for callback in listeners {
+            let this = JsValue::NULL;
+            let _ = callback.call0(&this);
+        }
 
         Ok(())
     }
@@ -445,8 +455,13 @@ impl AppState {
 
 impl AppState {
     fn trigger_callbacks(&self) {
+        // Allows for droping the `&self` reference before
+        // executing the callback functions, thus avoiding
+        // reference recursion
+        let listeners = self.listeners.clone();
+
         // Notify listeners
-        for callback in &self.listeners {
+        for callback in listeners {
             let this = JsValue::NULL;
             let _ = callback.call0(&this);
         }

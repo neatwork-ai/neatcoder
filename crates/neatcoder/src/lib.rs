@@ -1,5 +1,7 @@
 use js_sys::Reflect;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
+use serde_wasm_bindgen::to_value;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::hash::Hash;
 use utils::log_err;
@@ -89,8 +91,10 @@ where
     }
 }
 
-impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
-    WasmType<ExternType> for VecDeque<V>
+impl<
+        V: DeserializeOwned + Serialize + Into<JsValue> + Clone,
+        ExternType: JsCast,
+    > WasmType<ExternType> for VecDeque<V>
 {
     type RustType = VecDeque<V>;
 
@@ -99,8 +103,32 @@ impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
         let js_array = js_sys::Array::new();
 
         // Add elements from the VecDeque to the JavaScript array
-        for value in rust_type.iter() {
-            js_array.push(&value.clone().into());
+        // for value in rust_type.iter() {
+        //     js_array.push(&value.clone().into());
+        // }
+
+        // Add elements from the Vec to the JavaScript object as array
+        for (index, value) in rust_type.iter().enumerate() {
+            let js_index = to_value(&(index as u32)).map_err(|e| {
+                JsError::from(JsValue::from_str(&format!(
+                    "Failed to convert index to JsValue: {:?}",
+                    e
+                )))
+            })?;
+
+            let js_value = to_value(&value.clone()).map_err(|e| {
+                JsError::from(JsValue::from_str(&format!(
+                    "Failed to convert value to JsValue: {:?}",
+                    e
+                )))
+            })?;
+
+            Reflect::set(&js_array, &js_index, &js_value).map_err(|e| {
+                JsValue::from_str(&format!(
+                    "Failed to set property on JsValue: {:?}",
+                    e
+                ))
+            })?;
         }
 
         // Attempt to cast the JsValue (Array) to the ExternType
@@ -134,8 +162,10 @@ impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
 }
 
 // TODO: dedup implementation of Vec/VecDeque
-impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
-    WasmType<ExternType> for Vec<V>
+impl<
+        V: DeserializeOwned + Serialize + Into<JsValue> + Clone,
+        ExternType: JsCast,
+    > WasmType<ExternType> for Vec<V>
 {
     type RustType = Vec<V>;
 
@@ -144,8 +174,32 @@ impl<V: DeserializeOwned + Into<JsValue> + Clone, ExternType: JsCast>
         let js_array = js_sys::Array::new();
 
         // Add elements from the Vec to the JavaScript array
-        for value in rust_type.iter() {
-            js_array.push(&value.clone().into());
+        // for value in rust_type.iter() {
+        //     js_array.push(&value.clone().into());
+        // }
+
+        // Add elements from the Vec to the JavaScript object as array
+        for (index, value) in rust_type.iter().enumerate() {
+            let js_index = to_value(&(index as u32)).map_err(|e| {
+                JsError::from(JsValue::from_str(&format!(
+                    "Failed to convert index to JsValue: {:?}",
+                    e
+                )))
+            })?;
+
+            let js_value = to_value(&value.clone()).map_err(|e| {
+                JsError::from(JsValue::from_str(&format!(
+                    "Failed to convert value to JsValue: {:?}",
+                    e
+                )))
+            })?;
+
+            Reflect::set(&js_array, &js_index, &js_value).map_err(|e| {
+                JsValue::from_str(&format!(
+                    "Failed to set property on JsValue: {:?}",
+                    e
+                ))
+            })?;
         }
 
         // Attempt to cast the JsValue (Array) to the ExternType

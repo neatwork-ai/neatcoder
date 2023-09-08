@@ -22,7 +22,7 @@ export async function startPrompt(
       saveAppStateToFile(appState);
 
       // Use the TCP client to send the command
-      logger.appendLine(`[INFO] Sending InitPrompt command via TCP Socket`);
+      logger.appendLine(`[INFO] Sending InitPrompt command`);
     } else {
       vscode.window.showErrorMessage("Unable to parse prompt.");
     }
