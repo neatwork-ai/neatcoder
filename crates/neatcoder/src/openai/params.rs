@@ -6,6 +6,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 use crate::{
     openai::utils::{BoundedFloat, Range100s},
     utils::jsvalue_to_hmap,
+    JsError,
 };
 
 use super::utils::{Bounded, Scale01, Scale100s, Scale22};
@@ -99,11 +100,11 @@ impl OpenAIParams {
         stream: bool,
         logit_bias: JsValue,
         user: Option<String>,
-    ) -> Self {
+    ) -> Result<OpenAIParams, JsValue> {
         let top_p = match top_p {
             Some(top_p) => Some(
                 BoundedFloat::new(top_p)
-                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+                    .map_err(|e| JsError::from_str(&e.to_string()))?,
             ),
             None => None,
         };
@@ -111,7 +112,7 @@ impl OpenAIParams {
         let frequency_penalty = match frequency_penalty {
             Some(frequency_penalty) => Some(
                 BoundedFloat::new(frequency_penalty)
-                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+                    .map_err(|e| JsError::from_str(&e.to_string()))?,
             ),
             None => None,
         };
@@ -119,15 +120,15 @@ impl OpenAIParams {
         let presence_penalty = match presence_penalty {
             Some(presence_penalty) => Some(
                 BoundedFloat::new(presence_penalty)
-                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+                    .map_err(|e| JsError::from_str(&e.to_string()))?,
             ),
             None => None,
         };
 
         let logit_bias =
-            jsvalue_to_hmap::<String, BoundedFloat<Range100s>>(logit_bias);
+            jsvalue_to_hmap::<String, BoundedFloat<Range100s>>(logit_bias)?;
 
-        Self {
+        Ok(Self {
             model,
             temperature,
             max_tokens,
@@ -138,7 +139,7 @@ impl OpenAIParams {
             stream,
             logit_bias,
             user,
-        }
+        })
     }
 
     pub fn empty(model: OpenAIModels) -> Self {
@@ -181,20 +182,22 @@ impl OpenAIParams {
     }
 
     #[wasm_bindgen(js_name = logicBias)]
-    pub fn logit_bias(mut self, logit_bias: JsValue) -> Self {
-        let mut logit_bias = jsvalue_to_hmap::<String, f64>(logit_bias);
+    pub fn logit_bias(
+        mut self,
+        logit_bias: JsValue,
+    ) -> Result<OpenAIParams, JsError> {
+        let mut logit_bias = jsvalue_to_hmap::<String, f64>(logit_bias)?;
 
         let logit_bias = logit_bias
             .drain()
             .map(|(key, val)| Ok((key, Scale100s::new(val)?)))
             .collect::<Result<HashMap<String, Scale100s>>>()
-            .expect("Invalid logit biases");
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         self.logit_bias = logit_bias;
-        self
+        Ok(self)
     }
 
-    // TODO: Add validation
     pub fn user(mut self, user: String) -> Self {
         self.user = Some(user);
         self

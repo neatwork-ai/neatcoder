@@ -52,8 +52,14 @@ pub async fn stream_code(
         return Err(anyhow!("No project scaffold config available.."));
     }
 
-    let project_scaffold = app_state.scaffold.as_ref().unwrap();
-    let project_description = app_state.specs.as_ref().unwrap();
+    let project_scaffold = app_state
+        .scaffold
+        .as_ref()
+        .ok_or_else(|| anyhow!("No folder scaffold config available.."))?;
+
+    let project_description = app_state.specs.as_ref().ok_or_else(|| {
+        anyhow!("It seems that the the field `specs` is missing..")
+    })?;
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
@@ -73,7 +79,9 @@ pub async fn stream_code(
     });
 
     for file in codebase.keys() {
-        let code = codebase.get(file).unwrap();
+        let code = codebase
+            .get(file)
+            .ok_or_else(|| anyhow!("Unable to find fild {:?}", file))?;
 
         prompts.push(OpenAIMsg {
             role: GptRole::User,

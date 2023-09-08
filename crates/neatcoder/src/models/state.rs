@@ -373,15 +373,13 @@ impl AppState {
         schema: SchemaFile,
     ) -> Result<()> {
         if !self.interfaces.contains_key(&interface_name) {
-            // TODO: We need proper error escallation and communication with the
-            // client
-            eprintln!("[ERROR] The interface does not exist. Please create an interface first.");
-
-            return Err(anyhow!("Interface does not exist"));
+            return Err(anyhow!("[ERROR] The interface does not exist. Please create an interface first."));
         }
 
-        // Safe to unwrap due to previous check
-        let interface = self.interfaces.get_mut(&interface_name).unwrap();
+        // Safe to call `expect` due to previous check
+        let interface = self.interfaces.get_mut(&interface_name).expect(
+            "Unable to locate the interface. This error should not occur.",
+        );
 
         // Replaces the existing interface if any
         interface.insert_schema(schema_name, schema);
@@ -403,7 +401,9 @@ impl AppState {
         }
 
         // Safe to unwrap due to previous check
-        let interface = self.interfaces.get_mut(interface_name).unwrap();
+        let interface = self.interfaces.get_mut(interface_name).expect(
+            "Unable to locate the interface. This error should not occur.",
+        );
 
         // Replaces the existing interface if any
         interface.remove_schema(schema_name);

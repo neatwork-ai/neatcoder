@@ -24,7 +24,14 @@ pub async fn write_json(
         let chat = client
             .chat_raw(request_callback, ai_params, prompts, &[], &[])
             .await?;
-        let answer = chat.choices.first().unwrap().message.content.clone();
+
+        let answer = chat
+            .choices
+            .first()
+            .ok_or_else(|| anyhow!("LLM Respose seems to be empty :("))?
+            .message
+            .content
+            .clone();
 
         match answer.as_str().strip_json() {
             Ok(result) => {
@@ -48,10 +55,9 @@ pub async fn write_json(
 // TODO: This function is on life support and it will be removed in the next serde generalisatoin cycles.
 pub fn jsvalue_to_hmap<K: DeserializeOwned + Eq + Hash, T: DeserializeOwned>(
     value: JsValue,
-) -> HashMap<K, T> {
+) -> Result<HashMap<K, T>, JsError> {
     serde_wasm_bindgen::from_value(value)
         .map_err(|e| JsError::from_str(&e.to_string()))
-        .unwrap()
 }
 
 pub fn log(msg: &str) {

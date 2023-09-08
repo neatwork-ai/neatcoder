@@ -29,13 +29,14 @@ pub async fn build_execution_plan(
         log("[INFO] No Interfaces detected. Proceeding...");
     }
 
-    let api_description = &app_state.specs.as_ref().unwrap();
+    let api_description = &app_state.specs.as_ref().ok_or_else(|| {
+        anyhow!("It seems that the the field `specs` is missing..")
+    })?;
 
-    if app_state.scaffold.is_none() {
-        return Err(anyhow!("No folder scaffold config available.."));
-    }
-
-    let project_scaffold = app_state.scaffold.as_ref().unwrap();
+    let project_scaffold = app_state
+        .scaffold
+        .as_ref()
+        .ok_or_else(|| anyhow!("No folder scaffold config available.."))?;
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,

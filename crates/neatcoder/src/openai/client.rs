@@ -49,8 +49,16 @@ impl OpenAI {
         let chat = self
             .chat_raw(request_callback, ai_params, msgs, funcs, stop_seq)
             .await?;
+
         log("[DEBUG] Got answer.");
-        let answer = chat.choices.first().unwrap().message.content.as_str();
+
+        let answer = chat
+            .choices
+            .first()
+            .ok_or_else(|| anyhow!("LLM Respose seems to be empty :("))?
+            .message
+            .content
+            .as_str();
 
         Ok(String::from(answer))
     }
