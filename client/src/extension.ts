@@ -23,6 +23,7 @@ import fetch from "node-fetch";
 import { Headers, Request } from "node-fetch";
 import { AppStateManager } from "./appStateManager";
 import { getOrSetApiKey } from "./utils";
+import { removeJob } from "./commands/removeJob";
 (global as any).fetch = fetch;
 (global as any).Headers = Headers;
 (global as any).Request = Request;
@@ -126,6 +127,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
+      "extension.removeSchema",
+      (item: InterfaceItem) => {
+        removeSchema(item);
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
       "extension.startJob",
       (taskView: TaskView) => {
         startJob(taskView, llmClient, llmParams, appManager);
@@ -135,9 +145,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "extension.removeSchema",
-      (item: InterfaceItem) => {
-        removeSchema(item);
+      "extension.removeJob",
+      (taskView: TaskView) => {
+        removeJob(taskView, appManager);
       }
     )
   );

@@ -59,6 +59,14 @@ export class AppStateManager {
     saveAppStateToFile(this.appState);
   }
 
+  public removeTask(taskId: number) {
+    this.appState.removeTodo(taskId);
+    saveAppStateToFile(this.appState);
+
+    // Update providers
+    this.refresh();
+  }
+
   public async startJob(
     taskId: number,
     llmClient: wasm.OpenAI,
@@ -68,6 +76,8 @@ export class AppStateManager {
     const taskType = task.taskType();
     const taskParams = task.taskParams;
 
+    this.refresh();
+
     this.logger.appendLine(`[DEBUG] Task TYPE ${taskType}`);
     this.logger.appendLine(`[DEBUG] Task Params ${taskParams}`);
 
@@ -75,6 +85,7 @@ export class AppStateManager {
       window.showErrorMessage(`[ERROR] Task Type is undefined.`);
     }
 
+    // The pattern matching should be offloaded to Rust
     try {
       if (taskType === wasm.TaskType.ScaffoldProject) {
         await this.appState.scaffoldProject(
@@ -142,6 +153,10 @@ export class AppStateManager {
           }
         );
       }
+
+      this.appState.addDone(task);
+      saveAppStateToFile(this.appState);
+      this.refresh();
     } catch (error) {
       console.error("Error while performing Task:", error);
       throw error;

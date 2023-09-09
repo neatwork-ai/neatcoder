@@ -191,6 +191,13 @@ impl AppState {
         self.task_pool.pop_todo(task_id)
     }
 
+    #[wasm_bindgen(js_name = removeTodo)]
+    pub fn remove_todo(&mut self, task_id: usize) -> Result<(), JsError> {
+        self.task_pool.pop_todo(task_id)?;
+
+        Ok(())
+    }
+
     #[wasm_bindgen(js_name = addDone)]
     pub fn add_done(&mut self, task: Task) {
         self.task_pool.add_done(task)
@@ -266,15 +273,10 @@ impl AppState {
 
         self.specs = Some(task_params.specs.clone());
 
-        let scaffold_json = scaffold_project(
-            client,
-            ai_params,
-            task_params,
-            self,
-            request_callback,
-        )
-        .await
-        .map_err(|e| JsError::from_str(&e.to_string()))?;
+        let scaffold_json =
+            scaffold_project(client, ai_params, task_params, request_callback)
+                .await
+                .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         self.scaffold = Some(scaffold_json.to_string());
 

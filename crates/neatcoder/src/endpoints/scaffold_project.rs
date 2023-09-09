@@ -1,11 +1,10 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use js_sys::{Function, JsString};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-    models::state::AppState,
     openai::{
         client::OpenAI,
         msg::{GptRole, OpenAIMsg},
@@ -38,7 +37,6 @@ pub async fn scaffold_project(
     client: &OpenAI,
     ai_params: &OpenAIParams,
     client_params: &ScaffoldParams,
-    app_state: &AppState,
     request_callback: &Function,
 ) -> Result<Value> {
     let mut prompts = Vec::new();
@@ -49,10 +47,6 @@ pub async fn scaffold_project(
             "You are a software engineer who is specialised in building APIs in Rust.",
         ),
     });
-
-    if app_state.scaffold.is_some() {
-        return Err(anyhow!("Scaffold already exists. Skipping..."));
-    }
 
     let main_prompt = format!("
 You are a Rust engineer tasked with creating an API in Rust based on the following project description:\n{}\n

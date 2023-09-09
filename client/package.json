@@ -56,6 +56,11 @@
         "icon": "$(remove)"
       },
       {
+        "command": "extension.removeJob",
+        "title": "Remove Job",
+        "icon": "$(trash)"
+      },
+      {
         "command": "extension.debugAppState",
         "title": "Print AppState"
       }
@@ -91,6 +96,11 @@
           "command": "extension.startJob",
           "when": "view == jobQueueView",
           "group": "navigation@1"
+        },
+        {
+          "command": "extension.removeJob",
+          "when": "view == jobQueueView",
+          "group": "navigation@4"
         },
         {
           "command": "extension.addDatastore",
