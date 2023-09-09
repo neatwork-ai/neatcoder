@@ -7,15 +7,9 @@ export async function startJob(
   taskView: TaskView,
   llmClient: wasm.OpenAI,
   llmParams: wasm.OpenAIParams,
-  appManager: AppStateManager,
-  logger: OutputChannel
+  appManager: AppStateManager
 ): Promise<void> {
   const taskId = taskView.task.id;
 
-  await appManager.startJob(
-    taskId,
-    taskView.task.taskParams,
-    llmClient,
-    llmParams
-  );
+  await appManager.startJob(taskId, llmClient, llmParams);
 }

@@ -43,6 +43,19 @@ impl TaskPool {
         task_id
     }
 
+    pub fn pop_todo(&mut self, task_id: usize) -> Result<Task, JsError> {
+        self.todo.remove(task_id).ok_or_else(|| {
+            JsError::from_str(&format!(
+                "Failed to retrieve task id: {:?}",
+                task_id
+            ))
+        })
+    }
+
+    pub fn add_done(&mut self, task: Task) {
+        self.todo.push_back(task);
+    }
+
     pub fn finish_task_by_id(&mut self, task_id: usize) {
         let mut task = self
             .todo

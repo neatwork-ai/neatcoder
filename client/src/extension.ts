@@ -125,7 +125,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.startJob",
       (taskView: TaskView) => {
-        startJob(taskView, llmClient, llmParams, appManager, logger);
+        startJob(taskView, llmClient, llmParams, appManager);
       }
     )
   );

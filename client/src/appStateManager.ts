@@ -61,51 +61,15 @@ export class AppStateManager {
 
   public async startJob(
     taskId: number,
-    taskParams0: wasm.TaskParams,
     llmClient: wasm.OpenAI,
     llmParams: wasm.OpenAIParams
   ): Promise<void> {
-    // There is a weird bug here, no matter what we do this will
-    // always return a string instead of a number. It's not the problem of the getter
-    // function however because it works just fine bellow...
-    const taskType0 = taskParams0.taskType;
+    const task = this.appState.popTodo(taskId);
+    const taskType = task.taskType();
+    const taskParams = task.taskParams;
 
-    this.logger.appendLine(`[DEBUG] Task TYPE ${taskType0}`);
-
-    this.logger.appendLine(`[DEBUG] Task TYPE ${wasm.TaskType.CodeGen}`);
-
-    this.logger.appendLine(
-      `[DEBUG] Here are the TaskParams ${JSON.stringify(taskParams0, null, 4)}`
-    );
-
-    this.logger.appendLine(
-      `[DEBUG] Here are the TaskParams INNER ${JSON.stringify(
-        taskParams0.inner,
-        null,
-        4
-      )}`
-    );
-
-    this.logger.appendLine(
-      `[DEBUG] Here are the TaskParams STREAM ${JSON.stringify(
-        taskParams0.inner.streamCode,
-        null,
-        4
-      )}`
-    );
-
-    const inner = taskParams0.inner;
-
-    const taskParamsNew = new wasm.TaskParams(2, inner); // The 2 is hardcoded here because of the bug mentioned above
-    const taskType = taskParamsNew.taskType; // this works just fine, it returns a number
-
-    this.logger.appendLine(
-      `[DEBUG] Here are the TaskParams AFTER ${JSON.stringify(
-        taskParamsNew,
-        null,
-        4
-      )}`
-    );
+    this.logger.appendLine(`[DEBUG] Task TYPE ${taskType}`);
+    this.logger.appendLine(`[DEBUG] Task Params ${taskParams}`);
 
     if (taskType === undefined) {
       window.showErrorMessage(`[ERROR] Task Type is undefined.`);
@@ -116,7 +80,7 @@ export class AppStateManager {
         await this.appState.scaffoldProject(
           llmClient,
           llmParams,
-          taskParamsNew,
+          taskParams,
           makeRequest
         );
       }
@@ -140,14 +104,14 @@ export class AppStateManager {
 
         this.logger.appendLine(
           `[DEBUG] Here are the params ${JSON.stringify(
-            taskParamsNew.streamCode,
+            taskParams.streamCode,
             null,
             4
           )}`
         );
 
         // If a new file should be created (or overwritten)
-        const filePath: string = taskParamsNew.streamCode!.filename;
+        const filePath: string = taskParams.streamCode!.filename;
         const tokenWriter = fs.createWriteStream(filePath, { flags: "w" });
 
         const directoryPath = path.dirname(filePath);
@@ -171,7 +135,7 @@ export class AppStateManager {
         await this.appState.streamCode(
           llmClient,
           llmParams,
-          taskParamsNew,
+          taskParams,
           codebase,
           (token: string) => {
             streamCode(token, activeTextDocument);

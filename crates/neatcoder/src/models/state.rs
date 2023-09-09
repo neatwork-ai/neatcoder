@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
+use crate::models::task::Task;
 use crate::{
-    JsError, WasmType,
     endpoints::{
         execution_plan::{build_execution_plan, Files},
         scaffold_project::scaffold_project,
@@ -14,6 +14,7 @@ use crate::{
     },
     models::task_params::{TaskParams, TaskType},
     openai::{client::OpenAI, params::OpenAIParams},
+    JsError, WasmType,
 };
 
 use super::{
@@ -185,9 +186,14 @@ impl AppState {
         Vec::to_extern(tasks)
     }
 
-    #[wasm_bindgen(js_name = finishTaskById)]
-    pub fn finish_task_by_id(&mut self, task_id: usize) {
-        self.task_pool.finish_task_by_id(task_id);
+    #[wasm_bindgen(js_name = popTodo)]
+    pub fn pop_todo(&mut self, task_id: usize) -> Result<Task, JsError> {
+        self.task_pool.pop_todo(task_id)
+    }
+
+    #[wasm_bindgen(js_name = addDone)]
+    pub fn add_done(&mut self, task: Task) {
+        self.task_pool.add_done(task)
     }
 
     #[wasm_bindgen(setter = setInterfaces)]
