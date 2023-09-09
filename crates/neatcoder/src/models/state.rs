@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::{
+    JsError, WasmType,
     endpoints::{
         execution_plan::{build_execution_plan, Files},
         scaffold_project::scaffold_project,
@@ -14,7 +15,6 @@ use crate::{
     models::task_params::{TaskParams, TaskType},
     openai::{client::OpenAI, params::OpenAIParams},
 };
-use crate::{JsError, WasmType};
 
 use super::{
     interfaces::{Interface, SchemaFile},
@@ -42,8 +42,6 @@ use super::{
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AppState {
-    #[serde(skip)]
-    listeners: Vec<js_sys::Function>,
     /// Initial prompt containing the specifications of the project
     pub(crate) specs: Option<String>,
     /// JSON String containing the File System Scaffold
@@ -101,7 +99,6 @@ impl AppState {
     ) -> Result<AppState, JsValue> {
         let interfaces = BTreeMap::from_extern(interfaces)?;
         Ok(Self {
-            listeners: Vec::new(),
             specs,
             scaffold,
             interfaces,
@@ -127,16 +124,11 @@ impl AppState {
 
     pub fn empty() -> Self {
         Self {
-            listeners: Vec::new(),
             specs: None,
             scaffold: None,
             interfaces: BTreeMap::new(),
             task_pool: TaskPool::empty(),
         }
-    }
-
-    pub fn subscribe(&mut self, callback: &js_sys::Function) {
-        self.listeners.push(callback.clone());
     }
 
     #[wasm_bindgen(getter)]
@@ -211,8 +203,6 @@ impl AppState {
         let interfaces = BTreeMap::from_extern(interfaces)?;
         self.interfaces = interfaces;
 
-        self.trigger_callbacks();
-
         Ok(())
     }
 
@@ -223,8 +213,6 @@ impl AppState {
         schema_name: String,
         schema: SchemaFile,
     ) -> Result<(), JsError> {
-        self.trigger_callbacks();
-
         self.add_schema_(interface_name, schema_name, schema)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -235,8 +223,6 @@ impl AppState {
         interface_name: &str,
         schema_name: &str,
     ) -> Result<(), JsError> {
-        self.trigger_callbacks();
-
         self.remove_schema_(interface_name, schema_name)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -246,8 +232,6 @@ impl AppState {
         &mut self,
         new_interface: Interface,
     ) -> Result<(), JsError> {
-        self.trigger_callbacks();
-
         self.add_interface_(new_interface)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -257,8 +241,6 @@ impl AppState {
         &mut self,
         interface_name: &str,
     ) -> Result<(), JsError> {
-        self.trigger_callbacks();
-
         self.remove_interface_(interface_name)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -290,16 +272,6 @@ impl AppState {
 
         self.scaffold = Some(scaffold_json.to_string());
 
-        // self.trigger_callbacks();
-
-        let listeners = self.listeners.clone();
-
-        // Notify listeners
-        for callback in listeners {
-            let this = JsValue::NULL;
-            let _ = callback.call0(&this);
-        }
-
         Ok(())
     }
 
@@ -330,8 +302,6 @@ impl AppState {
 
             self.task_pool.add_todo(&format!("{}", file), task_params);
         }
-
-        self.trigger_callbacks();
 
         Ok(())
     }
@@ -368,7 +338,6 @@ impl AppState {
         task_pool: TaskPool,
     ) -> Self {
         Self {
-            listeners: Vec::new(),
             specs,
             scaffold,
             interfaces,
@@ -450,21 +419,6 @@ impl AppState {
         self.interfaces.remove(interface_name);
 
         Ok(())
-    }
-}
-
-impl AppState {
-    fn trigger_callbacks(&self) {
-        // Allows for droping the `&self` reference before
-        // executing the callback functions, thus avoiding
-        // reference recursion
-        let listeners = self.listeners.clone();
-
-        // Notify listeners
-        for callback in listeners {
-            let this = JsValue::NULL;
-            let _ = callback.call0(&this);
-        }
     }
 }
 

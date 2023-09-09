@@ -12,8 +12,6 @@ export async function startJob(
 ): Promise<void> {
   const taskId = taskView.task.id;
 
-  logger.appendLine(`[INFO] Sending StartJob command for uuid ${taskId}`);
-
   await appManager.startJob(
     taskId,
     taskView.task.taskParams,
