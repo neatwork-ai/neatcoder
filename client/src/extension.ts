@@ -22,6 +22,7 @@ import * as wasm from "./../pkg/neatcoder";
 import fetch from "node-fetch";
 import { Headers, Request } from "node-fetch";
 import { AppStateManager } from "./appStateManager";
+import { getOrSetApiKey } from "./utils";
 (global as any).fetch = fetch;
 (global as any).Headers = Headers;
 (global as any).Request = Request;
@@ -38,6 +39,8 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     return;
   }
+
+  getOrSetApiKey();
 
   // Create the output channel for logging
   let logger = vscode.window.createOutputChannel("Neatcoder");

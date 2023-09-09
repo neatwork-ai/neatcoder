@@ -125,7 +125,17 @@
           "command": "extension.debugAppState"
         }
       ]
-    }
+    },
+    "configuration": {
+      "title": "Neatcoder Configuration",
+      "properties": {
+          "extension.apiKey": {
+              "type": "string",
+              "default": "",
+              "description": "The API key for OpenAI."
+          }
+      }
+  }
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",

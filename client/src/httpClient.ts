@@ -1,16 +1,16 @@
 import fetch from "node-fetch";
+import { getOrSetApiKey } from "./utils";
 const EventSource = require("eventsource");
 
-const OPENAI_API_KEY = "TODO";
-
 export async function makeRequest(body: string): Promise<object> {
+  const apiKey = getOrSetApiKey();
+
   try {
-    // console.log("JS BoDY: " + body);
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body,
     });
@@ -27,11 +27,13 @@ export async function makeRequest(body: string): Promise<object> {
 }
 
 export function streamRequest() {
+  const apiKey = getOrSetApiKey();
+
   try {
     const url = "https://api.openai.com/v1/chat/completions";
     const es = new EventSource(url, {
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
     });
 

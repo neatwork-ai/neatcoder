@@ -228,3 +228,29 @@ export function getFilename(filepath: string): string {
   const parts = filepath.split(/[/\\]/);
   return parts[parts.length - 1];
 }
+
+export function getOrSetApiKey(): any {
+  let config = vscode.workspace.getConfiguration("extension");
+  let apiKey = config.get("apiKey");
+
+  if (!apiKey) {
+    vscode.window
+      .showInputBox({
+        prompt: "Please enter your API key",
+        ignoreFocusOut: true,
+      })
+      .then((value) => {
+        if (value) {
+          config.update("apiKey", value, vscode.ConfigurationTarget.Global);
+          vscode.window.showInformationMessage("API key saved!");
+        } else {
+          // Handle the case where the input box was dismissed without entering a value
+          vscode.window.showErrorMessage(
+            "API key is required to use this extension."
+          );
+        }
+      });
+  }
+
+  return apiKey;
+}
