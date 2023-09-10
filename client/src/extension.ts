@@ -17,17 +17,11 @@ import InterfaceItem from "./providers/interfaceItem";
 import { TaskView } from "./models/task";
 import { addInterface } from "./commands/interfaces/addInterface";
 import * as wasm from "./../pkg/neatcoder";
-
-// TODO: Remove
-import fetch from "node-fetch";
-import { Headers, Request } from "node-fetch";
 import { AppStateManager } from "./appStateManager";
 import { getOrSetApiKey } from "./utils";
 import { removeJob } from "./commands/removeJob";
-(global as any).fetch = fetch;
-(global as any).Headers = Headers;
-(global as any).Request = Request;
-//
+import { removeAllJobs } from "./commands/removeAllJobs";
+import { initStatusBar } from "./statusBar";
 
 let configWatcher: fs.FSWatcher | undefined;
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
@@ -41,6 +35,7 @@ export async function activate(context: vscode.ExtensionContext) {
     return;
   }
 
+  initStatusBar(context);
   getOrSetApiKey();
 
   // Create the output channel for logging
@@ -95,19 +90,19 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.startPrompt", () => {
+    vscode.commands.registerCommand("extension.startPrompt", async () => {
       startPrompt(llmClient, llmParams, appManager, logger);
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addDatastore", () => {
+    vscode.commands.registerCommand("extension.addDatastore", async () => {
       addInterface(wasm.InterfaceType.Database, interfacesProvider, logger);
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addApi", () => {
+    vscode.commands.registerCommand("extension.addApi", async () => {
       addInterface(wasm.InterfaceType.Api, interfacesProvider, logger);
     })
   );
@@ -150,6 +145,12 @@ export async function activate(context: vscode.ExtensionContext) {
         removeJob(taskView, appManager);
       }
     )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("extension.removeAllJobs", () => {
+      removeAllJobs(appManager);
+    })
   );
 }
 

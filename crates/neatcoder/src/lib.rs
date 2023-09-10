@@ -8,6 +8,7 @@ use utils::log_err;
 use wasm_bindgen::{JsCast, JsValue};
 
 pub mod conf;
+pub mod consts;
 pub mod endpoints;
 pub mod models;
 pub mod openai;

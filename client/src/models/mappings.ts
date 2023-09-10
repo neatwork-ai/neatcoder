@@ -36,7 +36,7 @@ export const dbList: string[] = [
   "MarkLogic",
 ];
 
-export const apiList = [
+export const apiList: string[] = [
   "RESTful API",
   "SOAP API",
   "RPC API",
@@ -51,4 +51,28 @@ export const apiList = [
   "TCP Socket",
   "Library IDL",
   "MQTT",
+];
+export const langList: string[] = [
+  "Python",
+  "Java",
+  "JavaScript",
+  "TypeScript",
+  "Ruby",
+  "PHP",
+  "C",
+  "C++",
+  "C#",
+  "Objective-C",
+  "Swift",
+  "Go",
+  "Rust",
+  "Perl",
+  "Shell",
+  "Scala",
+  "Kotlin",
+  "Lua",
+  "Haskell",
+  "HTML",
+  "MATLAB",
+  "R",
 ];

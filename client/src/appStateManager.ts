@@ -39,6 +39,11 @@ export class AppStateManager {
     return this.appState;
   }
 
+  public addLanguage(language: wasm.Language) {
+    this.appState.setLanguage(language);
+    saveAppStateToFile(this.appState);
+  }
+
   public addSchema(interfaceName: string, schemaName: string, schema: string) {
     this.appState.addSchema(interfaceName, schemaName, schema);
     saveAppStateToFile(this.appState);
@@ -61,6 +66,14 @@ export class AppStateManager {
 
   public removeTask(taskId: number) {
     this.appState.removeTodo(taskId);
+    saveAppStateToFile(this.appState);
+
+    // Update providers
+    this.refresh();
+  }
+
+  public removeAllTasks() {
+    this.appState.removeAllTodos();
     saveAppStateToFile(this.appState);
 
     // Update providers
@@ -182,8 +195,6 @@ export class AppStateManager {
   private handleUpdateTaskPool(): void {
     try {
       const tasksTodo: wasm.Task[] = this.appState.getTodoTasks();
-
-      window.showInformationMessage(`[DEBUG] Here are the TODOs ${tasksTodo}`);
 
       // Update the local task list
       this.taskPoolProvider.tasks = toTaskView(tasksTodo);

@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
 import * as wasm from "./../../pkg/neatcoder";
 import { AppStateManager } from "../appStateManager";
+import { addLanguage } from "./addLanguage";
+import { startLoading, stopLoading } from "../statusBar";
 
 export async function startPrompt(
   llmClient: wasm.OpenAI,
@@ -9,6 +11,13 @@ export async function startPrompt(
   logger: vscode.OutputChannel
 ): Promise<void> {
   {
+    try {
+      await addLanguage(appManager, logger);
+    } catch (error) {
+      vscode.window.showErrorMessage(`Error: ${error}`);
+      throw error;
+    }
+
     const userInput = await vscode.window.showInputBox({
       prompt: "Input your project description",
       value:
@@ -16,10 +25,17 @@ export async function startPrompt(
     });
 
     if (userInput !== undefined) {
+      startLoading();
       await appManager.startPrompt(llmClient, llmParams, userInput);
+      stopLoading();
 
-      // Use the TCP client to send the command
-      logger.appendLine(`[INFO] Sending InitPrompt command`);
+      vscode.window.showInformationMessage(
+        `The project scaffold & execution plan is now available.`
+      );
+
+      vscode.commands.executeCommand("workbench.action.focusView", {
+        id: "jobQueueView",
+      });
     } else {
       vscode.window.showErrorMessage("Unable to parse prompt.");
     }

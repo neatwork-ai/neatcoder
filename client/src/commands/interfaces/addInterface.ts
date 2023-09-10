@@ -11,11 +11,11 @@ import { InterfacesProvider } from "../../providers/interfaces";
  *
  * @returns {void}
  */
-export function addInterface(
+export async function addInterface(
   interfaceType: wasm.InterfaceType,
   interfacesProvider: InterfacesProvider,
   logger: vscode.OutputChannel
-): void {
+): Promise<void> {
   {
     const list = getList(interfaceType);
     const placeholderName = getPlaceholderName(interfaceType);
@@ -44,7 +44,7 @@ export function addInterface(
     });
 
     // Runs once the user proceeds by click enter or left-click with the mouse
-    quickPick.onDidAccept(() => {
+    quickPick.onDidAccept(async () => {
       let selectedType: string;
 
       if (
@@ -69,7 +69,7 @@ export function addInterface(
 
       // Convert the string into DbType
       logger.appendLine(`[INFO] Selected Datastore type ${selectedType}`);
-      handleSelection(
+      await handleSelection(
         placeholderName,
         interfaceType,
         selectedType,

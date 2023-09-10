@@ -58,6 +58,11 @@
       {
         "command": "extension.removeJob",
         "title": "Remove Job",
+        "icon": "$(remove)"
+      },
+      {
+        "command": "extension.removeAllJobs",
+        "title": "Remove Job",
         "icon": "$(trash)"
       },
       {
@@ -98,9 +103,9 @@
           "group": "navigation@1"
         },
         {
-          "command": "extension.removeJob",
+          "command": "extension.removeAllJobs",
           "when": "view == jobQueueView",
-          "group": "navigation@4"
+          "group": "navigation@2"
         },
         {
           "command": "extension.addDatastore",
@@ -127,6 +132,11 @@
         {
           "command": "extension.removeSchema",
           "when": "view == interfacesView && viewItem == fileItem",
+          "group": "inline"
+        },
+        {
+          "command": "extension.removeJob",
+          "when": "view == jobQueueView",
           "group": "inline"
         }
       ],

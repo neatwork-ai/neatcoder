@@ -24,9 +24,7 @@ export function readAppState(): wasm.AppState {
 
     return appState;
   } catch (e) {
-    vscode.window.showInformationMessage(
-      `Failed to Retrieve cached data: ${e}`
-    );
+    vscode.window.showErrorMessage(`Failed to Retrieve cached data: ${e}`);
     throw e;
   }
 }

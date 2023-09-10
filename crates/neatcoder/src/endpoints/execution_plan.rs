@@ -5,10 +5,12 @@ use serde_json::{from_value, Value};
 use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
+    path::Path,
 };
 
 use crate::{
-    models::{interfaces::AsContext, state::AppState},
+    consts::{CONFIG_EXTENSIONS, CONFIG_FILES},
+    models::{interfaces::AsContext, language::Language, state::AppState},
     openai::{
         client::OpenAI,
         msg::{GptRole, OpenAIMsg},
@@ -18,6 +20,7 @@ use crate::{
 };
 
 pub async fn build_execution_plan(
+    language: &Language,
     client: &OpenAI,
     params: &OpenAIParams,
     app_state: &AppState,
@@ -40,8 +43,8 @@ pub async fn build_execution_plan(
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
-        content: String::from(
-            "You are a software engineer who is specialised in building APIs in Rust.",
+        content: format!(
+            "You are a software engineer who is specialised in building software in {}.", language.name()
         ),
     });
 
@@ -55,8 +58,9 @@ pub async fn build_execution_plan(
         content: api_description.to_string(),
     });
 
+    // TODO: Consider adding the specs here...
     let main_prompt = format!("
-You are a Rust engineer tasked with creating an API in Rust.
+You are a software engineer tasked with creating a project in {}.
 You are assigned to build the API based on the project folder structure. Your current task is to order the files in accordance to the order of work that best fits the file dependencies.
 The project scaffold is the following:\n{}\n
 
@@ -66,7 +70,7 @@ Use the following schema:
 ```json
 {{'order': [...]}}
 ```
-", project_scaffold);
+", language.name(), project_scaffold);
 
     prompts.push(OpenAIMsg {
         role: GptRole::User,
@@ -107,7 +111,14 @@ impl DerefMut for Files {
 }
 
 impl Files {
-    pub fn from_schedule(job_schedule: &Value) -> Result<Self> {
+    pub fn new(files: VecDeque<String>) -> Files {
+        Files(files)
+    }
+
+    pub fn from_schedule(
+        job_schedule: &Value,
+        language: &Language,
+    ) -> Result<Self> {
         let mut files: Files =
             match from_value::<Files>(job_schedule["order"].clone()) {
                 Ok(files) => files,
@@ -119,15 +130,53 @@ impl Files {
                 }
             };
 
-        // Filter out files that are not rust files
-        files.retain(|file| {
-            if file.ends_with(".rs") {
-                true
-            } else {
-                log(&format!("[WARN] Filtered out: {}", file));
-                false
+        // Remove 'src/' prefix if it exists
+        for file in &mut files.0 {
+            if file.starts_with('/') {
+                *file = file.trim_start_matches('/').to_string();
             }
+
+            if file.starts_with("src/") {
+                *file = file.trim_start_matches("src/").to_string();
+            }
+        }
+
+        // Filter out files that are configuration files, both by extension name
+        // or by filename if no extension exists
+        files.retain(|file| {
+            let path = Path::new(file);
+            if file.ends_with('/') {
+                return false;
+            }
+
+            if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+                if CONFIG_FILES.contains(&file_name) {
+                    return false;
+                }
+            }
+            if let Some(extension) =
+                path.extension().and_then(|ext| ext.to_str())
+            {
+                if CONFIG_EXTENSIONS.contains(&extension) {
+                    return false;
+                }
+            }
+            true
         });
+
+        if !language.is_custom() {
+            let default_extension = language.language.default_extension();
+
+            // If GPT forgot to add the file extensions we add them here..
+            if let Some(default_ext) = default_extension {
+                for file in &mut files.0 {
+                    let path = Path::new(file);
+                    if path.extension().is_none() {
+                        file.push_str(default_ext);
+                    }
+                }
+            }
+        }
 
         Ok(files)
     }
