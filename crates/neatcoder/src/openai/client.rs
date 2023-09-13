@@ -84,14 +84,14 @@ impl OpenAI {
             .map_err(|e| {
                 anyhow!("Error processing request callback promise: {:?}", e)
             })?;
-        log("[DEBUG] Resolving promise...");
+        log("[INFO] Prompting the LLM...");
         let res_js_value: JsValue =
             JsFuture::from(js_promise).await.map_err(|e| {
                 anyhow!("Error processing request callback result: {:?}", e)
             })?;
 
-        log("[DEBUG] Promise resolved...");
-        log(&format!("Correct Request body: {:?}", res_js_value));
+        log("[INFO] Receive response from LLM..");
+        log(&format!("LLM response body: {:?}", res_js_value));
 
         let body: Result<Body, _> = from_value(res_js_value);
 
@@ -103,38 +103,56 @@ impl OpenAI {
         }
     }
 
-    pub async fn chat_stream(
+    pub fn request_stream(
         &self,
-        _job: &OpenAIParams,
-        _msgs: &[&OpenAIMsg],
-        _funcs: &[&String],
-        _stop_seq: &[String],
-    ) -> Result<()> {
-        // ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
-        // let client = Client::new();
+        ai_params: impl Deref<Target = OpenAIParams>,
+        msgs: &[&OpenAIMsg],
+        funcs: &[&String],
+        stop_seq: &[String],
+    ) -> Result<String> {
+        let req_body =
+            self.request_body(ai_params, msgs, funcs, stop_seq, true)?;
 
-        // let req_body = self.request_body(job, msgs, funcs, stop_seq, true)?;
+        let body_json = serde_json::to_string(&req_body)?;
 
-        // let response = client
-        //     .post("https://api.openai.com/v1/chat/completions")
-        //     .header(
-        //         "Authorization",
-        //         format!(
-        //             "Bearer {}",
-        //             self.api_key.as_ref().expect("No API Keys provided")
-        //         ),
-        //     )
-        //     .header("Content-Type", "application/json")
-        //     .json(&req_body)
-        //     .send()
-        //     .await?;
-
-        // let stream = response.bytes_stream();
-
-        todo!();
-
-        // return Ok(stream);
+        Ok(body_json)
     }
+
+    // TODO:
+    // pub async fn chat_stream(
+    //     &self,
+    //     request_callback: &Function,
+    //     ai_params: impl Deref<Target = OpenAIParams>,
+    //     msgs: &[&OpenAIMsg],
+    //     funcs: &[&String],
+    //     stop_seq: &[String],
+    // ) -> Result<()> {
+    //     // ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
+    //     let req_body =
+    //         self.request_body(ai_params, msgs, funcs, stop_seq, false)?;
+
+    //     let body_json = serde_json::to_string(&req_body)?;
+
+    //     // let response = client
+    //     //     .post("https://api.openai.com/v1/chat/completions")
+    //     //     .header(
+    //     //         "Authorization",
+    //     //         format!(
+    //     //             "Bearer {}",
+    //     //             self.api_key.as_ref().expect("No API Keys provided")
+    //     //         ),
+    //     //     )
+    //     //     .header("Content-Type", "application/json")
+    //     //     .json(&req_body)
+    //     //     .send()
+    //     //     .await?;
+
+    //     // let stream = response.bytes_stream();
+
+    //     todo!();
+
+    //     // return Ok(stream);
+    // }
 
     pub fn request_body(
         &self,

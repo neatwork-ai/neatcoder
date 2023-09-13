@@ -15,16 +15,12 @@ export function addLanguage(
       const quickPick = vscode.window.createQuickPick();
       quickPick.items = list.map((label) => ({ label }));
 
-      logger.appendLine(`[DEBUG] A`);
-
       quickPick.placeholder = `Select or type a ${placeholderName} type;`;
       quickPick.matchOnDescription = true;
       quickPick.matchOnDetail = true;
-      logger.appendLine(`[DEBUG] B`);
 
       let customEntered = false;
       let itemSelected = false;
-      logger.appendLine(`[DEBUG] C`);
 
       // If the user types in the QuickPick box and the value doesn't match an item, show a "(custom)" option
       quickPick.onDidChangeValue((value) => {
@@ -39,8 +35,6 @@ export function addLanguage(
           ];
         }
       });
-
-      logger.appendLine(`[DEBUG] d`);
 
       // Runs once the user proceeds by click enter or left-click with the mouse
       quickPick.onDidAccept(() => {
@@ -78,8 +72,6 @@ export function addLanguage(
           reject("Quick pick was closed");
         }
       });
-
-      logger.appendLine(`[DEBUG] e`);
 
       quickPick.show();
     });

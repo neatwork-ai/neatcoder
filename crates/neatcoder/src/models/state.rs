@@ -349,14 +349,13 @@ impl AppState {
     }
 
     #[wasm_bindgen(js_name = streamCode)]
-    pub async fn stream_code(
+    pub fn stream_code(
         &mut self,
         client: &OpenAI,
         ai_params: &OpenAIParams,
         task_params: TaskParams,
         codebase: ICodebase,
-        callback: Function,
-    ) -> Result<(), JsError> {
+    ) -> Result<String, JsError> {
         let task_params = task_params
             .stream_code_()
             .ok_or("No StreamCode field. This error should not occur.")
@@ -364,11 +363,11 @@ impl AppState {
 
         let codebase = BTreeMap::from_extern(codebase)?;
 
-        stream_code(self, client, ai_params, task_params, codebase, callback)
-            .await
-            .map_err(|e| JsError::from_str(&e.to_string()))?;
+        let req_body =
+            stream_code(self, client, ai_params, task_params, codebase)
+                .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-        Ok(())
+        Ok(req_body)
     }
 }
 

@@ -54,6 +54,11 @@ export function saveAppStateToFile(appState: wasm.AppState): void {
   saveFile(payload, ".neat/cache", "state");
 }
 
+export function saveCump(appState: wasm.AppState): void {
+  const payload = serializeAppState(appState);
+  saveFile(payload, ".neat/cache", "state");
+}
+
 function saveFile(
   payload: ArrayBuffer,
   folder: string,

@@ -32,10 +32,6 @@ export async function startPrompt(
       vscode.window.showInformationMessage(
         `The project scaffold & execution plan is now available.`
       );
-
-      vscode.commands.executeCommand("workbench.action.focusView", {
-        id: "jobQueueView",
-      });
     } else {
       vscode.window.showErrorMessage("Unable to parse prompt.");
     }

@@ -79,10 +79,8 @@ Use the following schema:
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let (answer, tasks) =
+    let (_, tasks) =
         write_json(client, params, &prompts, request_callback).await?;
-
-    log(&format!("[DEBUG] LLM: {}", answer));
 
     Ok(tasks)
 }

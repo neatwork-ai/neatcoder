@@ -149,13 +149,13 @@
     "configuration": {
       "title": "Neatcoder Configuration",
       "properties": {
-          "extension.apiKey": {
-              "type": "string",
-              "default": "",
-              "description": "The API key for OpenAI."
-          }
+        "extension.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "The API key for OpenAI."
+        }
       }
-  }
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",
@@ -192,6 +192,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@types/web": "^0.0.114",
     "@wasm-tool/wasm-pack-plugin": "^1.7.0",
     "eventsource": "^2.0.2",
     "node-fetch": "^3.3.2",

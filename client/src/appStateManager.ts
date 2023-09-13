@@ -1,18 +1,12 @@
 import * as wasm from "./../pkg/neatcoder";
-import {
-  OutputChannel,
-  Position,
-  TextDocument,
-  window,
-  workspace,
-} from "vscode";
+import { OutputChannel, window, workspace, TextDocument } from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { readAppState, saveAppStateToFile } from "./utils";
+import { getRoot, readAppState, saveAppStateToFile } from "./utils";
 import { TaskPoolProvider } from "./providers/taskPool";
 import { TasksCompletedProvider } from "./providers/tasksCompleted";
 import { toTaskView } from "./models/task";
-import { makeRequest } from "./httpClient";
+import { makeRequest, makeStreamingRequest } from "./httpClient";
 import { scanSourceFolder, streamCode } from "./commands/streamCode";
 
 export class AppStateManager {
@@ -126,45 +120,50 @@ export class AppStateManager {
       if (taskType === wasm.TaskType.CodeGen) {
         this.logger.appendLine(`[DEBUG] We are preparing the codegen!`);
 
-        this.logger.appendLine(
-          `[DEBUG] Here are the params ${JSON.stringify(
-            taskParams.streamCode,
-            null,
-            4
-          )}`
-        );
-
         // If a new file should be created (or overwritten)
-        const filePath: string = taskParams.streamCode!.filename;
-        const tokenWriter = fs.createWriteStream(filePath, { flags: "w" });
+        const relPath: string = taskParams.streamCode!.filename;
+        this.logger.appendLine(`[DEBUG] relPath: ${relPath}`);
+
+        const filePath = path.join(getRoot(), "src", relPath);
 
         const directoryPath = path.dirname(filePath);
+        this.logger.appendLine(`[DEBUG] Directpath: ${directoryPath}`);
+        this.logger.appendLine(
+          `[DEBUG] Does it exist?: ${fs.existsSync(directoryPath)}`
+        );
+
         if (!fs.existsSync(directoryPath)) {
+          this.logger.appendLine(`[DEBUG] Creating path: ${filePath}`);
           fs.mkdirSync(directoryPath, { recursive: true }); // recursive ensures that nested directories are created
         }
 
+        const tokenWriter = fs.createWriteStream(filePath, { flags: "w" });
+
         // Open the file in the editor
-        this.logger.appendLine(`[DEBUG] Opening code editor!`);
+        this.logger.appendLine(`[INFO] Opening code editor`);
         const activeTextDocument = await workspace.openTextDocument(filePath);
 
+        this.logger.appendLine(`[INFO] Showing text`);
         await window.showTextDocument(activeTextDocument, {
           preview: false,
         });
-        this.logger.appendLine(`[DEBUG] The test document should show!`);
 
-        this.logger.appendLine(`[DEBUG] Getting codebase...`);
-        const codebase = await scanSourceFolder();
+        this.logger.appendLine(`[INFO] Getting codebase...`);
+        const codebase = await scanSourceFolder(this.logger);
 
-        this.logger.appendLine(`[DEBUG] Making StreamCode call to wasm....`);
-        await this.appState.streamCode(
+        this.logger.appendLine(`[INFO] Making StreamCode call to wasm....`);
+        let requestBody = this.appState.streamCode(
           llmClient,
           llmParams,
           taskParams,
-          codebase,
-          (token: string) => {
-            streamCode(token, activeTextDocument);
-          }
+          codebase
         );
+
+        makeStreamingRequest(
+          requestBody,
+          activeTextDocument,
+          this.logger
+        ).catch(console.error);
       }
 
       this.appState.addDone(task);

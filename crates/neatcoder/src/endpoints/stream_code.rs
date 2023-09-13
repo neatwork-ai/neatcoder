@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use js_sys::{Function, JsString};
+use js_sys::JsString;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -34,14 +34,19 @@ impl CodeGenParams {
     }
 }
 
-pub async fn stream_code(
+pub fn stream_code(
     app_state: &AppState,
     client: &OpenAI,
     ai_params: &OpenAIParams,
     task_params: &CodeGenParams,
     codebase: BTreeMap<String, String>,
-    callback: Function,
-) -> Result<()> {
+) -> Result<String> {
+    if app_state.language.is_none() {
+        return Err(anyhow!("No programming lancuage specified"));
+    }
+
+    let language = app_state.language.clone().unwrap();
+
     let mut prompts = Vec::new();
 
     let CodeGenParams { filename } = task_params;
@@ -63,8 +68,9 @@ pub async fn stream_code(
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
-        content: String::from(
-            "You are a software engineer who is specialised in Rust.",
+        content: format!(
+            "You are a software engineer who is specialised in {}.",
+            language.name()
         ),
     });
 
@@ -97,10 +103,11 @@ pub async fn stream_code(
 
     let main_prompt = format!(
         "
-        You are a Rust engineer tasked with creating an API in Rust.
+        You are an engineer tasked with creating a in {}.
         You are assigned to build the API based on the project folder structure
-        Your current task is to write the module `{}.rs
+        Your current task is to write the module `{}.rs`
         ",
+        language.name(),
         filename
     );
 
@@ -109,49 +116,59 @@ pub async fn stream_code(
         content: main_prompt,
     });
 
-    stream_rust(client, ai_params, prompts, callback).await?;
+    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    Ok(())
+    let request_body = client.request_stream(ai_params, &prompts, &[], &[])?;
+
+    Ok(request_body)
 }
 
-pub async fn stream_rust(
-    _client: &OpenAI,
-    _ai_params: &OpenAIParams,
-    _prompts: Vec<OpenAIMsg>,
-    _callback: Function,
-) -> Result<()> {
-    log("[INFO] Initiating Stream");
+// TODO
+// pub async fn stream_rust(
+//     client: &OpenAI,
+//     ai_params: &OpenAIParams,
+//     prompts: Vec<OpenAIMsg>,
+//     callback: Function,
+// ) -> Result<String> {
+//     log("[INFO] Initiating Stream");
 
-    // let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
+//     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    // let mut chat_stream =
-    //     client.chat_stream(ai_params, &prompts, &[], &[]).await?;
+//     let chat_stream = client
+//         .chat_stream(&callback, ai_params, &prompts, &[], &[])
+//         .await?;
+//     // Your code here to handle the stream returned from the TypeScript function
+//     // ...
 
-    // let mut start_delimiter = false;
-    todo!();
-    // while let Some(item) = chat_stream.next().await {
-    //     match item {
-    //         Ok(bytes) => {
-    //             let token = std::str::from_utf8(&bytes)
-    //                 .expect("Failed to generate utf8 from bytes");
-    //             if !start_delimiter && ["```rust", "```"].contains(&token) {
-    //                 start_delimiter = true;
-    //                 continue;
-    //             } else if !start_delimiter {
-    //                 continue;
-    //             } else {
-    //                 if token == "```" {
-    //                     break;
-    //                 }
+//     // We need to build a stream from res_js_value, which is expected to be a stream from nodejs
+//     // You would need a mechanism to convert the JsValue stream into a Rust stream
+//     // This part may require some research and trial and error to get right.    let mut chat_stream =
 
-    //                 // Call the JavaScript callback with the token
-    //                 let this = JsValue::NULL;
-    //                 let js_token = JsValue::from_str(&token);
-    //                 callback.call1(&this, &js_token).unwrap();
-    //             }
-    //         }
-    //         Err(e) => eprintln!("Failed to receive token, with error: {e}"),
-    //     }
-    // }
-    // Ok(())
-}
+// let mut start_delimiter = false;
+
+// while let Some(item) = chat_stream.next().await {
+//     match item {
+//         Ok(bytes) => {
+//             let token = std::str::from_utf8(&bytes)
+//                 .expect("Failed to generate utf8 from bytes");
+//             if !start_delimiter && ["```rust", "```"].contains(&token) {
+//                 start_delimiter = true;
+//                 continue;
+//             } else if !start_delimiter {
+//                 continue;
+//             } else {
+//                 if token == "```" {
+//                     break;
+//                 }
+
+//                 // Call the JavaScript callback with the token
+//                 let this = JsValue::NULL;
+//                 let js_token = JsValue::from_str(&token);
+//                 callback.call1(&this, &js_token).unwrap();
+//             }
+//         }
+//         Err(e) => eprintln!("Failed to receive token, with error: {e}"),
+//     }
+// }
+//     Ok(())
+// }
