@@ -190,7 +190,7 @@ impl AppState {
             .done
             .order
             .iter()
-            .filter_map(|&id| self.task_pool.todo.tasks.get(&id))
+            .filter_map(|&id| self.task_pool.done.tasks.get(&id))
             .cloned()
             .collect();
 
