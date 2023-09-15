@@ -4,12 +4,13 @@ import * as path from "path";
 import { getOrSetApiKey, getRoot } from "./utils";
 import { Position, TextDocument, window, OutputChannel } from "vscode";
 import { streamCode } from "./commands/streamCode";
+import * as https from "https";
+import * as url from "url";
 
-let isProcessing = false;
-let isStreaming = true;
-let isEndClose = false;
+let isProcessingChillTheFuckOut = false;
+let isCodeBlock = false;
+let isCodeBlockMaybeEnding = false;
 let waitingForNewline = false;
-let startDelimiter = false;
 
 export async function makeRequest(body: string): Promise<object> {
   const apiKey = getOrSetApiKey();
@@ -77,164 +78,314 @@ export async function makeRequest(body: string): Promise<object> {
 //   });
 // }
 
-export function makeStreamingRequest(
+export async function makeStreamingRequest3(
   body: string,
   activeTextDocument: TextDocument,
   logger: OutputChannel
 ): Promise<void> {
-  return new Promise(async (resolve, reject) => {
-    let responseLog: string[] = [];
+  let responseLogRaw: string[] = [];
+  let responseLog: string[] = [];
 
-    const apiKey = getOrSetApiKey();
-    try {
-      const response = await fetch(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body,
+  const apiKey = getOrSetApiKey();
+  try {
+    const urlString = "https://api.openai.com/v1/chat/completions";
+    const parsedUrl = url.parse(urlString);
+
+    const options = {
+      ...parsedUrl,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+    };
+
+    const req = https.request(options, async (res) => {
+      console.log(`STATUS: ${res.statusCode}`);
+      console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
+      res.setEncoding("utf8");
+      res.pause();
+
+      res.on("readable", async () => {
+        if (isProcessingChillTheFuckOut) {
+          logger.appendLine(`Stopping the spam`);
+          console.log(`Stopping the spam`);
+          return;
         }
-      );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+        isProcessingChillTheFuckOut = true;
+        let chunk;
+        while (null !== (chunk = res.read())) {
+          console.log(`Chunk: ${chunk}`);
+          // const chunkAsString = chunk.toString("utf8"); // .substring(6); // removes the prefix "data: "
+          // const messages: string[] = chunkAsString.split("\n\n");
 
-      if (response.body) {
-        response.body
-          .on("data", async (chunk: any) => {
-            while (isProcessing) {
-              await new Promise((resolve) => setTimeout(resolve, 0));
+          // Assuming 'chunk' is a Buffer, convert it to a string
+          const chunkAsString0 = chunk.toString("utf8");
+
+          responseLogRaw.push(chunkAsString0);
+
+          writeRawLogs(responseLogRaw);
+
+          // Split the chunk by double newline to get individual messages
+          const chunkAsString = chunk.toString("utf8"); // .substring(6); // removes the prefix "data: "
+          const messages: string[] = chunkAsString.split("\n\n");
+
+          for (const message of messages) {
+            if (message.startsWith("data: ") && message.trim().length > 0) {
+              const rawData = message.substring(6); // remove 'data: ' prefix
+
+              if (rawData.trim() === "[DONE]") {
+                console.log(`[INFO] Streaming process completed.`);
+                cleanup();
+                break;
+              }
+
+              const json = JSON.parse(rawData); // JSONify response
+
+              // Here `json` will be an individual message object
+              // You can then access json.choices[0].delta.content and proceed with your existing logic
+              const token = json.choices[0].delta.content;
+
+              logger.appendLine(`[INFO] Streaming token: ${token}`);
+              console.log(`[INFO] Streaming token: ${token}`);
+              await streamCode(token, activeTextDocument, logger);
             }
+          }
+        }
+        isProcessingChillTheFuckOut = false;
+      });
 
-            lock();
+      res.on("end", () => {
+        isProcessingChillTheFuckOut = false;
+        console.log("No more data in response.");
+      });
+    });
 
-            // Assuming 'chunk' is a Buffer, convert it to a string
-            const chunkAsString0 = chunk.toString("utf8");
-            responseLog.push(chunkAsString0);
+    req.on("error", (e) => {
+      console.error(`Problem with request: ${e.message}`);
+    });
 
-            try {
-              const root = getRoot();
-              const folderPath = path.join(root, "responseLog.json");
-              fs.writeFile(
-                folderPath,
-                JSON.stringify(responseLog, null, 2),
-                (err) => {
-                  if (err) {
-                    console.error("Error writing to file", err);
-                  } else {
-                  }
+    req.write(body);
+    req.end();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+export async function makeStreamingRequest(
+  body: string,
+  activeTextDocument: TextDocument,
+  logger: OutputChannel
+): Promise<void> {
+  let responseLogRaw: string[] = [];
+  let responseLog: string[] = [];
+
+  const apiKey = getOrSetApiKey();
+  try {
+    const urlString = "https://api.openai.com/v1/chat/completions";
+    const parsedUrl = url.parse(urlString);
+
+    const options = {
+      ...parsedUrl,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+    };
+
+    const req = https.request(options, async (res) => {
+      console.log(`STATUS: ${res.statusCode}`);
+      console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
+      res.setEncoding("utf8");
+      res.pause();
+
+      res.on("readable", async () => {
+        if (isProcessingChillTheFuckOut) {
+          logger.appendLine(`Stopping the spam`);
+          console.log(`Stopping the spam`);
+          return;
+        }
+
+        isProcessingChillTheFuckOut = true;
+        let chunk;
+        while (null !== (chunk = res.read())) {
+          console.log(`Chunk: ${chunk}`);
+          // const chunkAsString = chunk.toString("utf8"); // .substring(6); // removes the prefix "data: "
+          // const messages: string[] = chunkAsString.split("\n\n");
+
+          // Assuming 'chunk' is a Buffer, convert it to a string
+          const chunkAsString0 = chunk.toString("utf8");
+
+          responseLogRaw.push(chunkAsString0);
+
+          writeRawLogs(responseLogRaw);
+
+          // Split the chunk by double newline to get individual messages
+          const chunkAsString = chunk.toString("utf8"); // .substring(6); // removes the prefix "data: "
+          const messages: string[] = chunkAsString.split("\n\n");
+
+          for (const message of messages) {
+            if (message.startsWith("data: ") && message.trim().length > 0) {
+              const rawData = message.substring(6); // remove 'data: ' prefix
+
+              if (rawData.trim() === "[DONE]") {
+                console.log(`[INFO] Streaming process completed.`);
+                cleanup();
+                break;
+              }
+
+              const json = JSON.parse(rawData); // JSONify response
+
+              // Here `json` will be an individual message object
+              // You can then access json.choices[0].delta.content and proceed with your existing logic
+              const token = json.choices[0].delta.content;
+
+              responseLog.push(token);
+
+              writeLogs(responseLog);
+
+              if (isCodeBlock) {
+                if (checkIfCodeBlockMaybeEnding(token)) {
+                  // If we get `` then it means the end of the code block may
+                  // be near so we signal that
+                  isCodeBlockMaybeEnding = true;
+                  continue;
                 }
-              );
-            } catch (error) {
-              console.error(error);
-              throw error;
-            }
 
-            // Split the chunk by double newline to get individual messages
-            const chunkAsString = chunk.toString("utf8"); // .substring(6); // removes the prefix "data: "
-            const messages: string[] = chunkAsString.split("\n\n");
+                if (checkIfCodeBlockEnds(token)) {
+                  // Here we have gotten the confirmation that the code block
+                  // is completed
+                  logger.appendLine(`[INFO] Streamed END`);
+                  console.log(`[INFO] Streamed END`);
+                  // Ending the stream listening
+                  cleanup();
+                  continue;
+                }
 
-            for (const message of messages) {
-              if (message.startsWith("data: ") && message.trim().length > 0) {
-                // Remove 'data: ' prefix and parse JSON
-                const json = JSON.parse(message.substring(6)); // remove 'data: ' prefix
+                // TODO: Consider where to put this...
+                isCodeBlockMaybeEnding = false;
 
-                // Here `json` will be an individual message object
-                // You can then access json.choices[0].delta.content and proceed with your existing logic
-                const token = json.choices[0].delta.content;
+                if (checkForStreamStartSignal(token)) {
+                  logger.appendLine(
+                    `[INFO] Stream is about to start. Received token: ${token}`
+                  );
+                  console.log(
+                    `[INFO] Stream is about to start. Received token: ${token}`
+                  );
 
-                if (!startDelimiter && token === "```") {
+                  waitingForNewline = false;
+                  continue;
+                }
+
+                if (checkIfCanStream()) {
+                  logger.appendLine(`[INFO] Streaming token: ${token}`);
+                  console.log(`[INFO] Streaming token: ${token}`);
+                  await streamCode(token, activeTextDocument, logger);
+                }
+              } else {
+                if (checkIfCodeBlockIsStarting(token)) {
                   logger.appendLine(`[INFO] Streamed START: ${token}`);
+                  console.log(`[INFO] Streamed START: ${token}`);
                   prepareStartStreaming();
-                  unlock();
-                  return;
-                }
-                if (!startDelimiter) {
+                } else {
                   logger.appendLine(`[INFO] Skipping: ${token}`);
                   console.log(`Skipping: ${token}`);
-                  unlock();
-                  // If it hasn't started the code block then ignore
-                  return;
-                } else {
-                  if (token === "``") {
-                    // If we get `` then it means the end of the code block may
-                    // be near so we signal that
-                    isEndClose = true;
-                    unlock();
-                    return;
-                  }
-
-                  if (isEndClose === true && token[0] === "`") {
-                    // Here we have gotten the confirmation that the code block
-                    // is completed
-                    logger.appendLine(`[INFO] Streamed END`);
-                    // Ending the stream listening
-                    isStreaming = false;
-                    isProcessing = false;
-                    resolve();
-                    return;
-                  }
-
-                  if (token === "```") {
-                    /// This is an alternative end of the code block, in case
-                    // the three delimiter chars come in the same streamed json.
-                    logger.appendLine(`[INFO] Streamed END`);
-                    // Ending the stream listening
-                    isStreaming = false;
-                    isProcessing = false;
-                    resolve();
-                    return;
-                  }
-
-                  isEndClose = false;
-
-                  console.log(`isStreaming is: ${isStreaming}`);
-                  console.log(`waitingForNewline is: ${waitingForNewline}`);
-
-                  if (isStreaming) {
-                    if (waitingForNewline && token === "\n") {
-                      waitingForNewline = false;
-                      isProcessing = false;
-                      return;
-                    }
-                    if (!waitingForNewline) {
-                      await streamCode(token, activeTextDocument, logger);
-                      isProcessing = false;
-                    }
-                  }
+                  isCodeBlockMaybeEnding = false;
                 }
               }
             }
-          })
-          .on("error", (err: any) => {
-            reject(`Error reading the stream: ${err}`);
-          })
-          .on("end", () => {
-            resolve();
-          });
-      } else {
-        reject("Response body is null");
-      }
-    } catch (error) {
-      reject(`Error during request: ${error}`);
-    }
-  });
+          }
+        }
+        isProcessingChillTheFuckOut = false;
+      });
+
+      res.on("end", () => {
+        isProcessingChillTheFuckOut = false;
+        console.log("No more data in response.");
+      });
+    });
+
+    req.on("error", (e) => {
+      isProcessingChillTheFuckOut = false;
+      console.error(`Problem with request: ${e.message}`);
+    });
+
+    req.write(body);
+    req.end();
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 function prepareStartStreaming() {
-  startDelimiter = true;
+  isCodeBlockMaybeEnding = false;
+  isCodeBlock = true;
   waitingForNewline = true;
-  isProcessing = false;
 }
 
-function unlock() {
-  isProcessing = false;
+function cleanup() {
+  isCodeBlock = false;
+  isCodeBlockMaybeEnding = false;
+  waitingForNewline = false;
 }
 
-function lock() {
-  isProcessing = false;
+function checkIfCodeBlockEnds(token: any): boolean {
+  const check1 = isCodeBlockMaybeEnding === true && token[0] === "`";
+  const check2 = token === "```" && isCodeBlock;
+
+  return check1 || check2;
+}
+
+function checkIfCodeBlockMaybeEnding(token: any): boolean {
+  return token === "``" && isCodeBlock;
+}
+
+function checkForStreamStartSignal(token: any): boolean {
+  return isCodeBlock && waitingForNewline && token === "\n";
+}
+
+function checkIfCanStream(): boolean {
+  return isCodeBlock && !waitingForNewline;
+}
+
+function checkIfCodeBlockIsStarting(token: any): boolean {
+  return !isCodeBlock && token === "```";
+}
+
+function writeRawLogs(responseLogRaw: string[]) {
+  try {
+    const root = getRoot();
+    const folderPath = path.join(root, "responseLogRaw.json");
+    fs.writeFile(folderPath, JSON.stringify(responseLogRaw, null, 2), (err) => {
+      if (err) {
+        console.error("Error writing to file", err);
+      } else {
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
+function writeLogs(responseLog: string[]) {
+  try {
+    const root = getRoot();
+    const folderPath = path.join(root, "responseLog.json");
+    fs.writeFile(folderPath, JSON.stringify(responseLog, null, 2), (err) => {
+      if (err) {
+        console.error("Error writing to file", err);
+      } else {
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

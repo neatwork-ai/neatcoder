@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 
-let editing = false;
+let currentPosition = new Position(0, 0);
 
 export async function streamCode(
   token: string,
@@ -11,28 +11,56 @@ export async function streamCode(
   logger: vscode.OutputChannel
 ): Promise<void> {
   try {
-    while (editing) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-
-    editing = true;
-
     const editor = await window.showTextDocument(activeTextDocument);
-    const lastLine = activeTextDocument.lineAt(
-      activeTextDocument.lineCount - 1
+
+    logger.appendLine(
+      `[INFO] Inserting '${token}'  at line ${JSON.stringify(currentPosition)}`
     );
-    const position = new Position(lastLine.lineNumber, lastLine.text.length);
+    console.log(
+      `[INFO] Inserting '${token}' at line ${JSON.stringify(currentPosition)}`
+    );
+
     await editor.edit((editBuilder) => {
-      editBuilder.insert(position, token); // Adding a space after every word
+      editBuilder.insert(currentPosition, token); // Adding a space after every word
     });
 
-    editing = false;
+    await sleep(10);
+
+    // Update currentPosition to point to the new end of the document
+    const docContent = editor.document.getText();
+    currentPosition = editor.document.positionAt(docContent.length);
+
+    logger.appendLine(
+      `[INFO] UPDATED POSITION TO: ${JSON.stringify(currentPosition)}`
+    );
+    console.log(
+      `[INFO] UPDATED POSITION TO: ${JSON.stringify(currentPosition)}`
+    );
   } catch (error) {
-    editing = false;
     console.log(error);
     throw error;
   }
 }
+
+// export async function streamCode(
+//   token: string,
+//   activeTextDocument: TextDocument,
+//   logger: vscode.OutputChannel
+// ): Promise<void> {
+//   try {
+//     const editor = await window.showTextDocument(activeTextDocument);
+//     const lastLine = activeTextDocument.lineAt(
+//       activeTextDocument.lineCount - 1
+//     );
+//     const position = new Position(lastLine.lineNumber, lastLine.text.length);
+//     await editor.edit((editBuilder) => {
+//       editBuilder.insert(position, token); // Adding a space after every word
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     throw error;
+//   }
+// }
 
 export async function scanSourceFolder(
   logger: vscode.OutputChannel
@@ -76,4 +104,8 @@ export async function scanSourceFolder(
   readDirRecursively(srcFolderPath);
 
   return record;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
