@@ -53,7 +53,7 @@ impl TaskPool {
     }
 
     pub fn add_done(&mut self, task: Task) {
-        self.todo.push_back(task);
+        self.done.push_back(task);
     }
 
     pub fn finish_task_by_id(&mut self, task_id: usize) {

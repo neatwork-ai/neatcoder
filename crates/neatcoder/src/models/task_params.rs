@@ -55,11 +55,6 @@ impl TaskParams {
 
     #[wasm_bindgen(getter, js_name = streamCode)]
     pub fn stream_code(&self) -> Option<CodeGenParams> {
-        log(&format!(
-            "TASK TYPE SHOULD MATCH: TaskType::CodeGen => {:?}",
-            self.task_type,
-        ));
-
         match self.task_type {
             TaskType::CodeGen => {
                 log(&format!(

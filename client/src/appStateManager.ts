@@ -159,16 +159,23 @@ export class AppStateManager {
           codebase
         );
 
-        makeStreamingRequest(
+        await makeStreamingRequest(
           requestBody,
           activeTextDocument,
           this.logger
         ).catch(console.error);
       }
 
+      console.log("Adding Task to DONE");
       this.appState.addDone(task);
+      console.log("Saving state");
       saveAppStateToFile(this.appState);
+      console.log("Refreshing..");
       this.refresh();
+
+      this.logger.appendLine(
+        `[DEBUG] AppState ${JSON.stringify(this.appState.castToString())}`
+      );
     } catch (error) {
       console.error("Error while performing Task:", error);
       throw error;
@@ -189,20 +196,6 @@ export class AppStateManager {
 
     // Update providers
     this.refresh();
-  }
-
-  private handleUpdateTaskPool(): void {
-    try {
-      const tasksTodo: wasm.Task[] = this.appState.getTodoTasks();
-
-      // Update the local task list
-      this.taskPoolProvider.tasks = toTaskView(tasksTodo);
-
-      // Refresh the view
-      this.taskPoolProvider.refresh();
-    } catch (error) {
-      console.error("Error while updating FE TaskPool:", error);
-    }
   }
 
   async scaffoldProject(
@@ -240,15 +233,39 @@ export class AppStateManager {
     }
   }
 
+  private handleUpdateTaskPool(): void {
+    try {
+      const tasksTodo: wasm.Task[] = this.appState.getTodoTasks();
+
+      // Update the local task list
+      this.taskPoolProvider.tasks = toTaskView(tasksTodo);
+
+      // Refresh the view
+      this.taskPoolProvider.refresh();
+    } catch (error) {
+      console.error("Error while updating FE TaskPool:", error);
+    }
+  }
+
   // Event handler
   private handleUpdateTasksCompleted(): void {
-    const tasksDone: wasm.Task[] = this.appState.getDoneTasks();
+    try {
+      const tasksDone: wasm.Task[] = this.appState.getDoneTasks();
 
-    // Update the local task list
-    this.tasksCompletedProvider.tasks = toTaskView(tasksDone);
+      window.showInformationMessage(
+        `HERE ARE THE TASKS DONE: ${JSON.stringify(tasksDone)}`
+      );
 
-    // Refresh the view
-    this.tasksCompletedProvider.refresh();
+      // Update the local task list
+      this.tasksCompletedProvider.tasks = toTaskView(tasksDone);
+
+      // Refresh the view
+      this.tasksCompletedProvider.refresh();
+    } catch (error) {
+      window.showInformationMessage(`HERRRRRRRO: ${error}`);
+
+      console.error("Error while updating FE AuditPool:", error);
+    }
   }
 
   private refresh(): void {

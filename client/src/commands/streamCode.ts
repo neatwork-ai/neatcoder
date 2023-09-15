@@ -13,54 +13,18 @@ export async function streamCode(
   try {
     const editor = await window.showTextDocument(activeTextDocument);
 
-    logger.appendLine(
-      `[INFO] Inserting '${token}'  at line ${JSON.stringify(currentPosition)}`
-    );
-    console.log(
-      `[INFO] Inserting '${token}' at line ${JSON.stringify(currentPosition)}`
-    );
-
     await editor.edit((editBuilder) => {
       editBuilder.insert(currentPosition, token); // Adding a space after every word
     });
 
-    await sleep(10);
-
     // Update currentPosition to point to the new end of the document
     const docContent = editor.document.getText();
     currentPosition = editor.document.positionAt(docContent.length);
-
-    logger.appendLine(
-      `[INFO] UPDATED POSITION TO: ${JSON.stringify(currentPosition)}`
-    );
-    console.log(
-      `[INFO] UPDATED POSITION TO: ${JSON.stringify(currentPosition)}`
-    );
   } catch (error) {
     console.log(error);
     throw error;
   }
 }
-
-// export async function streamCode(
-//   token: string,
-//   activeTextDocument: TextDocument,
-//   logger: vscode.OutputChannel
-// ): Promise<void> {
-//   try {
-//     const editor = await window.showTextDocument(activeTextDocument);
-//     const lastLine = activeTextDocument.lineAt(
-//       activeTextDocument.lineCount - 1
-//     );
-//     const position = new Position(lastLine.lineNumber, lastLine.text.length);
-//     await editor.edit((editBuilder) => {
-//       editBuilder.insert(position, token); // Adding a space after every word
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     throw error;
-//   }
-// }
 
 export async function scanSourceFolder(
   logger: vscode.OutputChannel
