@@ -6,6 +6,7 @@ import { setupSchemaWatchers } from "./schemaWatcher";
 import { getOrCreateConfigPath, getRoot, saveAppStateToFile } from "../utils";
 import * as wasm from "../../pkg/neatcoder";
 import { AppStateManager } from "../appStateManager";
+import { logger } from "../logger";
 
 let originalConfig: any;
 
@@ -21,8 +22,7 @@ let originalConfig: any;
 export function setupConfigWatcher(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
-  appManager: AppStateManager,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ) {
   if (!vscode.workspace.workspaceFolders) {
     return;
@@ -65,7 +65,6 @@ export function setupConfigWatcher(
           originalConfig.dbs,
           newContent.dbs,
           appManager,
-          logger,
           createDbInterface
         );
 
@@ -73,7 +72,6 @@ export function setupConfigWatcher(
           originalConfig.apis,
           newContent.apis,
           appManager,
-          logger,
           createApiInterface
         );
 
@@ -81,15 +79,13 @@ export function setupConfigWatcher(
         const bool3 = handleRemovals(
           originalConfig.dbs,
           newContent.dbs,
-          appManager,
-          logger
+          appManager
         );
 
         const bool4 = handleRemovals(
           originalConfig.apis,
           newContent.apis,
-          appManager,
-          logger
+          appManager
         );
 
         const toUpdate = bool1 || bool2 || bool3 || bool4;
@@ -103,12 +99,7 @@ export function setupConfigWatcher(
           }
 
           // Set up new schema watchers based on the updated config.json
-          setupSchemaWatchers(
-            schemaWatchers,
-            interfacesProvider,
-            appManager,
-            logger
-          );
+          setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager);
         }
 
         // Update original content
@@ -122,8 +113,7 @@ function handleAdditions(
   original: any[],
   updated: any[],
   appManager: AppStateManager,
-  logger: vscode.OutputChannel,
-  callback: (newItem: any, logger: vscode.OutputChannel) => any
+  callback: (newItem: any) => any
 ): Boolean {
   const newItems = updated.filter(
     (item) => !original.some((origItem) => origItem.name === item.name)
@@ -131,7 +121,7 @@ function handleAdditions(
 
   const toUpdate = newItems.length > 0;
   for (const newItem of newItems) {
-    const appInterface = callback(newItem, logger);
+    const appInterface = callback(newItem);
     appManager.addInterface(appInterface);
   }
   return toUpdate;
@@ -140,8 +130,7 @@ function handleAdditions(
 function handleRemovals(
   original: any[],
   updated: any[],
-  appManager: AppStateManager,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ): Boolean {
   const removedItems = original.filter(
     (item) => !updated.some((updatedItem) => updatedItem.name === item.name)
@@ -157,10 +146,7 @@ function handleRemovals(
   return toUpdate;
 }
 
-function createDbInterface(
-  newItem: any,
-  logger: vscode.OutputChannel
-): wasm.Interface {
+function createDbInterface(newItem: any): wasm.Interface {
   const dbType: wasm.DbType = newItem.dbType;
   const database: wasm.Database = new wasm.Database(newItem.name, dbType, {});
 
@@ -171,10 +157,7 @@ function createDbInterface(
   return inter_;
 }
 
-function createApiInterface(
-  newItem: any,
-  logger: vscode.OutputChannel
-): wasm.Interface {
+function createApiInterface(newItem: any): wasm.Interface {
   const apiType: wasm.ApiType = newItem.apiType;
 
   const api: wasm.Api = new wasm.Api(newItem.name, apiType, {});

@@ -10,7 +10,6 @@ import { addSchema } from "./commands/schemas/addSchema";
 import { setupSchemaWatchers } from "./watchers/schemaWatcher";
 import { startJob } from "./commands/startJob";
 import { startPrompt } from "./commands/startPrompt";
-import { setupSrcFolderWatcher } from "./watchers/sourceWatcher";
 import { removeInterface } from "./commands/interfaces/removeInterface";
 import { removeSchema } from "./commands/schemas/removeSchema";
 import InterfaceItem from "./providers/interfaceItem";
@@ -22,6 +21,7 @@ import { getOrSetApiKey } from "./utils";
 import { removeJob } from "./commands/removeJob";
 import { removeAllJobs } from "./commands/removeAllJobs";
 import { initStatusBar } from "./statusBar";
+import { logger } from "./logger";
 
 let configWatcher: fs.FSWatcher | undefined;
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
@@ -39,22 +39,17 @@ export async function activate(context: vscode.ExtensionContext) {
   getOrSetApiKey();
 
   // Create the output channel for logging
-  let logger = vscode.window.createOutputChannel("Neatcoder");
   logger.appendLine("[INFO] Extension Name: Neatcoder");
 
   // === Init Providers ===
 
-  const jobQueueProvider = new TaskPoolProvider(logger);
-  const auditTrailProvider = new TasksCompletedProvider(logger);
+  const jobQueueProvider = new TaskPoolProvider();
+  const auditTrailProvider = new TasksCompletedProvider();
   const interfacesProvider = new InterfacesProvider();
 
   // Read or Initialize Application state
 
-  let appManager = new AppStateManager(
-    logger,
-    jobQueueProvider,
-    auditTrailProvider
-  );
+  let appManager = new AppStateManager(jobQueueProvider, auditTrailProvider);
   let llmClient = new wasm.OpenAI("TODO");
   let llmParams = wasm.OpenAIParams.empty(wasm.OpenAIModels.Gpt35Turbo16k);
 
@@ -62,9 +57,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Setup File Watcher which checks for changes in the `.neat` and
   // communicates them to the server if relevant
-  setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager, logger);
-  setupConfigWatcher(schemaWatchers, interfacesProvider, appManager, logger);
-  setupSrcFolderWatcher(logger);
+  setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager);
+  setupConfigWatcher(schemaWatchers, interfacesProvider, appManager);
 
   // === Registration & Garbage Collection ===
 
@@ -91,19 +85,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.startPrompt", async () => {
-      startPrompt(llmClient, llmParams, appManager, logger);
+      startPrompt(llmClient, llmParams, appManager);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.addDatastore", async () => {
-      addInterface(wasm.InterfaceType.Database, interfacesProvider, logger);
+      addInterface(wasm.InterfaceType.Database, interfacesProvider);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.addApi", async () => {
-      addInterface(wasm.InterfaceType.Api, interfacesProvider, logger);
+      addInterface(wasm.InterfaceType.Api, interfacesProvider);
     })
   );
 
@@ -115,7 +109,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.removeInterface",
       (item: InterfaceItem) => {
-        removeInterface(item, logger);
+        removeInterface(item);
       }
     )
   );

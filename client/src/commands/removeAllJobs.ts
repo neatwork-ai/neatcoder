@@ -1,4 +1,3 @@
-import { TaskView } from "../models/task";
 import { AppStateManager } from "../appStateManager";
 
 export async function removeAllJobs(

@@ -7,12 +7,11 @@ import { startLoading, stopLoading } from "../statusBar";
 export async function startPrompt(
   llmClient: wasm.OpenAI,
   llmParams: wasm.OpenAIParams,
-  appManager: AppStateManager,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ): Promise<void> {
   {
     try {
-      await addLanguage(appManager, logger);
+      await addLanguage(appManager);
     } catch (error) {
       vscode.window.showErrorMessage(`Error: ${error}`);
       throw error;

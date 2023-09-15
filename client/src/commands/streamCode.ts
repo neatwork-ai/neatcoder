@@ -2,13 +2,13 @@ import { Position, TextDocument, window } from "vscode";
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import { logger } from "../logger";
 
 let currentPosition = new Position(0, 0);
 
 export async function streamCode(
   token: string,
-  activeTextDocument: TextDocument,
-  logger: vscode.OutputChannel
+  activeTextDocument: TextDocument
 ): Promise<void> {
   try {
     const editor = await window.showTextDocument(activeTextDocument);
@@ -26,9 +26,7 @@ export async function streamCode(
   }
 }
 
-export async function scanSourceFolder(
-  logger: vscode.OutputChannel
-): Promise<Record<string, string>> {
+export async function scanSourceFolder(): Promise<Record<string, string>> {
   const workspaceFolders = vscode.workspace.workspaceFolders;
 
   if (!workspaceFolders) {

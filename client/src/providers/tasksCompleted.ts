@@ -15,11 +15,7 @@ export class TasksCompletedProvider
     TaskView | undefined | null | void
   > = this._onDidChangeTreeData.event;
 
-  logger: vscode.OutputChannel;
-
-  constructor(logger: vscode.OutputChannel) {
-    this.logger = logger;
-  }
+  constructor() {}
 
   refresh(): void {
     this._onDidChangeTreeData.fire();

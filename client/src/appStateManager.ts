@@ -8,20 +8,18 @@ import { TasksCompletedProvider } from "./providers/tasksCompleted";
 import { toTaskView } from "./models/task";
 import { makeRequest, makeStreamingRequest } from "./httpClient";
 import { scanSourceFolder, streamCode } from "./commands/streamCode";
+import { logger } from "./logger";
 
 export class AppStateManager {
   private appState: wasm.AppState;
-  private logger: OutputChannel;
   private taskPoolProvider: TaskPoolProvider;
   private tasksCompletedProvider: TasksCompletedProvider;
 
   constructor(
-    logger: OutputChannel,
     taskPoolProvider: TaskPoolProvider,
     tasksCompletedProvider: TasksCompletedProvider
   ) {
     this.appState = readAppState();
-    this.logger = logger;
     this.taskPoolProvider = taskPoolProvider;
     this.tasksCompletedProvider = tasksCompletedProvider;
 
@@ -82,11 +80,9 @@ export class AppStateManager {
     const task = this.appState.popTodo(taskId);
     const taskType = task.taskType();
     const taskParams = task.taskParams;
+    this.appState.addDone(task);
 
     this.refresh();
-
-    this.logger.appendLine(`[DEBUG] Task TYPE ${taskType}`);
-    this.logger.appendLine(`[DEBUG] Task Params ${taskParams}`);
 
     if (taskType === undefined) {
       window.showErrorMessage(`[ERROR] Task Type is undefined.`);
@@ -111,47 +107,32 @@ export class AppStateManager {
         );
       }
 
-      this.logger.appendLine(
-        `Does ${taskType} == ${
-          wasm.TaskType.CodeGen
-        }? According to JS the answer is ${taskType === wasm.TaskType.CodeGen}`
-      );
-
       if (taskType === wasm.TaskType.CodeGen) {
-        this.logger.appendLine(`[DEBUG] We are preparing the codegen!`);
-
         // If a new file should be created (or overwritten)
         const relPath: string = taskParams.streamCode!.filename;
-        this.logger.appendLine(`[DEBUG] relPath: ${relPath}`);
 
         const filePath = path.join(getRoot(), "src", relPath);
 
         const directoryPath = path.dirname(filePath);
-        this.logger.appendLine(`[DEBUG] Directpath: ${directoryPath}`);
-        this.logger.appendLine(
-          `[DEBUG] Does it exist?: ${fs.existsSync(directoryPath)}`
-        );
 
         if (!fs.existsSync(directoryPath)) {
-          this.logger.appendLine(`[DEBUG] Creating path: ${filePath}`);
           fs.mkdirSync(directoryPath, { recursive: true }); // recursive ensures that nested directories are created
         }
 
         const tokenWriter = fs.createWriteStream(filePath, { flags: "w" });
 
         // Open the file in the editor
-        this.logger.appendLine(`[INFO] Opening code editor`);
+        logger.appendLine(`[INFO] Opening code editor`);
         const activeTextDocument = await workspace.openTextDocument(filePath);
 
-        this.logger.appendLine(`[INFO] Showing text`);
+        logger.appendLine(`[INFO] Showing text`);
         await window.showTextDocument(activeTextDocument, {
           preview: false,
         });
 
-        this.logger.appendLine(`[INFO] Getting codebase...`);
-        const codebase = await scanSourceFolder(this.logger);
+        const codebase = await scanSourceFolder();
 
-        this.logger.appendLine(`[INFO] Making StreamCode call to wasm....`);
+        logger.appendLine(`[INFO] Making StreamCode call to WASM Module.`);
         let requestBody = this.appState.streamCode(
           llmClient,
           llmParams,
@@ -159,23 +140,13 @@ export class AppStateManager {
           codebase
         );
 
-        await makeStreamingRequest(
-          requestBody,
-          activeTextDocument,
-          this.logger
-        ).catch(console.error);
+        await makeStreamingRequest(requestBody, activeTextDocument).catch(
+          console.error
+        );
       }
 
-      console.log("Adding Task to DONE");
-      this.appState.addDone(task);
-      console.log("Saving state");
       saveAppStateToFile(this.appState);
-      console.log("Refreshing..");
       this.refresh();
-
-      this.logger.appendLine(
-        `[DEBUG] AppState ${JSON.stringify(this.appState.castToString())}`
-      );
     } catch (error) {
       console.error("Error while performing Task:", error);
       throw error;

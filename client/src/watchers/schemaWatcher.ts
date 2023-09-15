@@ -5,6 +5,7 @@ import { getFilename, getOrCreateConfigPath } from "../utils";
 import { InterfacesProvider } from "../providers/interfaces";
 import * as wasm from "../../pkg/neatcoder";
 import { AppStateManager } from "../appStateManager";
+import { logger } from "../logger";
 
 /**
  * Sets up watchers for schema directories defined in a configuration file.
@@ -16,8 +17,7 @@ import { AppStateManager } from "../appStateManager";
 export function setupSchemaWatchers(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
-  appManager: AppStateManager,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ) {
   if (!vscode.workspace.workspaceFolders) {
     return [];
@@ -48,8 +48,7 @@ export function setupSchemaWatchers(
           name,
           absolutePath,
           interfacesProvider,
-          appManager,
-          logger
+          appManager
         );
       }
     });
@@ -60,8 +59,7 @@ function setupWatcherForInterface(
   name: string,
   absolutePath: string,
   interfacesProvider: InterfacesProvider,
-  appManager: AppStateManager,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ): fs.FSWatcher {
   logger.appendLine("[INFO] Setting up schema watcher for " + name);
   // Your existing watcher setup logic here, but return the watcher
@@ -75,13 +73,13 @@ function setupWatcherForInterface(
         if (event === "rename") {
           if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
             // File was added or renamed
-            handleNewFile(name, fullPath, appManager, logger);
+            handleNewFile(name, fullPath, appManager);
 
             // Refresh the view
             interfacesProvider.refresh();
           } else {
             // File was deleted
-            handleFileDelete(name, filename, appManager, logger);
+            handleFileDelete(name, filename, appManager);
 
             // Refresh the view
             interfacesProvider.refresh();
@@ -91,7 +89,7 @@ function setupWatcherForInterface(
           fs.existsSync(fullPath) &&
           fs.statSync(fullPath).isFile()
         ) {
-          handleFileEdit(name, fullPath, appManager, logger);
+          handleFileEdit(name, fullPath, appManager);
         }
       }
     }
@@ -103,8 +101,7 @@ function setupWatcherForInterface(
 function handleNewFile(
   interfaceName: string,
   filePath: string,
-  appManager: AppStateManager,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ) {
   const schema = fs.readFileSync(filePath, "utf8");
   const schemaName = getFilename(filePath);
@@ -123,8 +120,7 @@ function handleNewFile(
 function handleFileEdit(
   interfaceName: string,
   filePath: string,
-  appManager: AppStateManager,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ) {
   const schema = fs.readFileSync(filePath, "utf8");
   const schemaName = getFilename(filePath);
@@ -137,8 +133,7 @@ function handleFileEdit(
 function handleFileDelete(
   interfaceName: string,
   filename: string,
-  appManager: AppStateManager,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ) {
   const schemaName = getFilename(filename);
 

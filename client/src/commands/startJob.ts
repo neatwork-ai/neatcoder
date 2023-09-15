@@ -1,4 +1,3 @@
-import { OutputChannel } from "vscode";
 import * as wasm from "../../pkg/neatcoder";
 import { TaskView } from "../models/task";
 import { AppStateManager } from "../appStateManager";

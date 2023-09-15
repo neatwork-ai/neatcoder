@@ -2,11 +2,9 @@ import * as vscode from "vscode";
 import { langList } from "../models/mappings";
 import { AppStateManager } from "../appStateManager";
 import * as wasm from "../../pkg/neatcoder";
+import { logger } from "../logger";
 
-export function addLanguage(
-  appManager: AppStateManager,
-  logger: vscode.OutputChannel
-): Promise<void> {
+export function addLanguage(appManager: AppStateManager): Promise<void> {
   {
     return new Promise((resolve, reject) => {
       const list = langList;
@@ -62,7 +60,7 @@ export function addLanguage(
         }
 
         // Convert the string into Language
-        handleSelection(appManager, selectedType, logger);
+        handleSelection(appManager, selectedType);
         quickPick.dispose();
         resolve();
       });
@@ -80,8 +78,7 @@ export function addLanguage(
 
 function handleSelection(
   appManager: AppStateManager,
-  selectedType: string,
-  logger: vscode.OutputChannel
+  selectedType: string
 ): void {
   try {
     const langType = wasm.languageTypeFromFriendlyUX(selectedType);

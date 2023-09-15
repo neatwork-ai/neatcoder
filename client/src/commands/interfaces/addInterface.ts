@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
+import * as wasm from "../../../pkg/neatcoder";
 import { getOrCreateConfigPath, getOrCreateSchemasPath } from "../../utils";
 import { apiList, dbList } from "../../models/mappings";
-import * as wasm from "../../../pkg/neatcoder";
 import { InterfacesProvider } from "../../providers/interfaces";
+import { logger } from "../../logger";
 
 /**
  * Presents a quick pick list to the user to select or input a datastore type.
@@ -13,8 +14,7 @@ import { InterfacesProvider } from "../../providers/interfaces";
  */
 export async function addInterface(
   interfaceType: wasm.InterfaceType,
-  interfacesProvider: InterfacesProvider,
-  logger: vscode.OutputChannel
+  interfacesProvider: InterfacesProvider
 ): Promise<void> {
   {
     const list = getList(interfaceType);
@@ -73,8 +73,7 @@ export async function addInterface(
         placeholderName,
         interfaceType,
         selectedType,
-        interfacesProvider,
-        logger
+        interfacesProvider
       );
       quickPick.dispose();
     });
@@ -94,8 +93,7 @@ async function handleSelection(
   placeholderName: string,
   interfaceType: wasm.InterfaceType,
   selectedType: string,
-  interfacesProvider: InterfacesProvider,
-  logger: vscode.OutputChannel
+  interfacesProvider: InterfacesProvider
 ): Promise<void> {
   try {
     const interfaceName = await vscode.window.showInputBox({
@@ -136,7 +134,7 @@ async function handleSelection(
     }
 
     // Update config - TODO: make sure that it's passing a mutable reference
-    _writeInterface(config, logger, interfaceName, interfaceType, selectedType);
+    _writeInterface(config, interfaceName, interfaceType, selectedType);
 
     const updatedContent = Buffer.from(JSON.stringify(config, null, 4)); // 4 spaces indentation
     fs.writeFileSync(configPath, updatedContent);
@@ -174,7 +172,6 @@ function getPlaceholderName(interfaceType: wasm.InterfaceType): string {
 
 function _writeInterface(
   config: any,
-  logger: vscode.OutputChannel,
   interfaceName: string,
   interfaceType: wasm.InterfaceType,
   selectedType: string

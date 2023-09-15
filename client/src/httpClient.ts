@@ -2,10 +2,11 @@ import fetch from "node-fetch";
 import * as fs from "fs";
 import * as path from "path";
 import { getOrSetApiKey, getRoot } from "./utils";
-import { Position, TextDocument, window, OutputChannel } from "vscode";
+import { TextDocument } from "vscode";
 import { streamCode } from "./commands/streamCode";
 import * as https from "https";
 import * as url from "url";
+import { logger } from "./logger";
 
 let isProcessing = false;
 let isCodeBlock = false;
@@ -38,8 +39,7 @@ export async function makeRequest(body: string): Promise<object> {
 
 export async function makeStreamingRequest(
   body: string,
-  activeTextDocument: TextDocument,
-  logger: OutputChannel
+  activeTextDocument: TextDocument
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     let responseLogRaw: string[] = [];
@@ -66,18 +66,12 @@ export async function makeStreamingRequest(
 
         res.on("readable", async () => {
           if (isProcessing) {
-            logger.appendLine(`Stopping the spam`);
-            console.log(`Stopping the spam`);
             return;
           }
 
           isProcessing = true;
           let chunk;
           while (null !== (chunk = res.read())) {
-            console.log(`Chunk: ${chunk}`);
-            // const chunkAsString = chunk.toString("utf8"); // .substring(6); // removes the prefix "data: "
-            // const messages: string[] = chunkAsString.split("\n\n");
-
             // Assuming 'chunk' is a Buffer, convert it to a string
             const chunkAsString0 = chunk.toString("utf8");
 
@@ -123,36 +117,28 @@ export async function makeStreamingRequest(
                   if (checkIfCodeBlockEnds(token)) {
                     // Here we have gotten the confirmation that the code block
                     // is completed
-                    logger.appendLine(`[INFO] Streaming END`);
-                    console.log(`[INFO] Streaming END`);
-                    // Ending the stream listening
                     cleanup();
                     continue;
                   }
 
-                  // TODO: Consider where to put this...
                   isCodeBlockMaybeEnding = false;
 
                   if (checkForStreamStartSignal(token)) {
-                    console.log(
-                      `[INFO] Stream is about to start. Received token: ${token}`
-                    );
-
+                    console.log(`[INFO] Stream is about to start.`);
                     waitingForNewline = false;
                     continue;
                   }
 
                   if (checkIfCanStream()) {
                     console.log(`[INFO] Streaming token: ${token}`);
-                    await streamCode(token, activeTextDocument, logger);
+                    await streamCode(token, activeTextDocument);
                   }
                 } else {
                   if (checkIfCodeBlockIsStarting(token)) {
-                    logger.appendLine(`[INFO] START Streaming: ${token}`);
-                    console.log(`[INFO] START Streaming: ${token}`);
+                    logger.appendLine(`[INFO] Starting Code Stream: ${token}`);
+                    console.log(`[INFO] Start Code Stream: ${token}`);
                     prepareStartStreaming();
                   } else {
-                    console.log(`Skipping: ${token}`);
                     isCodeBlockMaybeEnding = false;
                   }
                 }
@@ -253,8 +239,4 @@ function writeLogs(responseLog: string[]) {
     console.error(error);
     throw error;
   }
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

@@ -13,22 +13,7 @@ export class TaskPoolProvider implements vscode.TreeDataProvider<TaskView> {
     TaskView | undefined | null | void
   > = this._onDidChangeTreeData.event;
 
-  logger: vscode.OutputChannel;
-
-  constructor(logger: vscode.OutputChannel) {
-    this.logger = logger;
-
-    // TODO: remove
-    const taskType = wasm.TaskType.ScaffoldProject;
-    const taskPayload = new wasm.TaskParamsInner(
-      new wasm.ScaffoldParams("debugging")
-    );
-    const taskParams = new wasm.TaskParams(taskType, taskPayload);
-
-    const task = new wasm.Task(1, "debugging", taskParams);
-    const dumyTask = new TaskView("debugging", task);
-    this.tasks = [dumyTask];
-  }
+  constructor() {}
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
