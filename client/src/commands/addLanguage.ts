@@ -4,6 +4,14 @@ import { AppStateManager } from "../appStateManager";
 import * as wasm from "../../pkg/neatcoder";
 import { logger } from "../logger";
 
+/**
+ * Prompts the user to select or enter a programming language through a QuickPick interface.
+ * The function returns a promise that resolves once a language has been selected or entered,
+ * and rejects if the QuickPick interface is closed without a selection.
+ *
+ * @param appManager - The application state manager instance where the selected or entered language will be added.
+ * @return Promise<void> - A promise that resolves when a language is selected or entered, and rejects if the selection interface is closed without making a selection.
+ */
 export function addLanguage(appManager: AppStateManager): Promise<void> {
   {
     return new Promise((resolve, reject) => {
@@ -76,6 +84,14 @@ export function addLanguage(appManager: AppStateManager): Promise<void> {
   }
 }
 
+/**
+ * Handles the selected or entered language type from the QuickPick interface by converting
+ * it to a wasm Language instance and adding it to the application state manager.
+ * If an error occurs during this process, it logs the error to the logger.
+ *
+ * @param appManager - The application state manager instance where the new language will be added.
+ * @param selectedType - The label of the selected item or the entered text from the QuickPick interface, representing a programming language.
+ */
 function handleSelection(
   appManager: AppStateManager,
   selectedType: string

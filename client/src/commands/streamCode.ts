@@ -6,6 +6,17 @@ import { logger } from "../logger";
 
 let currentPosition = new Position(0, 0);
 
+/**
+ * Asynchronously streams a token (typically a portion of code) to the active text document in the VS Code editor.
+ * The function performs the following operations:
+ * 1. Opens the active text document in the editor.
+ * 2. Inserts the given token at the current position.
+ * 3. Updates the current position to point to the end of the document.
+ *
+ * @param token - The string token to be streamed into the active text document.
+ * @param activeTextDocument - The currently active text document in the VS Code editor.
+ * @returns Promise<void> - A promise that resolves once the token has been streamed to the document.
+ */
 export async function streamCode(
   token: string,
   activeTextDocument: TextDocument
@@ -26,6 +37,12 @@ export async function streamCode(
   }
 }
 
+/**
+ * Scans the source folder in the current workspace and returns a record containing file names as keys and their contents as values.
+ * If the workspace is not open or the 'src' folder does not exist, an appropriate error message is displayed to the user.
+ *
+ * @returns Promise<Record<string, string>> - A promise that resolves to a record with file names as keys and their content as values.
+ */
 export async function scanSourceFolder(): Promise<Record<string, string>> {
   const workspaceFolders = vscode.workspace.workspaceFolders;
 
@@ -66,8 +83,4 @@ export async function scanSourceFolder(): Promise<Record<string, string>> {
   readDirRecursively(srcFolderPath);
 
   return record;
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

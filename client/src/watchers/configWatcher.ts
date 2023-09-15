@@ -11,13 +11,12 @@ import { logger } from "../logger";
 let originalConfig: any;
 
 /**
- * Sets up a watcher for the `.neat/config.json` configuration file.
- * It handles the refresh of the Interfaces UI view and communicates changes to the TCP server.
+ * Sets up a watcher for the configuration file to handle changes in the file, and
+ * synchronises the AppState via the appManager
  *
- * @param interfacesProvider - The provider for the Interfaces UI view.
- * @param logger - Output channel for logging events.
- * @param appState - A mutable reference to the application state
- * @returns The file watcher for the `.neat/config.json` file.
+ * @param schemaWatchers - The watchers for schema changes.
+ * @param interfacesProvider - Provider for managing interfaces.
+ * @param appManager - The application manager for handling state and configurations.
  */
 export function setupConfigWatcher(
   schemaWatchers: { [key: string]: fs.FSWatcher },
@@ -109,6 +108,15 @@ export function setupConfigWatcher(
   });
 }
 
+/**
+ * Handles the addition of new items in the configuration.
+ *
+ * @param original - The original array of items.
+ * @param updated - The updated array of items.
+ * @param appManager - The application manager for handling state and configurations.
+ * @param callback - Callback function to create a new interface for the added item.
+ * @returns Boolean indicating if there were any new items added.
+ */
 function handleAdditions(
   original: any[],
   updated: any[],
@@ -127,6 +135,14 @@ function handleAdditions(
   return toUpdate;
 }
 
+/**
+ * Handles the removal of items from the configuration.
+ *
+ * @param original - The original array of items.
+ * @param updated - The updated array of items.
+ * @param appManager - The application manager for handling state and configurations.
+ * @returns Boolean indicating if there were any items removed.
+ */
 function handleRemovals(
   original: any[],
   updated: any[],
@@ -146,6 +162,12 @@ function handleRemovals(
   return toUpdate;
 }
 
+/**
+ * Creates a new database interface.
+ *
+ * @param newItem - The new database item.
+ * @returns A new database interface.
+ */
 function createDbInterface(newItem: any): wasm.Interface {
   const dbType: wasm.DbType = newItem.dbType;
   const database: wasm.Database = new wasm.Database(newItem.name, dbType, {});
@@ -157,6 +179,12 @@ function createDbInterface(newItem: any): wasm.Interface {
   return inter_;
 }
 
+/**
+ * Creates a new API interface.
+ *
+ * @param newItem - The new API item.
+ * @returns A new API interface.
+ */
 function createApiInterface(newItem: any): wasm.Interface {
   const apiType: wasm.ApiType = newItem.apiType;
 

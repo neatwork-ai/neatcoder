@@ -1,8 +1,23 @@
 import * as vscode from "vscode";
 
+/**
+ * An instance of the StatusBarItem class, representing a status bar item which can be added to the VS Code status bar.
+ * @type {vscode.StatusBarItem}
+ */
 export let statusBar: vscode.StatusBarItem;
+
+/**
+ * A NodeJS timer that will be used to handle the loading animation interval.
+ * @type {NodeJS.Timeout}
+ */
 let loadingInterval: NodeJS.Timeout;
 
+/**
+ * Initializes a status bar item with alignment to the right and a priority of 100, then adds it to the extension context's subscriptions.
+ * This ensures that the status bar item will be disposed of when the extension is deactivated.
+ *
+ * @param {vscode.ExtensionContext} context - The context of the VS Code extension.
+ */
 export function initStatusBar(context: vscode.ExtensionContext) {
   statusBar = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
@@ -12,6 +27,9 @@ export function initStatusBar(context: vscode.ExtensionContext) {
   context.subscriptions.push(statusBar);
 }
 
+/**
+ * Stops the loading animation and sets the status bar item's text to "Status: OK" before hiding it.
+ */
 export function stopLoading() {
   if (statusBar) {
     clearInterval(loadingInterval);
@@ -20,6 +38,10 @@ export function stopLoading() {
   }
 }
 
+/**
+ * Initiates a loading animation on the status bar item. The animation cycles through different steps,
+ * changing the status bar item's text and icon at a regular interval of 500 milliseconds.
+ */
 export function startLoading() {
   console.log("We are in the loading scope..");
 
@@ -37,6 +59,13 @@ export function startLoading() {
     statusBar.show();
   }
 }
+
+/**
+ * Returns a string representing a loading icon based on the current step of the loading animation.
+ *
+ * @param {number} step - The current step of the loading animation, cycling between 0 and 3.
+ * @returns {string} - A string representing a VS Code icon.
+ */
 function getLoadingStep(step: number): string {
   switch (step) {
     case 0:

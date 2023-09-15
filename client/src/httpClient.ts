@@ -13,6 +13,14 @@ let isCodeBlock = false;
 let isCodeBlockMaybeEnding = false;
 let waitingForNewline = false;
 
+/**
+ * This function makes an HTTP POST request to the OpenAI API
+ * to get the completion suggestions based on the input body.
+ * Note that this function will return the response in full.
+ *
+ * @param {string} body - The request body which possibly contains the text to be completed.
+ * @return {Promise<object>} - A promise that resolves to the response object from the OpenAI API.
+ */
 export async function makeRequest(body: string): Promise<object> {
   const apiKey = getOrSetApiKey();
 
@@ -37,6 +45,15 @@ export async function makeRequest(body: string): Promise<object> {
   }
 }
 
+/**
+ * This function initiates a streaming request to the OpenAI API.
+ * It handles the streaming response, processes the received chunks of data,
+ * manages the state variables related to code block streaming, and writes logs to files.
+ *
+ * @param {string} body - The request body which contains the text to be completed.
+ * @param {TextDocument} activeTextDocument - The active text document in VS Code where the streamed data might be used.
+ * @return {Promise<void>} - A promise that resolves when the streaming process completes successfully.
+ */
 export async function makeStreamingRequest(
   body: string,
   activeTextDocument: TextDocument
@@ -174,18 +191,33 @@ export async function makeStreamingRequest(
   });
 }
 
+/**
+ * This function prepares the environment to start streaming data by
+ * setting the appropriate state variables.
+ */
 function prepareStartStreaming() {
   isCodeBlockMaybeEnding = false;
   isCodeBlock = true;
   waitingForNewline = true;
 }
 
+/**
+ * This function resets the state variables used in the streaming process
+ * to their initial values.
+ */
 function cleanup() {
   isCodeBlock = false;
   isCodeBlockMaybeEnding = false;
   waitingForNewline = false;
 }
 
+/**
+ * This function checks whether a code block is ending based on the current token
+ * and the state of the `isCodeBlockMaybeEnding` and `isCodeBlock` variables.
+ *
+ * @param {any} token - The current token or string being processed.
+ * @return {boolean} - True if a code block is ending, false otherwise.
+ */
 function checkIfCodeBlockEnds(token: any): boolean {
   const check1 = isCodeBlockMaybeEnding === true && token[0] === "`";
   const check2 = token === "```" && isCodeBlock;
@@ -193,22 +225,50 @@ function checkIfCodeBlockEnds(token: any): boolean {
   return check1 || check2;
 }
 
+/**
+ * This function checks if a code block might be ending soon, based on the
+ * current token and the state of the `isCodeBlock` variable.
+ *
+ * @param {any} token - The current token or string being processed.
+ * @return {boolean} - True if a code block might be ending soon, false otherwise.
+ */
 function checkIfCodeBlockMaybeEnding(token: any): boolean {
   return token === "``" && isCodeBlock;
 }
 
+/**
+ * This function checks for a signal in the response data that indicates the
+ * start of a stream, based on the current token and the state variables.
+ *
+ * @param {any} token - The current token or string being processed.
+ * @return {boolean} - True if a stream start signal is detected, false otherwise.
+ */
 function checkForStreamStartSignal(token: any): boolean {
   return isCodeBlock && waitingForNewline && token === "\n";
 }
 
+/**
+ * This function checks whether the script can continue streaming data
+ * based on the current state variables.
+ *
+ * @return {boolean} - True if the script can continue streaming data, false otherwise.
+ */
 function checkIfCanStream(): boolean {
   return isCodeBlock && !waitingForNewline;
 }
 
+/**
+ * This function checks if a code block is starting based on the current token
+ * and the state of the `isCodeBlock` variable.
+ *
+ * @param {any} token - The current token or string being processed.
+ * @return {boolean} - True if a code block is starting, false otherwise.
+ */
 function checkIfCodeBlockIsStarting(token: any): boolean {
   return !isCodeBlock && token === "```";
 }
 
+// TODO: Produce this only in debug mode
 function writeRawLogs(responseLogRaw: string[]) {
   try {
     const root = getRoot();
@@ -225,6 +285,7 @@ function writeRawLogs(responseLogRaw: string[]) {
   }
 }
 
+// TODO: Produce this only in debug mode
 function writeLogs(responseLog: string[]) {
   try {
     const root = getRoot();
