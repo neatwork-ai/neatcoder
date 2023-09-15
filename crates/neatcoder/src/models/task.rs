@@ -1,3 +1,4 @@
+use js_sys::JsString;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -37,8 +38,8 @@ impl Task {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn name(&self) -> String {
-        self.name.clone()
+    pub fn name(&self) -> JsString {
+        self.name.clone().into()
     }
 
     #[wasm_bindgen(getter, js_name = taskParams)]

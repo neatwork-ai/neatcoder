@@ -10,6 +10,7 @@ import * as path from "path";
 import { TaskView } from "../models/task";
 import * as wasm from "../../pkg/neatcoder";
 import { scanSourceFolder, streamCode } from "./streamCode";
+import { makeRequest } from "../httpClient";
 
 export async function startJob(
   taskView: TaskView,
@@ -29,17 +30,18 @@ export async function startJob(
     await appState.scaffoldProject(
       llmClient,
       llmParams,
-      taskView.task.taskParams
+      taskView.task.taskParams,
+      makeRequest
     );
   }
 
   if (taskType === wasm.TaskType.BuildExecutionPlan) {
-    await appState.buildExecutionPlan(llmClient, llmParams);
+    await appState.buildExecutionPlan(llmClient, llmParams, makeRequest);
   }
 
   if (taskType === wasm.TaskType.CodeGen) {
     // If a new file should be created (or overwritten)
-    const filePath: string = taskView.task.taskParams.streamCode.getFilename();
+    const filePath: string = taskView.task.taskParams.streamCode!.filename;
     const tokenWriter = fs.createWriteStream(filePath, { flags: "w" });
 
     const directoryPath = path.dirname(filePath);

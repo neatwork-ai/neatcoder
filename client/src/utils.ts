@@ -15,52 +15,20 @@ export function readAppState(): wasm.AppState {
     return wasm.AppState.empty();
   }
 
-  // Read the file content
-  const binaryData = fs.readFileSync(filePath);
-
-  // Deserialize the data
-  const stateData = deserializeAppState(binaryData);
-
-  // Create a new AppState instance and populate it with the deserialized data
-
-  // const todoPipeline = new wasm.Pipeline(
-  //   stateData.taskPool.todo.task,
-  //   stateData.taskPool.todo.order
-  // );
-  // const donePipeline = new wasm.Pipeline(
-  //   stateData.done.task,
-  //   stateData.done.order
-  // );
-
-  // const realTaskPool = new wasm.TaskPool(
-  //   stateData.taskPool.counter,
-  //   todoPipeline,
-  //   donePipeline
-  // );
-
-  // const realTaskPool = new wasm.TaskPool(stateData.taskPool);
-
-  vscode.window.showInformationMessage(
-    `APP STATE!!: ${JSON.stringify(stateData)}`
-  );
-
-  const stringifiedData = JSON.stringify(stateData, null, 2);
   try {
-    const appState = new wasm.AppState(stringifiedData);
+    // Read the file content
+    const binaryData = fs.readFileSync(filePath);
+
+    // Deserialize the data
+    const appState = deserializeAppState(binaryData);
+
     return appState;
   } catch (e) {
-    vscode.window.showInformationMessage(`ERROR: ${e}`);
+    vscode.window.showInformationMessage(
+      `Failed to Retrieve cached data: ${e}`
+    );
     throw e;
   }
-
-  // stateData.specs,
-  // stateData.scaffold,
-  // stateData.interfaces,
-
-  //
-  //
-  // return appState;
-  //TODO remove
 }
 
 function readDirectoryStructure(
@@ -109,39 +77,26 @@ function saveFile(
 /// ===== Serialize / Deserialize ===== ///
 
 export function serializeAppState(appState: wasm.AppState): ArrayBuffer {
-  const data = {
-    specs: appState.specs,
-    scaffold: appState.scaffold,
-    interfaces: appState.interfaces,
-    taskPool: appState.taskPool,
-  };
-
-  const jsonString = JSON.stringify(data, null, 2);
-  const compressedData = pako.gzip(jsonString);
-  return compressedData.buffer as ArrayBuffer;
-}
-
-function deserializeAppState(buffer: ArrayBuffer): any {
   try {
-    const decompressedData = pako.ungzip(new Uint8Array(buffer));
-    const jsonString = new TextDecoder().decode(decompressedData);
-    return JSON.parse(jsonString);
+    const jsonString = appState.castToString();
+    const compressedData = pako.gzip(jsonString);
+    return compressedData.buffer as ArrayBuffer;
   } catch (e) {
-    vscode.window.showErrorMessage(`Decompression failed:, ${e}`);
+    vscode.window.showErrorMessage(`Serialization failed:, ${e}`);
     throw e;
   }
 }
 
-function serializeString(data: string): ArrayBuffer {
-  const jsonString = JSON.stringify(data);
-  const compressedData = pako.deflate(jsonString);
-  return compressedData.buffer as ArrayBuffer;
-}
-
-function deserializeString(buffer: ArrayBuffer): string {
-  const decompressedData = pako.inflate(new Uint8Array(buffer));
-  const jsonString = new TextDecoder().decode(decompressedData);
-  return JSON.parse(jsonString) as string;
+function deserializeAppState(buffer: ArrayBuffer): wasm.AppState {
+  try {
+    const decompressedData = pako.ungzip(new Uint8Array(buffer));
+    const jsonString = new TextDecoder().decode(decompressedData);
+    const appState = wasm.AppState.castFromString(jsonString);
+    return appState;
+  } catch (e) {
+    vscode.window.showErrorMessage(`Deserialization failed:, ${e}`);
+    throw e;
+  }
 }
 
 /// ===== Getters && Others ===== ///

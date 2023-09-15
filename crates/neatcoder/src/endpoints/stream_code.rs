@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use js_sys::Function;
+use js_sys::{Function, JsString};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -11,6 +11,7 @@ use crate::{
         msg::{GptRole, OpenAIMsg},
         params::OpenAIParams,
     },
+    utils::log,
 };
 
 #[wasm_bindgen]
@@ -27,9 +28,9 @@ impl CodeGenParams {
         CodeGenParams { filename }
     }
 
-    #[wasm_bindgen(getter, js_name = getFilename)]
-    pub fn get_filename(&self) -> String {
-        self.filename.clone()
+    #[wasm_bindgen(getter)]
+    pub fn filename(&self) -> JsString {
+        self.filename.clone().into()
     }
 }
 
@@ -37,7 +38,7 @@ pub async fn stream_code(
     app_state: &AppState,
     client: &OpenAI,
     ai_params: &OpenAIParams,
-    task_params: CodeGenParams,
+    task_params: &CodeGenParams,
     codebase: BTreeMap<String, String>,
     callback: Function,
 ) -> Result<()> {
@@ -45,7 +46,7 @@ pub async fn stream_code(
 
     let CodeGenParams { filename } = task_params;
 
-    println!("[INFO] Running `CodeGen` Job: {}", filename);
+    log(&format!("[INFO] Running `CodeGen` Job: {}", filename));
 
     if app_state.scaffold.is_none() {
         return Err(anyhow!("No project scaffold config available.."));
@@ -111,7 +112,7 @@ pub async fn stream_rust(
     _prompts: Vec<OpenAIMsg>,
     _callback: Function,
 ) -> Result<()> {
-    println!("[INFO] Initiating Stream");
+    log("[INFO] Initiating Stream");
 
     // let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 

@@ -1,11 +1,9 @@
 use anyhow::{anyhow, Result};
-use js_sys::Object;
+use js_sys::JsString;
 use js_sys::{Error, Function};
 use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen::to_value;
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
-use web_sys::console;
 
 use crate::{
     endpoints::{
@@ -81,18 +79,50 @@ pub struct AppState {
 }
 
 #[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "Record<string, Interface>")]
+    pub type IInterfaces;
+
+    #[wasm_bindgen(typescript_type = "Record<string, string>")]
+    pub type ICodebase;
+
+    #[wasm_bindgen(typescript_type = "Array<Task>")]
+    pub type ITasksVec;
+}
+
+#[wasm_bindgen]
 impl AppState {
     #[wasm_bindgen(constructor)]
-    pub fn new(value: JsValue) -> Result<AppState, JsValue> {
-        console::error_1(
-            &format!("AppState JsValue is: {:?}", value).as_str().into(),
-        );
+    pub fn new(
+        specs: Option<String>,
+        scaffold: Option<String>,
+        interfaces: IInterfaces,
+        task_pool: TaskPool,
+    ) -> Result<AppState, JsValue> {
+        let interfaces = BTreeMap::from_extern(interfaces)?;
+        Ok(Self {
+            listeners: Vec::new(),
+            specs,
+            scaffold,
+            interfaces,
+            task_pool,
+        })
+    }
 
-        let app_state: Result<AppState, _> =
-            serde_wasm_bindgen::from_value(value)
-                .map_err(|e| JsValue::from_str(&e.to_string()));
+    #[wasm_bindgen(js_name = castToString)]
+    pub fn cast_to_string(&self) -> Result<JsString, JsError> {
+        let json = serde_json::to_string(self)
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-        return app_state;
+        Ok(json.into())
+    }
+
+    #[wasm_bindgen(js_name = castFromString)]
+    pub fn cast_from_string(json: String) -> Result<AppState, JsError> {
+        let app_state = serde_json::from_str(&json)
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
+
+        Ok(app_state)
     }
 
     pub fn empty() -> Self {
@@ -105,61 +135,38 @@ impl AppState {
         }
     }
 
-    // // This is here to help in the storing process
-    // #[wasm_bindgen(getter, js_name = makeCopy)]
-    // pub fn make_copy(&self) -> Self {
-    //     Self {
-    //         listeners: Vec::new(),
-    //         specs: None,
-    //         scaffold: None,
-    //         interfaces: BTreeMap::new(),
-    //         task_pool: TaskPool::empty(),
-    //     }
-    // }
-
     pub fn subscribe(&mut self, callback: &js_sys::Function) {
         self.listeners.push(callback.clone());
     }
 
-    #[wasm_bindgen(getter, js_name = specs)]
-    pub fn get_specs(&self) -> JsValue {
+    #[wasm_bindgen(getter)]
+    pub fn specs(&self) -> Option<JsString> {
         match &self.specs {
-            Some(s) => JsValue::from_str(s),
-            None => JsValue::NULL,
+            Some(specs) => Some(specs.clone().into()),
+            None => None,
         }
     }
 
-    #[wasm_bindgen(getter, js_name = scaffold)]
-    pub fn get_scaffold(&self) -> JsValue {
+    #[wasm_bindgen(getter)]
+    pub fn scaffold(&self) -> Option<JsString> {
         match &self.scaffold {
-            Some(s) => JsValue::from_str(s),
-            None => JsValue::NULL,
+            Some(scaffold) => Some(scaffold.clone().into()),
+            None => None,
         }
     }
 
-    // #[wasm_bindgen(typescript_type = "Record<string, Interface>")]
-    #[wasm_bindgen(getter, js_name = interfaces)]
-    pub fn get_interfaces(&self) -> JsValue {
-        let obj = Object::new();
-
-        for (key, value) in &self.interfaces {
-            let js_interface =
-                JsValue::from_str(&serde_json::to_string(&value).unwrap());
-            js_sys::Reflect::set(&obj, &JsValue::from_str(key), &js_interface)
-                .unwrap();
-        }
-
-        // Using the InterfacesRecord type to match the TypeScript type
-        JsValue::from(obj)
+    #[wasm_bindgen(getter)]
+    pub fn interfaces(&self) -> Result<IInterfaces, JsError> {
+        BTreeMap::to_extern(self.interfaces.clone())
     }
 
     #[wasm_bindgen(getter, js_name = taskPool)]
-    pub fn get_task_pool(&self) -> JsValue {
-        to_value(&self.task_pool).unwrap()
+    pub fn task_pool(&self) -> TaskPool {
+        self.task_pool.clone()
     }
 
     #[wasm_bindgen(js_name = getTodoTasks)]
-    pub fn get_todo_tasks(&self) -> JsValue {
+    pub fn get_todo_tasks(&self) -> Result<ITasksVec, JsError> {
         let tasks: Vec<_> = self
             .task_pool
             .todo
@@ -169,11 +176,11 @@ impl AppState {
             .cloned()
             .collect();
 
-        to_value(&tasks).unwrap()
+        Vec::to_extern(tasks)
     }
 
     #[wasm_bindgen(js_name = getDoneTasks)]
-    pub fn get_done_tasks(&self) -> JsValue {
+    pub fn get_done_tasks(&self) -> Result<ITasksVec, JsError> {
         let tasks: Vec<_> = self
             .task_pool
             .done
@@ -183,7 +190,7 @@ impl AppState {
             .cloned()
             .collect();
 
-        to_value(&tasks).unwrap()
+        Vec::to_extern(tasks)
     }
 
     #[wasm_bindgen(js_name = finishTaskById)]
@@ -194,7 +201,7 @@ impl AppState {
     #[wasm_bindgen(setter = setInterfaces)]
     pub fn set_interfaces(
         &mut self,
-        interfaces: JsValue,
+        interfaces: IInterfaces,
     ) -> Result<(), JsError> {
         if !self.interfaces.is_empty() {
             return Err(anyhow!("Data model already exists"))
@@ -262,15 +269,22 @@ impl AppState {
         client: &OpenAI,
         ai_params: &OpenAIParams,
         task_params: TaskParams,
+        request_callback: &Function,
     ) -> Result<(), JsError> {
         let task_params = task_params
-            .scaffold_project()
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .scaffold_project_()
+            .ok_or("No ScaffoldProject field. This error should not occur.")
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-        let scaffold_json =
-            scaffold_project(client, ai_params, task_params, self)
-                .await
-                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let scaffold_json = scaffold_project(
+            client,
+            ai_params,
+            task_params,
+            self,
+            request_callback,
+        )
+        .await
+        .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         self.scaffold = Some(scaffold_json.to_string());
 
@@ -284,13 +298,15 @@ impl AppState {
         &mut self,
         client: &OpenAI,
         ai_params: &OpenAIParams,
+        request_callback: &Function,
     ) -> Result<(), JsError> {
-        let plan = build_execution_plan(client, ai_params, self)
-            .await
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let plan =
+            build_execution_plan(client, ai_params, self, request_callback)
+                .await
+                .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         let files = Files::from_schedule(&plan)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         // Add code writing jobs to the job queue
         for file in files.iter() {
@@ -300,7 +316,7 @@ impl AppState {
                 TaskType::CodeGen,
                 Box::new(CodeGenParams { filename: file_ }),
             )
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
             self.task_pool.add_todo(&format!("{}", file), task_params);
         }
@@ -316,18 +332,19 @@ impl AppState {
         client: &OpenAI,
         ai_params: &OpenAIParams,
         task_params: TaskParams,
-        codebase: JsValue,
+        codebase: ICodebase,
         callback: Function,
     ) -> Result<(), JsError> {
         let task_params = task_params
-            .stream_code()
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .stream_code_()
+            .ok_or("No StreamCode field. This error should not occur.")
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         let codebase = BTreeMap::from_extern(codebase)?;
 
         stream_code(self, client, ai_params, task_params, codebase, callback)
             .await
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         Ok(())
     }
@@ -455,65 +472,47 @@ pub mod tests {
     use super::*;
     use wasm_bindgen_test::*;
 
-    // #[wasm_bindgen_test]
-    // pub fn test_app_state_new() {
-    //     let json_value = JsValue::from_str(
-    //         r#"{"specs":null,"scaffold":null,"interfaces":"{"aaa":{"
-    // interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
-    // ClickHouse","customType":null,"port":null,"host":null,"schemas":{}}},"
-    // storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":
-    // {},"order":[]},"done":{"tasks":{},"order":[]}}}"#,         //
-    // opriginal //
-    // r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\
-    // ":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"
-    // ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":
-    // {}}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"
-    // tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,     );
+    #[wasm_bindgen_test]
+    pub fn test_app_state_new() {
+        let json = r#"{
+            "specs":null,
+            "scaffold":null,
+            "interfaces":{
+                "aaa":{
+                    "interfaceType":"Database",
+                    "inner":{
+                        "database":{
+                            "name":"aaa",
+                            "dbType":"ClickHouse",
+                            "customType":null,
+                            "port":null,
+                            "host":null,
+                            "schemas":{}
+                        }
+                    },
+                    "storage":null,
+                    "api":null
+                }
+            },
+            "taskPool":{
+                "counter":0,
+                "todo":{
+                    "tasks":{},
+                    "order":[]
+                },
+                "done":{
+                    "tasks":{},
+                    "order":[]
+                }
+            }
+        }"#;
 
-    //     //  OK:
-    // "{"interfaces":{"MyDB":{"interfaceType":"Database","inner":{"database":{"
-    // name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"
-    // schemas":{"MySchema":"schema"}},"storage":null,"api":null}},"MyApi":{"
-    // interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"
-    // name":"MyApi","api_type":"RestfulApi","custom_type":null,"port":null,"
-    // host":null,"schemas":{"MySchema":"schema"}}}}},"task_pool":{"counter":3,"
-    // todo":{"tasks":{"2":{"id":2,"name":"Task2","task_params":{"task_type":"
-    // BuildExecutionPlan","inner":{"scaffold_project":null,"stream_code":
-    // null}},"status":"Todo"},"3":{"id":3,"name":"Task3","task_params":{"
-    // task_type":"CodeGen","inner":{"scaffold_project":null,"stream_code":{"
-    // filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"
-    // tasks":{"1":{"id":1,"name":"Task1","task_params":{"task_type":"
-    // ScaffoldProject","inner":{"scaffold_project":{"specs":"specs"},"
-    // stream_code":null}},"status":"Todo"}},"order":[1]}}}")'     // NOK:
-    // "{"interfaces":"{"aaa":{"interfaceType":"Database","inner":{"database":{"
-    // name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":
-    // null,"schemas":{}}},"storage\":null,\"api\":null}}}","taskPool":{"
-    // counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":
-    // []}}}"#,
+        let app_state = AppState::cast_from_string(json.to_string());
 
-    //     let app_state = AppState::new(json_value);
-
-    //     if let Err(e) = app_state {
-    //         panic!("Failed to create AppState: {:?}", e);
-    //     }
-
-    //     // let js_value: JsValue = JsValue::from_str(js_value_string);
-    //     // // panic!("{:?}", js_value);
-
-    //     // // let app_state = AppState::new(js_value);
-    //     // let app_state: Result<AppState, _> =
-    //     //     serde_json::from_str(js_value_string);
-
-    //     // match app_state {
-    //     //     Ok(app_state) => {
-    //     //         // Here we would check the fields of app_state to make
-    // sure they have the expected values.     //     }
-    //     //     Err(e) => {
-    //     //         panic!("Failed to create AppState: {:?}", e);
-    //     //         // eprintln!("Failed to create AppState: {:?}", e);
-    //     //     }
-    //     // }
-    // }
+        if let Err(e) = app_state {
+            panic!("Failed to create AppState: {:?}", e);
+        }
+    }
 
     #[wasm_bindgen_test]
     pub fn app_state_deserialize() {
@@ -587,32 +586,18 @@ pub mod tests {
             task_pool,
         );
 
-        // Deserialized - Should be equal to:
-        // JsValue("{"specs":"specs","scaffold":"scaffold","interfaces":{"MyDB":
-        // {"interfaceType":"Database","inner":{"database":{"name":"MyDB","
-        // dbType":"MySql","customType":null,"port":null,"host":null,"schemas":
-        // {"MySchema":"schema"}},"storage":null,"api":null}},"MyApi":{"
-        // interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"
-        // name":"MyApi","api_type":"RestfulApi","custom_type":null,"port":null,
-        // "host":null,"schemas":{"MySchema":"schema"}}}}},"task_pool":{"
-        // counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","task_params":
-        // {"task_type":"BuildExecutionPlan","inner":{"scaffold_project":null,"
-        // stream_code":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","
-        // task_params":{"task_type":"CodeGen","inner":{"scaffold_project":null,
-        // "stream_code":{"filename":"filename.rs"}}},"status":"Todo"}},"order":
-        // [3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","task_params":{"
-        // task_type":"ScaffoldProject","inner":{"scaffold_project":{"specs":"
-        // specs"},"stream_code":null}},"status":"Todo"}},"order":[1]}}}")'
-        let actual =
-            JsValue::from_str(&serde_json::to_string(&app_state).unwrap());
+        let actual = AppState::cast_to_string(&app_state)
+            .unwrap()
+            .as_string()
+            .unwrap();
 
-        let expected = JsValue::from_str(
+        let expected = String::from(
             r#"{"specs":"specs","scaffold":"scaffold","interfaces":{"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","apiType":"RestfulApi","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}},"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}}},"taskPool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","taskParams":{"taskType":"BuildExecutionPlan","inner":{"scaffoldProject":null,"streamCode":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","taskParams":{"taskType":"CodeGen","inner":{"scaffoldProject":null,"streamCode":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","taskParams":{"taskType":"ScaffoldProject","inner":{"scaffoldProject":{"specs":"specs"},"streamCode":null}},"status":"Todo"}},"order":[1]}}}"#,
         );
 
         assert_eq!(actual, expected);
 
-        let app_state = AppState::new(actual);
+        let app_state = AppState::cast_from_string(actual);
 
         if let Err(e) = app_state {
             panic!("Failed to create AppState: {:?}", e);
@@ -641,16 +626,18 @@ pub mod tests {
 
         let app_state = AppState::new_(None, None, interfaces, task_pool);
 
-        let _actual =
-            JsValue::from_str(&serde_json::to_string(&app_state).unwrap());
+        let actual = AppState::cast_to_string(&app_state)
+            .unwrap()
+            .as_string()
+            .unwrap();
 
-        let expected = JsValue::from_str(
+        let expected = String::from(
             r#"{"specs":null,"scaffold":null,"interfaces":{"aaa":{"interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage":null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
         );
 
-        // assert_eq!(actual, expected);
+        assert_eq!(actual, expected);
 
-        let app_state = AppState::new(expected);
+        let app_state = AppState::cast_from_string(expected);
 
         if let Err(e) = app_state {
             panic!("Failed to create AppState: {:?}", e);
@@ -672,47 +659,18 @@ pub mod tests {
         assert_eq!(actual, expected);
     }
 
-    // #[wasm_bindgen_test]
-    // pub fn gradcefully_handles_stringified_objects() {
-    //     let expected = JsValue::from_str(
-    //         r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"
-    // interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"
-    // dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\
-    // "schemas\":{}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,
-    // "todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
-    //     );
+    #[wasm_bindgen_test]
+    pub fn gracefully_handles_stringified_objects() {
+        let expected = JsValue::from_str(
+            r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"
+    interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"
+    dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\
+    "schemas\":{}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,
+    "todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
+        );
 
-    //     if expected.as_string().is_none() {
-    //         panic!("Upsie")
-    //     }
-    // }
+        if expected.as_string().is_none() {
+            panic!("Upsie")
+        }
+    }
 }
-
-// APP STATE!!:
-// {"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"interfaceType\":\"
-// Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"dbType\":\"ClickHouse\
-// ",\"customType\":null,\"port\":null,\"host\":null,\"schemas\":{}},\"storage\"
-// :null,\"api\":null}}}","taskPool":{"counter":0,"todo":{"tasks":{},"order":
-// []},"done":{"tasks":{},"order":[]}}} ERROR: invalid type: string
-// "{\"aaa\":{\"interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\
-// "aaa\",\"dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":
-// null,\"schemas\":{}},\"storage\":null,\"api\":null}}}", expected a map at
-// line 1 column 250
-
-// left:  `JsValue("{"specs":null,"scaffold":null,"interfaces":{"aaa":{"
-// interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
-// ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage"
-// :null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"
-// done":{"tasks":{},"order":[]}}}")`,
-// right: `JsValue("{"specs":null,"scaffold":null,"interfaces":{\"aaa\":{\"
-// interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"
-// dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\"
-// schemas\":{}},\"storage\":null,\"api\":null}}},"taskPool":{"counter":0,"todo"
-// :{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}")`'
-
-// right: `JsValue("{"specs":null,"scaffold":null,"interfaces":{"aaa":{"
-// interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"
-// ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage"
-// :null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"
-// done":{"tasks":{},"order":[]}}}")`',
-// crates/neatcoder/src/models/state.rs:610:9

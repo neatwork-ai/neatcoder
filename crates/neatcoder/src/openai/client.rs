@@ -1,11 +1,12 @@
-use std::{fmt, ops::Deref};
-
-use anyhow::{anyhow, Result};
-use reqwest::Client;
-use serde_json::{json, Value};
-use wasm_bindgen::prelude::wasm_bindgen;
-
 use super::{msg::OpenAIMsg, output::Body, params::OpenAIParams};
+use crate::utils::log;
+use anyhow::{anyhow, Result};
+use js_sys::{Function, Promise};
+use serde_json::{json, Value};
+use std::{fmt, ops::Deref};
+use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
+use wasm_bindgen_futures::JsFuture;
+use web_sys::Response;
 
 #[wasm_bindgen]
 pub struct OpenAI {
@@ -38,14 +39,17 @@ impl OpenAI {
 
     pub async fn chat(
         &self,
-        job: impl Deref<Target = OpenAIParams>,
+        request_callback: &Function,
+        ai_params: impl Deref<Target = OpenAIParams>,
         msgs: &[&OpenAIMsg],
         funcs: &[&String],
         stop_seq: &[String],
     ) -> Result<String> {
-        println!("[DEBUG] Getting Chat Raw...");
-        let chat = self.chat_raw(job, msgs, funcs, stop_seq).await?;
-        println!("[DEBUG] Got answer.");
+        log("[DEBUG] Getting Chat Raw...");
+        let chat = self
+            .chat_raw(request_callback, ai_params, msgs, funcs, stop_seq)
+            .await?;
+        log("[DEBUG] Got answer.");
         let answer = chat.choices.first().unwrap().message.content.as_str();
 
         Ok(String::from(answer))
@@ -53,39 +57,51 @@ impl OpenAI {
 
     pub async fn chat_raw(
         &self,
-        job: impl Deref<Target = OpenAIParams>,
+        request_callback: &Function,
+        ai_params: impl Deref<Target = OpenAIParams>,
         msgs: &[&OpenAIMsg],
         funcs: &[&String],
         stop_seq: &[String],
     ) -> Result<Body> {
-        let client = Client::new();
+        let req_body =
+            self.request_body(ai_params, msgs, funcs, stop_seq, false)?;
 
-        let req_body = self.request_body(job, msgs, funcs, stop_seq, false)?;
-        println!("[DEBUG] Sending reqeust to OpenAI...");
-        let res = client
-            .post("https://api.openai.com/v1/chat/completions")
-            .header(
-                "Authorization",
-                format!(
-                    "Bearer {}",
-                    self.api_key.as_ref().expect("No API Keys provided")
-                ),
-            )
-            .header("Content-Type", "application/json")
-            .json(&req_body)
-            .send()
-            .await?;
-        println!("[DEBUG] Got response.....");
-        let status = res.status();
+        let body_json = serde_json::to_string(&req_body)?;
 
-        if !status.is_success() {
-            return Err(anyhow!("Failed with status: {}", status));
+        log("[DEBUG] Getting promise...");
+        let js_promise: Promise = request_callback
+            .call1(&JsValue::NULL, &JsValue::from_str(&body_json))
+            .map_err(|e| anyhow!("Error performing request callback: {:?}", e))?
+            .dyn_into()
+            .map_err(|e| {
+                anyhow!("Error processing request callback promise: {:?}", e)
+            })?;
+        log("[DEBUG] Resolving promise...");
+        let res_js_value: JsValue =
+            JsFuture::from(js_promise).await.map_err(|e| {
+                anyhow!("Error processing request callback result: {:?}", e)
+            })?;
+
+        log("[DEBUG] Promise resolved...");
+        log(&format!("Correct Request body: {:?}", res_js_value));
+
+        if let Ok(res) = res_js_value.dyn_into::<Response>() {
+            // Now `res` is a `web_sys::Response` instance and you can work with it using web-sys APIs.
+            // For example, to get the response as text:
+            let text_js_promise = res.text().map_err(|e| {
+                anyhow!("Error fetching request body promise: {:?}", e)
+            })?;
+            let body_js_value: JsValue = JsFuture::from(text_js_promise)
+                .await
+                .map_err(|e| anyhow!("Error fetching request body: {:?}", e))?;
+            let body: String = body_js_value.as_string().unwrap();
+
+            let api_response = serde_json::from_str(body.as_str())?;
+            return Ok(api_response);
+        } else {
+            // Handle the case where the JsValue could not be cast to a Response
+            return Err(anyhow!("Could not convert JsValue to Response",));
         }
-
-        let body = res.text().await?;
-        let api_response = serde_json::from_str(body.as_str())?;
-
-        Ok(api_response)
     }
 
     pub async fn chat_stream(
@@ -121,7 +137,7 @@ impl OpenAI {
         // return Ok(stream);
     }
 
-    fn request_body(
+    pub fn request_body(
         &self,
         job: impl Deref<Target = OpenAIParams>,
         msgs: &[&OpenAIMsg],
