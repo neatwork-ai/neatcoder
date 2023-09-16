@@ -11,7 +11,7 @@ import { AppStateManager } from "../appStateManager";
  * @param appManager - The application state manager which is responsible for managing application state, including starting jobs.
  * @return Promise<void> - A promise that resolves once the job has been initiated.
  */
-export async function startJob(
+export async function runTask(
   taskView: TaskView,
   llmClient: wasm.OpenAI,
   llmParams: wasm.OpenAIParams,
@@ -19,5 +19,5 @@ export async function startJob(
 ): Promise<void> {
   const taskId = taskView.task.id;
 
-  await appManager.startJob(taskId, llmClient, llmParams);
+  await appManager.runTask(taskId, llmClient, llmParams);
 }

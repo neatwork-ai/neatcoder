@@ -8,8 +8,8 @@ import { TasksCompletedProvider } from "./providers/tasksCompleted";
 import { setupConfigWatcher } from "./watchers/configWatcher";
 import { addSchema } from "./commands/schemas/addSchema";
 import { setupSchemaWatchers } from "./watchers/schemaWatcher";
-import { startJob } from "./commands/startJob";
-import { startPrompt } from "./commands/startPrompt";
+import { runTask } from "./commands/runTask";
+import { initCodeBase } from "./commands/initCodeBase";
 import { removeInterface } from "./commands/interfaces/removeInterface";
 import { removeSchema } from "./commands/schemas/removeSchema";
 import InterfaceItem from "./providers/interfaceItem";
@@ -18,10 +18,10 @@ import { addInterface } from "./commands/interfaces/addInterface";
 import * as wasm from "./../pkg/neatcoder";
 import { AppStateManager } from "./appStateManager";
 import { getOrSetApiKey } from "./utils";
-import { removeJob } from "./commands/removeJob";
-import { removeAllJobs } from "./commands/removeAllJobs";
+import { removeTask } from "./commands/removeTask";
+import { removeAllTasks } from "./commands/removeAllTasks";
 import { initStatusBar } from "./statusBar";
-import { logger } from "./logger";
+import { initLogger, logger } from "./logger";
 
 let configWatcher: fs.FSWatcher | undefined;
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
@@ -36,6 +36,7 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   initStatusBar(context);
+  initLogger(context);
   getOrSetApiKey();
 
   // Create the output channel for logging
@@ -72,7 +73,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // array of disposables. When the extension is deactivated
   // everything in `context.subscriptions` will be disposed of automatically.
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("jobQueueView", jobQueueProvider)
+    vscode.window.registerTreeDataProvider("taskPoolView", jobQueueProvider)
   );
 
   context.subscriptions.push(
@@ -84,8 +85,8 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.startPrompt", async () => {
-      startPrompt(llmClient, llmParams, appManager);
+    vscode.commands.registerCommand("extension.initCodeBase", async () => {
+      initCodeBase(llmClient, llmParams, appManager);
     })
   );
 
@@ -125,25 +126,25 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "extension.startJob",
+      "extension.runTask",
       async (taskView: TaskView) => {
-        await startJob(taskView, llmClient, llmParams, appManager);
+        await runTask(taskView, llmClient, llmParams, appManager);
       }
     )
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "extension.removeJob",
+      "extension.removeTask",
       (taskView: TaskView) => {
-        removeJob(taskView, appManager);
+        removeTask(taskView, appManager);
       }
     )
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.removeAllJobs", () => {
-      removeAllJobs(appManager);
+    vscode.commands.registerCommand("extension.removeAllTasks", () => {
+      removeAllTasks(appManager);
     })
   );
 }

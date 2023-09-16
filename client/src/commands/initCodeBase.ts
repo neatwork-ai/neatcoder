@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import * as wasm from "./../../pkg/neatcoder";
+import * as wasm from "../../pkg/neatcoder";
 import { AppStateManager } from "../appStateManager";
 import { addLanguage } from "./addLanguage";
 import { startLoading, stopLoading } from "../statusBar";
@@ -16,7 +16,7 @@ import { startLoading, stopLoading } from "../statusBar";
  * @param appManager - The AppStateManager instance responsible for managing the application state, including starting prompts.
  * @returns Promise<void> - A promise that resolves once the prompt process has initiated and the user has been notified.
  */
-export async function startPrompt(
+export async function initCodeBase(
   llmClient: wasm.OpenAI,
   llmParams: wasm.OpenAIParams,
   appManager: AppStateManager
@@ -37,7 +37,7 @@ export async function startPrompt(
 
     if (userInput !== undefined) {
       startLoading();
-      await appManager.startPrompt(llmClient, llmParams, userInput);
+      await appManager.initCodeBase(llmClient, llmParams, userInput);
       stopLoading();
 
       vscode.window.showInformationMessage(

@@ -332,7 +332,7 @@ impl AppState {
         let files = Files::from_schedule(&plan, language)
             .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-        // Add code writing jobs to the job queue
+        // Add code writing jobs to the task pool
         for file in files.iter() {
             let file_ = file.clone();
 

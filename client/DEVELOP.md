@@ -52,17 +52,17 @@ To add to Package JSON:
       "view/title": [
         {
           "command": "extension.stopJob",
-          "when": "view == jobQueueView",
+          "when": "view == taskPoolView",
           "group": "navigation@2"
         },
         {
           "command": "extension.retryJob",
-          "when": "view == jobQueueView",
+          "when": "view == taskPoolView",
           "group": "navigation@3"
         },
         {
-          "command": "extension.removeJob",
-          "when": "view == jobQueueView",
+          "command": "extension.removeTask",
+          "when": "view == taskPoolView",
           "group": "navigation@4"
         },
       ],
@@ -81,7 +81,7 @@ commands: [{
         "icon": "$(refresh)"
       },
       {
-        "command": "extension.removeJob",
+        "command": "extension.removeTask",
         "title": "Remove Job",
         "icon": "$(trash)"
       },]

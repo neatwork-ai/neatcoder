@@ -12,7 +12,7 @@ import { logger } from "./logger";
 
 /**
  * A class to manage the application state, including functionalities such as
- * handling tasks, schemas, interfaces, and initiating various jobs. This manager
+ * handling tasks, schemas, interfaces, and initiating various tasks. This manager
  * is responsible for managing the state as well as calling methods on the
  * WASM AppState struct
  */
@@ -126,14 +126,14 @@ export class AppStateManager {
   }
 
   /**
-   * Initiates a job based on the task ID and the associated task parameters.
+   * Initiates a task based on the task ID and the associated task parameters.
    *
    * @param {number} taskId - The ID of the task to start.
    * @param {wasm.OpenAI} llmClient - The OpenAI client instance.
    * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
-   * @returns {Promise<void>} - A promise indicating the completion of the job.
+   * @returns {Promise<void>} - A promise indicating the completion of the task.
    */
-  public async startJob(
+  public async runTask(
     taskId: number,
     llmClient: wasm.OpenAI,
     llmParams: wasm.OpenAIParams
@@ -224,7 +224,7 @@ export class AppStateManager {
    * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
    * @param {string} userInput - The user input to start the prompt with.
    */
-  public async startPrompt(
+  public async initCodeBase(
     llmClient: wasm.OpenAI,
     llmParams: wasm.OpenAIParams,
     userInput: string

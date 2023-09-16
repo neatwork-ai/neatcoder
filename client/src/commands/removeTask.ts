@@ -7,7 +7,7 @@ import { AppStateManager } from "../appStateManager";
  * @param appManager - The instance of AppStateManager from which all tasks will be removed.
  * @return Promise<void> - A promise that resolves once all tasks are removed.
  */
-export async function removeJob(
+export async function removeTask(
   taskView: TaskView,
   appManager: AppStateManager
 ): Promise<void> {

@@ -22,8 +22,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "extension.startJob",
-        "title": "Run Job",
+        "command": "extension.runTask",
+        "title": "Run Task",
         "icon": "$(play)"
       },
       {
@@ -32,8 +32,8 @@
         "icon": "$(add)"
       },
       {
-        "command": "extension.startPrompt",
-        "title": "Start Project"
+        "command": "extension.initCodeBase",
+        "title": "Workflow: Init Codebase"
       },
       {
         "command": "extension.addDatastore",
@@ -56,18 +56,14 @@
         "icon": "$(remove)"
       },
       {
-        "command": "extension.removeJob",
-        "title": "Remove Job",
+        "command": "extension.removeTask",
+        "title": "Remove Task",
         "icon": "$(remove)"
       },
       {
-        "command": "extension.removeAllJobs",
-        "title": "Remove Job",
+        "command": "extension.removeAllTasks",
+        "title": "Remove all Tasks",
         "icon": "$(trash)"
-      },
-      {
-        "command": "extension.debugAppState",
-        "title": "Print AppState"
       }
     ],
     "viewsContainers": {
@@ -82,8 +78,8 @@
     "views": {
       "activityBarViews": [
         {
-          "id": "jobQueueView",
-          "name": "JOB QUEUE"
+          "id": "taskPoolView",
+          "name": "TASK POOL"
         },
         {
           "id": "auditTrailView",
@@ -98,13 +94,13 @@
     "menus": {
       "view/title": [
         {
-          "command": "extension.startJob",
-          "when": "view == jobQueueView",
+          "command": "extension.runTask",
+          "when": "view == taskPoolView",
           "group": "navigation@1"
         },
         {
-          "command": "extension.removeAllJobs",
-          "when": "view == jobQueueView",
+          "command": "extension.removeAllTasks",
+          "when": "view == taskPoolView",
           "group": "navigation@2"
         },
         {
@@ -135,14 +131,9 @@
           "group": "inline"
         },
         {
-          "command": "extension.removeJob",
-          "when": "view == jobQueueView",
+          "command": "extension.removeTask",
+          "when": "view == taskPoolView",
           "group": "inline"
-        }
-      ],
-      "commandPalette": [
-        {
-          "command": "extension.debugAppState"
         }
       ]
     },
