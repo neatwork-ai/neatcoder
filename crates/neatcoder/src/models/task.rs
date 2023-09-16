@@ -1,10 +1,14 @@
+use js_sys::JsString;
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
+
+use crate::models::task_params::TaskType;
 
 use super::task_params::TaskParams;
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Task {
     pub id: usize,
     pub(crate) name: String,
@@ -31,19 +35,22 @@ impl Task {
         }
     }
 
-    pub fn complete(&mut self) -> Result<(), JsValue> {
+    pub fn complete(&mut self) {
         self.status = TaskStatus::Done;
-
-        Ok(())
     }
 
-    #[wasm_bindgen(getter, js_name = name)]
-    pub fn get_name(&self) -> String {
-        self.name.clone()
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> JsString {
+        self.name.clone().into()
     }
 
     #[wasm_bindgen(getter, js_name = taskParams)]
-    pub fn get_task_params(&self) -> TaskParams {
+    pub fn task_params(&self) -> TaskParams {
         self.task_params.clone()
+    }
+
+    #[wasm_bindgen(js_name = taskType)]
+    pub fn task_type(&self) -> TaskType {
+        self.task_params.task_type
     }
 }

@@ -2,17 +2,22 @@ use anyhow::{anyhow, Result};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::{marker::PhantomData, ops::Deref};
 
+/// A struct representing a bounded float where the bounds are defined by the `T: MinMax` type parameter.
+/// The actual float value is stored in the `inner` field, and the bounds are enforced by the associated
+/// constants of the `T` type.
 #[derive(Debug, Clone, Copy)]
 pub struct BoundedFloat<T> {
     inner: f64,
     _marker: PhantomData<T>,
 }
 
+/// A trait defining constants for minimum and maximum values that serve as bounds for `BoundedFloat`.
 pub trait MinMax {
     const MIN: f64;
     const MAX: f64;
 }
 
+/// A trait for creating a new bounded value, ensuring that the provided value is within the specified bounds.
 pub trait Bounded {
     fn new(value: f64) -> Result<Self>
     where
@@ -23,6 +28,7 @@ impl<T> Bounded for BoundedFloat<T>
 where
     T: MinMax,
 {
+    /// Creates a new `BoundedFloat`, returning an error if the value is not within the bounds specified by `T`.
     fn new(value: f64) -> Result<Self> {
         if T::MIN <= value && value <= T::MAX {
             Ok(Self {
@@ -72,6 +78,7 @@ where
     }
 }
 
+// Definitions for various range types with specific minimum and maximum values.
 #[derive(Debug, Clone, Copy)]
 pub struct Range22;
 #[derive(Debug, Clone, Copy)]
@@ -92,6 +99,7 @@ impl MinMax for Range100s {
     const MAX: f64 = 100.0;
 }
 
+// Type aliases for BoundedFloat with specific range types.
 pub type Scale22 = BoundedFloat<Range22>;
 pub type Scale01 = BoundedFloat<Range01>;
 pub type Scale100s = BoundedFloat<Range100s>;

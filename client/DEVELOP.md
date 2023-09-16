@@ -35,7 +35,7 @@ Reload VS Code: After installing the extension, you may need to reload the windo
 `kill -9 <PID>`
 
 
-// To listen in 
+// To listen in
 `sudo tcpdump -i any port 1895`
 
 ### TEMP
@@ -85,3 +85,7 @@ commands: [{
         "title": "Remove Job",
         "icon": "$(trash)"
       },]
+
+
+
+`npm install copy-webpack-plugin --save-dev`

@@ -1,16 +1,17 @@
 use crate::{
     openai::msg::{GptRole, OpenAIMsg},
-    utils::{jsvalue_to_map, map_to_jsvalue},
+    JsError, WasmType,
 };
 use anyhow::Result;
+use js_sys::JsString;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     fmt::{self, Display},
 };
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
 
-use super::{AsContext, SchemaFile};
+use super::{AsContext, ISchemas, SchemaFile};
 
 /// Struct documenting a Data storage interface. This refers to more raw storage
 /// solutions that usually provide a direct interface to a file or object-store
@@ -19,6 +20,7 @@ use super::{AsContext, SchemaFile};
 /// data-lake that utilizes `parquet` files or `ndjson` files.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[wasm_bindgen]
+#[serde(rename_all = "camelCase")]
 pub struct Storage {
     pub(crate) name: String,
     pub file_type: FileType,
@@ -28,7 +30,7 @@ pub struct Storage {
     /// Field that is only present when the type chose is a custom one
     custom_storage_type: Option<String>,
     pub(crate) region: Option<String>,
-    pub(crate) schemas: HashMap<String, SchemaFile>,
+    pub(crate) schemas: BTreeMap<String, SchemaFile>,
 }
 
 /// Enum documenting the type of data storages.
@@ -81,42 +83,59 @@ pub enum FileType {
     Xml,
 }
 
+#[wasm_bindgen]
 impl Storage {
     // Create a new Storage instance from JavaScript
+    #[wasm_bindgen(constructor)]
     pub fn new(
         name: String,
         file_type: FileType,
         storage_type: StorageType,
         region: Option<String>,
-        schemas: &JsValue,
-    ) -> Storage {
-        Storage {
+        schemas: ISchemas,
+    ) -> Result<Storage, JsError> {
+        let schemas = BTreeMap::from_extern(schemas)?;
+
+        Ok(Storage {
             name,
             file_type,
             storage_type,
             custom_file_type: None,
             custom_storage_type: None,
-            schemas: jsvalue_to_map(schemas),
+            schemas,
             region,
-        }
+        })
     }
 
     // TODO: New Custom method
 
-    // Get the schemas as a JsValue to return to JavaScript
-    pub fn schemas(&self) -> JsValue {
-        map_to_jsvalue(&self.schemas)
+    // Get the schemas as ISchemas to return to JavaScript
+    #[wasm_bindgen(getter)]
+    pub fn schemas(&self) -> Result<ISchemas, JsError> {
+        BTreeMap::to_extern(self.schemas.clone())
     }
 
-    pub fn name(&self) -> String {
-        self.name.clone()
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> JsString {
+        self.name.clone().into()
     }
 
-    pub fn region(&self) -> JsValue {
+    #[wasm_bindgen(setter)]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn region(&self) -> Option<JsString> {
         match &self.region {
-            Some(s) => JsValue::from_str(s),
-            None => JsValue::NULL,
+            Some(region) => Some(region.clone().into()),
+            None => None,
         }
+    }
+
+    #[wasm_bindgen(setter)]
+    pub fn set_region(&mut self, host: Option<String>) {
+        self.region = host;
     }
 }
 

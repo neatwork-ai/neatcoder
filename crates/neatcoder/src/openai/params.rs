@@ -5,7 +5,8 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
     openai::utils::{BoundedFloat, Range100s},
-    utils::jsvalue_to_map,
+    utils::jsvalue_to_hmap,
+    JsError,
 };
 
 use super::utils::{Bounded, Scale01, Scale100s, Scale22};
@@ -79,7 +80,7 @@ pub struct OpenAIParams {
     /// values like -100 or 100 should result in a ban or exclusive selection
     /// of the relevant token.
     pub(crate) logit_bias: HashMap<String, Scale100s>, // TODO: Add getter
-    /// A unique identifier representing your end-user, which can help OpenAI
+    /// A unique identifier representing the end-user, which can help OpenAI
     /// to monitor and detect abuse. You can read more at:
     /// https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids
     pub(crate) user: Option<String>,
@@ -99,11 +100,11 @@ impl OpenAIParams {
         stream: bool,
         logit_bias: JsValue,
         user: Option<String>,
-    ) -> Self {
+    ) -> Result<OpenAIParams, JsValue> {
         let top_p = match top_p {
             Some(top_p) => Some(
                 BoundedFloat::new(top_p)
-                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+                    .map_err(|e| JsError::from_str(&e.to_string()))?,
             ),
             None => None,
         };
@@ -111,7 +112,7 @@ impl OpenAIParams {
         let frequency_penalty = match frequency_penalty {
             Some(frequency_penalty) => Some(
                 BoundedFloat::new(frequency_penalty)
-                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+                    .map_err(|e| JsError::from_str(&e.to_string()))?,
             ),
             None => None,
         };
@@ -119,14 +120,15 @@ impl OpenAIParams {
         let presence_penalty = match presence_penalty {
             Some(presence_penalty) => Some(
                 BoundedFloat::new(presence_penalty)
-                    .unwrap_or_else(|e| panic!("Encountered an error: {}", e)),
+                    .map_err(|e| JsError::from_str(&e.to_string()))?,
             ),
             None => None,
         };
 
-        let logit_bias = jsvalue_to_map::<BoundedFloat<Range100s>>(&logit_bias);
+        let logit_bias =
+            jsvalue_to_hmap::<String, BoundedFloat<Range100s>>(logit_bias)?;
 
-        Self {
+        Ok(Self {
             model,
             temperature,
             max_tokens,
@@ -137,7 +139,7 @@ impl OpenAIParams {
             stream,
             logit_bias,
             user,
-        }
+        })
     }
 
     pub fn empty(model: OpenAIModels) -> Self {
@@ -156,17 +158,6 @@ impl OpenAIParams {
     }
 
     // === Setter methods with chaining ===
-
-    pub fn temperature(mut self, temperature: f64) -> Self {
-        self.temperature = Some(temperature);
-        self
-    }
-
-    #[wasm_bindgen(js_name = maxTokens)]
-    pub fn max_tokens(mut self, max_tokens: u64) -> Self {
-        self.max_tokens = Some(max_tokens);
-        self
-    }
 
     #[wasm_bindgen(js_name = topP)]
     pub fn top_p(mut self, top_p: f64) -> Self {
@@ -190,31 +181,23 @@ impl OpenAIParams {
         self
     }
 
-    pub fn n(mut self, n: u64) -> Self {
-        self.n = Some(n);
-        self
-    }
-
-    pub fn stream(mut self, stream: bool) -> Self {
-        self.stream = stream;
-        self
-    }
-
     #[wasm_bindgen(js_name = logicBias)]
-    pub fn logit_bias(mut self, logit_bias: JsValue) -> Self {
-        let mut logit_bias = jsvalue_to_map::<f64>(&logit_bias);
+    pub fn logit_bias(
+        mut self,
+        logit_bias: JsValue,
+    ) -> Result<OpenAIParams, JsError> {
+        let mut logit_bias = jsvalue_to_hmap::<String, f64>(logit_bias)?;
 
         let logit_bias = logit_bias
             .drain()
             .map(|(key, val)| Ok((key, Scale100s::new(val)?)))
             .collect::<Result<HashMap<String, Scale100s>>>()
-            .expect("Invalid logit biases");
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         self.logit_bias = logit_bias;
-        self
+        Ok(self)
     }
 
-    // TODO: Add validation
     pub fn user(mut self, user: String) -> Self {
         self.user = Some(user);
         self

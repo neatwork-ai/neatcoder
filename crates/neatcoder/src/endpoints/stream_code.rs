@@ -1,9 +1,8 @@
 use anyhow::{anyhow, Result};
-use futures::StreamExt;
-use js_sys::Function;
+use js_sys::JsString;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use std::collections::BTreeMap;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     models::{interfaces::AsContext, state::AppState},
@@ -12,52 +11,66 @@ use crate::{
         msg::{GptRole, OpenAIMsg},
         params::OpenAIParams,
     },
+    utils::log,
 };
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct CodeGen {
+#[serde(rename_all = "camelCase")]
+pub struct CodeGenParams {
     pub(crate) filename: String,
 }
 
 #[wasm_bindgen]
-impl CodeGen {
+impl CodeGenParams {
     #[wasm_bindgen(constructor)]
-    pub fn new(filename: String) -> CodeGen {
-        CodeGen { filename }
+    pub fn new(filename: String) -> CodeGenParams {
+        CodeGenParams { filename }
     }
 
-    #[wasm_bindgen(getter, js_name = getFilename)]
-    pub fn get_filename(&self) -> String {
-        self.filename.clone()
+    #[wasm_bindgen(getter)]
+    pub fn filename(&self) -> JsString {
+        self.filename.clone().into()
     }
 }
 
-pub async fn stream_code(
+pub fn stream_code(
     app_state: &AppState,
     client: &OpenAI,
     ai_params: &OpenAIParams,
-    task_params: CodeGen,
-    codebase: HashMap<String, String>,
-    callback: Function,
-) -> Result<()> {
+    task_params: &CodeGenParams,
+    codebase: BTreeMap<String, String>,
+) -> Result<String> {
+    if app_state.language.is_none() {
+        return Err(anyhow!("No programming lancuage specified"));
+    }
+
+    let language = app_state.language.clone().unwrap();
+
     let mut prompts = Vec::new();
 
-    let CodeGen { filename } = task_params;
+    let CodeGenParams { filename } = task_params;
 
-    println!("[INFO] Running `CodeGen` Job: {}", filename);
+    log(&format!("[INFO] Running `CodeGen` Job: {}", filename));
 
     if app_state.scaffold.is_none() {
         return Err(anyhow!("No project scaffold config available.."));
     }
 
-    let project_scaffold = app_state.scaffold.as_ref().unwrap();
-    let project_description = app_state.specs.as_ref().unwrap();
+    let project_scaffold = app_state
+        .scaffold
+        .as_ref()
+        .ok_or_else(|| anyhow!("No folder scaffold config available.."))?;
+
+    let project_description = app_state.specs.as_ref().ok_or_else(|| {
+        anyhow!("It seems that the the field `specs` is missing..")
+    })?;
 
     prompts.push(OpenAIMsg {
         role: GptRole::System,
-        content: String::from(
-            "You are a software engineer who is specialised in Rust.",
+        content: format!(
+            "You are a software engineer who is specialised in {}.",
+            language.name()
         ),
     });
 
@@ -72,7 +85,9 @@ pub async fn stream_code(
     });
 
     for file in codebase.keys() {
-        let code = codebase.get(file).unwrap();
+        let code = codebase
+            .get(file)
+            .ok_or_else(|| anyhow!("Unable to find fild {:?}", file))?;
 
         prompts.push(OpenAIMsg {
             role: GptRole::User,
@@ -88,10 +103,11 @@ pub async fn stream_code(
 
     let main_prompt = format!(
         "
-        You are a Rust engineer tasked with creating an API in Rust.
+        You are an engineer tasked with creating a in {}.
         You are assigned to build the API based on the project folder structure
-        Your current task is to write the module `{}.rs
+        Your current task is to write the module `{}.rs`
         ",
+        language.name(),
         filename
     );
 
@@ -100,48 +116,9 @@ pub async fn stream_code(
         content: main_prompt,
     });
 
-    stream_rust(client, ai_params, prompts, callback).await?;
-
-    Ok(())
-}
-
-pub async fn stream_rust(
-    client: &OpenAI,
-    ai_params: &OpenAIParams,
-    prompts: Vec<OpenAIMsg>,
-    callback: Function,
-) -> Result<()> {
-    println!("[INFO] Initiating Stream");
-
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let mut chat_stream =
-        client.chat_stream(ai_params, &prompts, &[], &[]).await?;
+    let request_body = client.request_stream(ai_params, &prompts, &[], &[])?;
 
-    let mut start_delimiter = false;
-    while let Some(item) = chat_stream.next().await {
-        match item {
-            Ok(bytes) => {
-                let token = std::str::from_utf8(&bytes)
-                    .expect("Failed to generate utf8 from bytes");
-                if !start_delimiter && ["```rust", "```"].contains(&token) {
-                    start_delimiter = true;
-                    continue;
-                } else if !start_delimiter {
-                    continue;
-                } else {
-                    if token == "```" {
-                        break;
-                    }
-
-                    // Call the JavaScript callback with the token
-                    let this = JsValue::NULL;
-                    let js_token = JsValue::from_str(&token);
-                    callback.call1(&this, &js_token).unwrap();
-                }
-            }
-            Err(e) => eprintln!("Failed to receive token, with error: {e}"),
-        }
-    }
-    Ok(())
+    Ok(request_body)
 }

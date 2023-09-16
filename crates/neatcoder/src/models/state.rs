@@ -1,21 +1,24 @@
 use anyhow::{anyhow, Result};
+use js_sys::JsString;
 use js_sys::{Error, Function};
 use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen::to_value;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
+use crate::models::task::Task;
+use crate::models::task_pool::Pipeline;
 use crate::{
     endpoints::{
         execution_plan::{build_execution_plan, Files},
         scaffold_project::scaffold_project,
-        stream_code::{stream_code, CodeGen},
+        stream_code::{stream_code, CodeGenParams},
     },
     models::task_params::{TaskParams, TaskType},
     openai::{client::OpenAI, params::OpenAIParams},
-    utils::{jsvalue_to_map, map_to_jsvalue},
+    JsError, WasmType,
 };
 
+use super::language::Language;
 use super::{
     interfaces::{Interface, SchemaFile},
     task_pool::TaskPool,
@@ -29,20 +32,20 @@ use super::{
 // as a chat app like Slack, in which each message can have a Thread or we can
 // generalise it further to something more intricate.
 //
-// 2. This struct is storing static application data such as `scaffold`, `codebase`.
-// we will need to find a way to make the application state dynamic such that it reflects the
-// current state of the codebase at any given time. We should also consider if
-// have the field `codebase` makes sense here, because we can also access the codebase
-// via the Language Server on the client side.
+// 2. This struct is storing static application data such as `scaffold`,
+// `codebase`. we will need to find a way to make the application state dynamic
+// such that it reflects the current state of the codebase at any given time. We
+// should also consider if have the field `codebase` makes sense here, because
+// we can also access the codebase via the Language Server on the client side.
 //
 /// Acts as a shared application data (i.e. shared state). It contains
 /// information related to the initial prompt, the scaffold of the project, its
 /// interfaces, and current jobs in the TODO pipeline among others (see `Jobs`).
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct AppState {
-    #[serde(skip)]
-    listeners: Vec<js_sys::Function>,
+    pub(crate) language: Option<Language>,
     /// Initial prompt containing the specifications of the project
     pub(crate) specs: Option<String>,
     /// JSON String containing the File System Scaffold
@@ -71,67 +74,103 @@ pub struct AppState {
     ///   }
     /// ```
     pub(crate) scaffold: Option<String>,
-    /// Vector of strings containing the interface config files (e.g. SQL DLLs, etc.)
-    /// The HashMap represents HashMap<Interface Name, Interface>
-    pub(crate) interfaces: HashMap<String, Interface>,
+    /// Vector of strings containing the interface config files (e.g. SQL DLLs,
+    /// etc.) The BTreeMap represents BTreeMap<Interface Name, Interface>
+    pub(crate) interfaces: BTreeMap<String, Interface>,
     pub(crate) task_pool: TaskPool,
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "Record<string, Interface>")]
+    pub type IInterfaces;
+
+    #[wasm_bindgen(typescript_type = "Record<string, string>")]
+    pub type ICodebase;
+
+    #[wasm_bindgen(typescript_type = "Array<Task>")]
+    pub type ITasksVec;
 }
 
 #[wasm_bindgen]
 impl AppState {
     #[wasm_bindgen(constructor)]
-    pub fn new(specs: String, task_pool: TaskPool) -> Self {
-        Self {
-            listeners: Vec::new(),
-            specs: Some(specs),
-            scaffold: None,
-            interfaces: HashMap::new(),
+    pub fn new(
+        language: Option<Language>,
+        specs: Option<String>,
+        scaffold: Option<String>,
+        interfaces: IInterfaces,
+        task_pool: TaskPool,
+    ) -> Result<AppState, JsValue> {
+        let interfaces = BTreeMap::from_extern(interfaces)?;
+        Ok(Self {
+            language,
+            specs,
+            scaffold,
+            interfaces,
             task_pool,
-        }
+        })
+    }
+
+    #[wasm_bindgen(js_name = castToString)]
+    pub fn cast_to_string(&self) -> Result<JsString, JsError> {
+        let json = serde_json::to_string(self)
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
+
+        Ok(json.into())
+    }
+
+    #[wasm_bindgen(js_name = castFromString)]
+    pub fn cast_from_string(json: String) -> Result<AppState, JsError> {
+        let app_state = serde_json::from_str(&json)
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
+
+        Ok(app_state)
     }
 
     pub fn empty() -> Self {
         Self {
-            listeners: Vec::new(),
+            language: None,
             specs: None,
             scaffold: None,
-            interfaces: HashMap::new(),
+            interfaces: BTreeMap::new(),
             task_pool: TaskPool::empty(),
         }
     }
 
-    pub fn subscribe(&mut self, callback: &js_sys::Function) {
-        self.listeners.push(callback.clone());
+    #[wasm_bindgen(js_name = removeAllTodos)]
+    pub fn remove_all_todos(&mut self) {
+        self.task_pool.todo = Pipeline::empty();
     }
 
-    #[wasm_bindgen(getter, js_name = specs)]
-    pub fn get_specs(&self) -> JsValue {
+    #[wasm_bindgen(getter)]
+    pub fn specs(&self) -> Option<JsString> {
         match &self.specs {
-            Some(s) => JsValue::from_str(s),
-            None => JsValue::NULL,
+            Some(specs) => Some(specs.clone().into()),
+            None => None,
         }
     }
 
-    #[wasm_bindgen(getter, js_name = scaffold)]
-    pub fn get_scaffold(&self) -> JsValue {
+    #[wasm_bindgen(getter)]
+    pub fn scaffold(&self) -> Option<JsString> {
         match &self.scaffold {
-            Some(s) => JsValue::from_str(s),
-            None => JsValue::NULL,
+            Some(scaffold) => Some(scaffold.clone().into()),
+            None => None,
         }
     }
 
-    #[wasm_bindgen(getter, js_name = interfaces)]
-    pub fn get_interfaces(&self) -> JsValue {
-        map_to_jsvalue::<String, Interface>(&self.interfaces)
+    #[wasm_bindgen(getter)]
+    pub fn interfaces(&self) -> Result<IInterfaces, JsError> {
+        BTreeMap::to_extern(self.interfaces.clone())
     }
 
     #[wasm_bindgen(getter, js_name = taskPool)]
-    pub fn get_task_pool(&self) -> JsValue {
-        to_value(&self.task_pool).unwrap()
+    pub fn task_pool(&self) -> TaskPool {
+        self.task_pool.clone()
     }
 
     #[wasm_bindgen(js_name = getTodoTasks)]
-    pub fn get_todo_tasks(&self) -> JsValue {
+    pub fn get_todo_tasks(&self) -> Result<ITasksVec, JsError> {
         let tasks: Vec<_> = self
             .task_pool
             .todo
@@ -141,44 +180,59 @@ impl AppState {
             .cloned()
             .collect();
 
-        to_value(&tasks).unwrap()
+        Vec::to_extern(tasks)
     }
 
     #[wasm_bindgen(js_name = getDoneTasks)]
-    pub fn get_done_tasks(&self) -> JsValue {
+    pub fn get_done_tasks(&self) -> Result<ITasksVec, JsError> {
         let tasks: Vec<_> = self
             .task_pool
             .done
             .order
             .iter()
-            .filter_map(|&id| self.task_pool.todo.tasks.get(&id))
+            .filter_map(|&id| self.task_pool.done.tasks.get(&id))
             .cloned()
             .collect();
 
-        to_value(&tasks).unwrap()
+        Vec::to_extern(tasks)
     }
 
-    #[wasm_bindgen(js_name = finishTaskById)]
-    pub fn finish_task_by_id(&mut self, task_id: usize) -> Result<(), JsValue> {
-        self.task_pool.finish_task_by_id(task_id)
+    #[wasm_bindgen(js_name = popTodo)]
+    pub fn pop_todo(&mut self, task_id: usize) -> Result<Task, JsError> {
+        self.task_pool.pop_todo(task_id)
     }
 
-    #[wasm_bindgen(setter = setInterface)]
+    #[wasm_bindgen(js_name = removeTodo)]
+    pub fn remove_todo(&mut self, task_id: usize) -> Result<(), JsError> {
+        self.task_pool.pop_todo(task_id)?;
+
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = addDone)]
+    pub fn add_done(&mut self, task: Task) {
+        self.task_pool.add_done(task)
+    }
+
+    #[wasm_bindgen(js_name = setInterfaces)]
     pub fn set_interfaces(
         &mut self,
-        interfaces: JsValue,
-    ) -> Result<(), JsValue> {
+        interfaces: IInterfaces,
+    ) -> Result<(), JsError> {
         if !self.interfaces.is_empty() {
             return Err(anyhow!("Data model already exists"))
                 .map_err(|e| Error::new(&e.to_string()).into());
         }
 
-        let interfaces = jsvalue_to_map::<Interface>(&interfaces);
+        let interfaces = BTreeMap::from_extern(interfaces)?;
         self.interfaces = interfaces;
 
-        self.trigger_callbacks();
-
         Ok(())
+    }
+
+    #[wasm_bindgen(js_name = setLanguage)]
+    pub fn set_language(&mut self, language: Language) {
+        self.language = Some(language);
     }
 
     #[wasm_bindgen(js_name = addSchema)]
@@ -187,9 +241,7 @@ impl AppState {
         interface_name: String,
         schema_name: String,
         schema: SchemaFile,
-    ) -> Result<(), JsValue> {
-        self.trigger_callbacks();
-
+    ) -> Result<(), JsError> {
         self.add_schema_(interface_name, schema_name, schema)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -199,9 +251,7 @@ impl AppState {
         &mut self,
         interface_name: &str,
         schema_name: &str,
-    ) -> Result<(), JsValue> {
-        self.trigger_callbacks();
-
+    ) -> Result<(), JsError> {
         self.remove_schema_(interface_name, schema_name)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -210,9 +260,7 @@ impl AppState {
     pub fn add_interface(
         &mut self,
         new_interface: Interface,
-    ) -> Result<(), JsValue> {
-        self.trigger_callbacks();
-
+    ) -> Result<(), JsError> {
         self.add_interface_(new_interface)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -221,9 +269,7 @@ impl AppState {
     pub fn remove_interface(
         &mut self,
         interface_name: &str,
-    ) -> Result<(), JsValue> {
-        self.trigger_callbacks();
-
+    ) -> Result<(), JsError> {
         self.remove_interface_(interface_name)
             .map_err(|e| Error::new(&e.to_string()).into())
     }
@@ -234,19 +280,30 @@ impl AppState {
         client: &OpenAI,
         ai_params: &OpenAIParams,
         task_params: TaskParams,
-    ) -> Result<(), JsValue> {
+        request_callback: &Function,
+    ) -> Result<(), JsError> {
         let task_params = task_params
-            .scaffold_project()
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .scaffold_project_()
+            .ok_or("No ScaffoldProject field. This error should not occur.")
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-        let scaffold_json =
-            scaffold_project(client, ai_params, task_params, self)
-                .await
-                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        self.specs = Some(task_params.specs.clone());
+
+        let language = self.language.as_ref().ok_or_else(|| {
+            JsError::from_str("Failed to retrieve a language")
+        })?;
+
+        let scaffold_json = scaffold_project(
+            language,
+            client,
+            ai_params,
+            task_params,
+            request_callback,
+        )
+        .await
+        .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         self.scaffold = Some(scaffold_json.to_string());
-
-        self.trigger_callbacks();
 
         Ok(())
     }
@@ -256,13 +313,24 @@ impl AppState {
         &mut self,
         client: &OpenAI,
         ai_params: &OpenAIParams,
-    ) -> Result<(), JsValue> {
-        let plan = build_execution_plan(client, ai_params, self)
-            .await
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        request_callback: &Function,
+    ) -> Result<(), JsError> {
+        let language = self.language.as_ref().ok_or_else(|| {
+            JsError::from_str("Failed to retrieve a language")
+        })?;
 
-        let files = Files::from_schedule(&plan)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let plan = build_execution_plan(
+            language,
+            client,
+            ai_params,
+            self,
+            request_callback,
+        )
+        .await
+        .map_err(|e| JsError::from_str(&e.to_string()))?;
+
+        let files = Files::from_schedule(&plan, language)
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         // Add code writing jobs to the job queue
         for file in files.iter() {
@@ -270,42 +338,56 @@ impl AppState {
 
             let task_params = TaskParams::new_(
                 TaskType::CodeGen,
-                Box::new(CodeGen { filename: file_ }),
+                Box::new(CodeGenParams { filename: file_ }),
             )
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
             self.task_pool.add_todo(&format!("{}", file), task_params);
         }
-
-        self.trigger_callbacks();
 
         Ok(())
     }
 
     #[wasm_bindgen(js_name = streamCode)]
-    pub async fn stream_code(
+    pub fn stream_code(
         &mut self,
         client: &OpenAI,
         ai_params: &OpenAIParams,
         task_params: TaskParams,
-        codebase: JsValue,
-        callback: Function,
-    ) -> Result<(), JsValue> {
+        codebase: ICodebase,
+    ) -> Result<String, JsError> {
         let task_params = task_params
-            .stream_code()
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .stream_code_()
+            .ok_or("No StreamCode field. This error should not occur.")
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-        let codebase = jsvalue_to_map::<String>(&codebase);
+        let codebase = BTreeMap::from_extern(codebase)?;
 
-        stream_code(self, client, ai_params, task_params, codebase, callback)
-            .await
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let req_body =
+            stream_code(self, client, ai_params, task_params, codebase)
+                .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-        Ok(())
+        Ok(req_body)
     }
 }
 
 impl AppState {
+    pub fn new_(
+        language: Option<Language>,
+        specs: Option<String>,
+        scaffold: Option<String>,
+        interfaces: BTreeMap<String, Interface>,
+        task_pool: TaskPool,
+    ) -> Self {
+        Self {
+            language,
+            specs,
+            scaffold,
+            interfaces,
+            task_pool,
+        }
+    }
+
     fn add_schema_(
         &mut self,
         interface_name: String,
@@ -313,17 +395,18 @@ impl AppState {
         schema: SchemaFile,
     ) -> Result<()> {
         if !self.interfaces.contains_key(&interface_name) {
-            // TODO: We need proper error escallation and communication with the client
-            eprintln!("[ERROR] The interface does not exist. Please create an interface first.");
-
-            return Err(anyhow!("Interface does not exist"));
+            return Err(anyhow!("[ERROR] The interface does not exist. Please create an interface first."));
         }
 
-        // Safe to unwrap due to previous check
-        let interface = self.interfaces.get_mut(&interface_name).unwrap();
+        // Safe to call `expect` due to previous check
+        let interface = self.interfaces.get_mut(&interface_name).expect(
+            "Unable to locate the interface. This error should not occur.",
+        );
 
         // Replaces the existing interface if any
-        interface.insert_schema(schema_name, schema);
+        interface
+            .insert_schema(schema_name, schema)
+            .map_err(|e| anyhow!("{:?}", e))?;
 
         Ok(())
     }
@@ -334,26 +417,28 @@ impl AppState {
         schema_name: &str,
     ) -> Result<()> {
         if !self.interfaces.contains_key(interface_name) {
-            // TODO: We need proper error escallation and communication with the client
-            eprintln!("[ERROR] The interface does not exist.");
-
-            return Err(anyhow!("Interface does not exist"));
+            return Err(anyhow!("[ERROR] The interface does not exist."));
         }
 
         // Safe to unwrap due to previous check
-        let interface = self.interfaces.get_mut(interface_name).unwrap();
+        let interface = self.interfaces.get_mut(interface_name).expect(
+            "Unable to locate the interface. This error should not occur.",
+        );
 
         // Replaces the existing interface if any
-        interface.remove_schema(schema_name);
+        interface
+            .remove_schema(schema_name)
+            .map_err(|e| anyhow!("{:?}", e))?;
 
         Ok(())
     }
 
     pub fn add_interface_(&mut self, new_interface: Interface) -> Result<()> {
-        let interface_name = new_interface.get_name();
+        let interface_name = new_interface.name();
 
         if self.interfaces.contains_key(&interface_name) {
-            // TODO: We need proper error escallation and communication with the client
+            // TODO: We need proper error escalation and communication with the
+            // client
             eprintln!("[ERROR] The interface already exists. Skipping.");
 
             return Err(anyhow!("Interface already exists"));
@@ -367,7 +452,8 @@ impl AppState {
 
     pub fn remove_interface_(&mut self, interface_name: &str) -> Result<()> {
         if !self.interfaces.contains_key(interface_name) {
-            // TODO: We need proper error escallation and communication with the client
+            // TODO: We need proper error escalation and communication with the
+            // client
             eprintln!("[ERROR] The interface does not exist. Skipping.");
 
             return Err(anyhow!("Interface does not exist"));
@@ -379,12 +465,232 @@ impl AppState {
     }
 }
 
-impl AppState {
-    fn trigger_callbacks(&self) {
-        // Notify listeners
-        for callback in &self.listeners {
-            let this = JsValue::NULL;
-            let _ = callback.call0(&this);
+#[cfg(test)]
+pub mod tests {
+    use std::collections::VecDeque;
+
+    use crate::{
+        endpoints::scaffold_project::ScaffoldParams,
+        models::{
+            interfaces::{
+                apis::{Api, ApiType},
+                dbs::{Database, DbType},
+            },
+            language::LanguageType,
+            task::Task,
+            task_pool::Pipeline,
+        },
+    };
+
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test]
+    pub fn test_app_state_new() {
+        let json = r#"{
+            "specs":null,
+            "scaffold":null,
+            "interfaces":{
+                "aaa":{
+                    "interfaceType":"Database",
+                    "inner":{
+                        "database":{
+                            "name":"aaa",
+                            "dbType":"ClickHouse",
+                            "customType":null,
+                            "port":null,
+                            "host":null,
+                            "schemas":{}
+                        }
+                    },
+                    "storage":null,
+                    "api":null
+                }
+            },
+            "taskPool":{
+                "counter":0,
+                "todo":{
+                    "tasks":{},
+                    "order":[]
+                },
+                "done":{
+                    "tasks":{},
+                    "order":[]
+                }
+            }
+        }"#;
+
+        let app_state = AppState::cast_from_string(json.to_string());
+
+        if let Err(e) = app_state {
+            panic!("Failed to create AppState: {:?}", e);
+        }
+    }
+
+    #[wasm_bindgen_test]
+    pub fn app_state_deserialize() {
+        let mut interfaces = BTreeMap::new();
+        interfaces.insert(
+            String::from("MyDB"),
+            Interface::new_db(Database::new_(
+                String::from("MyDB"),
+                DbType::MySql,
+                BTreeMap::from([(
+                    "MySchema".to_string(),
+                    "schema".to_string(),
+                )]),
+            )),
+        );
+
+        interfaces.insert(
+            String::from("MyApi"),
+            Interface::new_api(Api::new_(
+                String::from("MyApi"),
+                ApiType::RestfulApi,
+                BTreeMap::from([(
+                    "MySchema".to_string(),
+                    "schema".to_string(),
+                )]),
+            )),
+        );
+
+        let task_1 = Task::new(
+            1,
+            "Task1",
+            TaskParams::new_(
+                TaskType::ScaffoldProject,
+                Box::new(ScaffoldParams::new(String::from("specs"))),
+            )
+            .unwrap(),
+        );
+        let task_2 = Task::new(
+            2,
+            "Task2",
+            TaskParams::new_(TaskType::BuildExecutionPlan, Box::new(0))
+                .unwrap(),
+        );
+        let task_3 = Task::new(
+            3,
+            "Task3",
+            TaskParams::new_(
+                TaskType::CodeGen,
+                Box::new(CodeGenParams::new(String::from("filename.rs"))),
+            )
+            .unwrap(),
+        );
+
+        let todo = Pipeline::new_(
+            BTreeMap::from([(3, task_3), (2, task_2)]),
+            VecDeque::from([3, 2]),
+        );
+
+        let done =
+            Pipeline::new_(BTreeMap::from([(1, task_1)]), VecDeque::from([1]));
+
+        let task_pool = TaskPool::new(
+            3, // The number of tasks
+            todo, done,
+        );
+
+        let app_state = AppState::new_(
+            Some(Language::new(LanguageType::Rust)),
+            Some(String::from("specs")),
+            Some(String::from("scaffold")),
+            interfaces,
+            task_pool,
+        );
+
+        let actual = AppState::cast_to_string(&app_state)
+            .unwrap()
+            .as_string()
+            .unwrap();
+
+        let expected = String::from(
+            r#"{"language":{"language":"Rust","custom":null},"specs":"specs","scaffold":"scaffold","interfaces":{"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","apiType":"RestfulApi","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}},"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}}},"taskPool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","taskParams":{"taskType":"BuildExecutionPlan","inner":{"scaffoldProject":null,"streamCode":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","taskParams":{"taskType":"CodeGen","inner":{"scaffoldProject":null,"streamCode":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","taskParams":{"taskType":"ScaffoldProject","inner":{"scaffoldProject":{"specs":"specs"},"streamCode":null}},"status":"Todo"}},"order":[1]}}}"#,
+        );
+
+        assert_eq!(actual, expected);
+
+        let app_state = AppState::cast_from_string(actual);
+
+        if let Err(e) = app_state {
+            panic!("Failed to create AppState: {:?}", e);
+        }
+    }
+
+    #[wasm_bindgen_test]
+    pub fn app_state_deserialize_2() {
+        let mut interfaces = BTreeMap::new();
+        interfaces.insert(
+            String::from("aaa"),
+            Interface::new_db(Database::new_(
+                String::from("aaa"),
+                DbType::ClickHouse,
+                BTreeMap::new(),
+            )),
+        );
+
+        let todo = Pipeline::new_(BTreeMap::new(), VecDeque::from([]));
+        let done = Pipeline::new_(BTreeMap::new(), VecDeque::from([]));
+
+        let task_pool = TaskPool::new(
+            0, // The number of tasks
+            todo, done,
+        );
+
+        let app_state = AppState::new_(
+            Some(Language::new(LanguageType::Rust)),
+            None,
+            None,
+            interfaces,
+            task_pool,
+        );
+
+        let actual = AppState::cast_to_string(&app_state)
+            .unwrap()
+            .as_string()
+            .unwrap();
+
+        let expected = String::from(
+            r#"{"language":{"language":"Rust","custom":null},"specs":null,"scaffold":null,"interfaces":{"aaa":{"interfaceType":"Database","inner":{"database":{"name":"aaa","dbType":"ClickHouse","customType":null,"port":null,"host":null,"schemas":{}},"storage":null,"api":null}}},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
+        );
+
+        assert_eq!(actual, expected);
+
+        let app_state = AppState::cast_from_string(expected);
+
+        if let Err(e) = app_state {
+            panic!("Failed to create AppState: {:?}", e);
+        }
+    }
+
+    #[wasm_bindgen_test]
+    pub fn app_state_deserialize_empty() {
+        let app_state_x = AppState::empty();
+
+        // Deserialized
+        let actual =
+            JsValue::from_str(&serde_json::to_string(&app_state_x).unwrap());
+
+        let expected = JsValue::from_str(
+            r#"{"language":null,"specs":null,"scaffold":null,"interfaces":{},"taskPool":{"counter":0,"todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
+        );
+
+        assert_eq!(actual, expected);
+    }
+
+    #[wasm_bindgen_test]
+    pub fn gracefully_handles_stringified_objects() {
+        let expected = JsValue::from_str(
+            r#"{"specs":null,"scaffold":null,"interfaces":"{\"aaa\":{\"
+    interfaceType\":\"Database\",\"inner\":{\"database\":{\"name\":\"aaa\",\"
+    dbType\":\"ClickHouse\",\"customType\":null,\"port\":null,\"host\":null,\
+    "schemas\":{}},\"storage\":null,\"api\":null}}}","taskPool":{"counter":0,
+    "todo":{"tasks":{},"order":[]},"done":{"tasks":{},"order":[]}}}"#,
+        );
+
+        if expected.as_string().is_none() {
+            panic!("Upsie")
         }
     }
 }

@@ -1,13 +1,19 @@
 use self::{apis::Api, dbs::Database, storage::Storage};
-use crate::{openai::msg::OpenAIMsg, utils::map_to_jsvalue};
-use anyhow::Result;
+use crate::{openai::msg::OpenAIMsg, JsError};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 pub mod apis;
 pub mod dbs;
 pub mod storage;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "Record<string, string>")]
+    pub type ISchemas;
+}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -41,23 +47,52 @@ impl Interface {
         }
     }
 
-    #[wasm_bindgen(getter, js_name = interface)]
-    pub fn get_interface(&self) -> JsValue {
+    #[wasm_bindgen(getter)]
+    pub fn interface(&self) -> Result<JsValue, JsError> {
         match &self.interface_type {
-            InterfaceType::Database => self.inner.get_database(),
-            InterfaceType::Storage => self.inner.get_storage(),
-            InterfaceType::Api => self.inner.get_api(),
+            InterfaceType::Database => {
+                let inner = self.inner.database().ok_or_else(|| {
+                    JsError::from_str(
+                        "Failed to retrieve inner Database interface",
+                    )
+                })?;
+                Ok(JsValue::from_str(
+                    &serde_json::to_string(&inner)
+                        .map_err(|e| JsError::from_str(&e.to_string()))?,
+                ))
+            }
+            InterfaceType::Storage => {
+                let inner = self.inner.storage().ok_or_else(|| {
+                    JsError::from_str(
+                        "Failed to retrieve inner Storage interface",
+                    )
+                })?;
+                Ok(JsValue::from_str(
+                    &serde_json::to_string(&inner)
+                        .map_err(|e| JsError::from_str(&e.to_string()))?,
+                ))
+            }
+            InterfaceType::Api => {
+                let inner = self.inner.api().ok_or_else(|| {
+                    JsError::from_str("Failed to retrieve inner Api interface")
+                })?;
+                Ok(JsValue::from_str(
+                    &serde_json::to_string(&inner)
+                        .map_err(|e| JsError::from_str(&e.to_string()))?,
+                ))
+            }
         }
     }
 
     #[wasm_bindgen(getter, js_name = interfaceType)]
-    pub fn get_interface_type(&self) -> InterfaceType {
+    pub fn interface_type(&self) -> InterfaceType {
         self.interface_type
     }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[wasm_bindgen]
+#[serde(rename_all = "camelCase")]
 pub struct InterfaceInner {
     pub(crate) database: Option<Database>,
     pub(crate) storage: Option<Storage>,
@@ -93,28 +128,19 @@ impl InterfaceInner {
         }
     }
 
-    #[wasm_bindgen(getter, js_name = database)]
-    pub fn get_database(&self) -> JsValue {
-        match &self.database {
-            Some(database) => database.clone().into(),
-            None => JsValue::NULL,
-        }
+    #[wasm_bindgen(getter)]
+    pub fn database(&self) -> Option<Database> {
+        self.database.clone()
     }
 
-    #[wasm_bindgen(getter, js_name = storage)]
-    pub fn get_storage(&self) -> JsValue {
-        match &self.storage {
-            Some(storage) => storage.clone().into(),
-            None => JsValue::NULL,
-        }
+    #[wasm_bindgen(getter)]
+    pub fn storage(&self) -> Option<Storage> {
+        self.storage.clone()
     }
 
-    #[wasm_bindgen(getter, js_name = api)]
-    pub fn get_api(&self) -> JsValue {
-        match &self.api {
-            Some(api) => api.clone().into(),
-            None => JsValue::NULL,
-        }
+    #[wasm_bindgen(getter)]
+    pub fn api(&self) -> Option<Api> {
+        self.api.clone()
     }
 }
 
@@ -159,19 +185,19 @@ impl AsContext for Interface {
                 .inner
                 .database
                 .as_ref()
-                .unwrap()
+                .ok_or_else(|| anyhow!("Unable to retrieve inner Database :("))?
                 .add_context(msg_sequence),
             InterfaceType::Storage => self
                 .inner
                 .database
                 .as_ref()
-                .unwrap()
+                .ok_or_else(|| anyhow!("Unable to retrieve inner Storage :("))?
                 .add_context(msg_sequence),
             InterfaceType::Api => self
                 .inner
                 .database
                 .as_ref()
-                .unwrap()
+                .ok_or_else(|| anyhow!("Unable to retrieve inner Api :("))?
                 .add_context(msg_sequence),
         }
     }
@@ -179,57 +205,111 @@ impl AsContext for Interface {
 
 #[wasm_bindgen]
 impl Interface {
-    #[wasm_bindgen(getter, js_name = name)]
-    pub fn get_name(&self) -> String {
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> String {
         match self.interface_type {
-            InterfaceType::Database => {
-                self.inner.database.as_ref().unwrap().name.clone()
-            }
-            InterfaceType::Storage => {
-                self.inner.storage.as_ref().unwrap().name.clone()
-            }
-            InterfaceType::Api => self.inner.api.as_ref().unwrap().name.clone(),
+            InterfaceType::Database => self
+                .inner
+                .database
+                .as_ref()
+                .expect("Unable to retrieve inner Database interface")
+                .name
+                .clone(),
+            InterfaceType::Storage => self
+                .inner
+                .storage
+                .as_ref()
+                .expect("Unable to retrieve inner Storage interface")
+                .name
+                .clone(),
+            InterfaceType::Api => self
+                .inner
+                .api
+                .as_ref()
+                .expect("Unable to retrieve inner Api interface")
+                .name
+                .clone(),
         }
     }
 
-    #[wasm_bindgen(getter, js_name = schemas)]
-    pub fn get_schemas(&mut self) -> JsValue {
+    #[wasm_bindgen(getter)]
+    pub fn schemas(&self) -> Result<ISchemas, JsError> {
         let schemas = match self.interface_type {
-            InterfaceType::Database => {
-                &self.inner.database.as_mut().unwrap().schemas
-            }
-            InterfaceType::Storage => {
-                &self.inner.storage.as_mut().unwrap().schemas
-            }
-            InterfaceType::Api => &self.inner.api.as_mut().unwrap().schemas,
+            InterfaceType::Database => self
+                .inner
+                .database
+                .as_ref()
+                .expect("Unable to retrieve inner Database interface")
+                .schemas(),
+            InterfaceType::Storage => self
+                .inner
+                .storage
+                .as_ref()
+                .expect("Unable to retrieve inner Storage interface")
+                .schemas(),
+            InterfaceType::Api => self
+                .inner
+                .api
+                .as_ref()
+                .expect("Unable to retrieve inner Api interface")
+                .schemas(),
         };
 
-        map_to_jsvalue(schemas)
+        schemas
     }
 
     #[wasm_bindgen(js_name = insertSchema)]
-    pub fn insert_schema(&mut self, schema_name: String, schema: String) {
-        let schemas = self.schemas_mut();
+    pub fn insert_schema(
+        &mut self,
+        schema_name: String,
+        schema: String,
+    ) -> Result<(), JsError> {
+        let schemas = self.schemas_mut()?;
         schemas.insert(schema_name, schema);
+        Ok(())
     }
 
     #[wasm_bindgen(js_name = removeSchema)]
-    pub fn remove_schema(&mut self, schema_name: &str) {
-        let schemas = self.schemas_mut();
+    pub fn remove_schema(&mut self, schema_name: &str) -> Result<(), JsError> {
+        let schemas = self.schemas_mut()?;
         schemas.remove(schema_name);
+        Ok(())
     }
 }
 
 impl Interface {
-    fn schemas_mut(&mut self) -> &mut HashMap<String, SchemaFile> {
+    fn schemas_mut(
+        &mut self,
+    ) -> Result<&mut BTreeMap<String, SchemaFile>, JsError> {
         match self.interface_type {
-            InterfaceType::Database => {
-                &mut self.inner.database.as_mut().unwrap().schemas
-            }
-            InterfaceType::Storage => {
-                &mut self.inner.storage.as_mut().unwrap().schemas
-            }
-            InterfaceType::Api => &mut self.inner.api.as_mut().unwrap().schemas,
+            InterfaceType::Database => Ok(&mut self
+                .inner
+                .database
+                .as_mut()
+                .ok_or_else(|| {
+                    JsError::from_str(
+                        "Failed to retrieve inner Database interface",
+                    )
+                })?
+                .schemas),
+            InterfaceType::Storage => Ok(&mut self
+                .inner
+                .storage
+                .as_mut()
+                .ok_or_else(|| {
+                    JsError::from_str(
+                        "Failed to retrieve inner Storage interface",
+                    )
+                })?
+                .schemas),
+            InterfaceType::Api => Ok(&mut self
+                .inner
+                .api
+                .as_mut()
+                .ok_or_else(|| {
+                    JsError::from_str("Failed to retrieve inner Api interface")
+                })?
+                .schemas),
         }
     }
 }

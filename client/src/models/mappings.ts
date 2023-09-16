@@ -1,4 +1,4 @@
-const dbList: string[] = [
+export const dbList: string[] = [
   "ClickHouse",
   "DuckDb",
   "MS SQL",
@@ -36,7 +36,7 @@ const dbList: string[] = [
   "MarkLogic",
 ];
 
-const ApiList = [
+export const apiList: string[] = [
   "RESTful API",
   "SOAP API",
   "RPC API",
@@ -51,4 +51,28 @@ const ApiList = [
   "TCP Socket",
   "Library IDL",
   "MQTT",
+];
+export const langList: string[] = [
+  "Python",
+  "Java",
+  "JavaScript",
+  "TypeScript",
+  "Ruby",
+  "PHP",
+  "C",
+  "C++",
+  "C#",
+  "Objective-C",
+  "Swift",
+  "Go",
+  "Rust",
+  "Perl",
+  "Shell",
+  "Scala",
+  "Kotlin",
+  "Lua",
+  "Haskell",
+  "HTML",
+  "MATLAB",
+  "R",
 ];

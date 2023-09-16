@@ -2,22 +2,47 @@ import { Position, TextDocument, window } from "vscode";
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import * as wasm from "../../pkg/neatcoder";
+import { logger } from "../logger";
 
+let currentPosition = new Position(0, 0);
+
+/**
+ * Asynchronously streams a token (typically a portion of code) to the active text document in the VS Code editor.
+ * The function performs the following operations:
+ * 1. Opens the active text document in the editor.
+ * 2. Inserts the given token at the current position.
+ * 3. Updates the current position to point to the end of the document.
+ *
+ * @param token - The string token to be streamed into the active text document.
+ * @param activeTextDocument - The currently active text document in the VS Code editor.
+ * @returns Promise<void> - A promise that resolves once the token has been streamed to the document.
+ */
 export async function streamCode(
   token: string,
   activeTextDocument: TextDocument
 ): Promise<void> {
-  // Here, we append the word to the opened document
-  // TODO: No need to continuously open the text document...
-  const editor = await window.showTextDocument(activeTextDocument);
-  const lastLine = activeTextDocument.lineAt(activeTextDocument.lineCount - 1);
-  const position = new Position(lastLine.lineNumber, lastLine.text.length);
-  editor.edit((editBuilder) => {
-    editBuilder.insert(position, token); // Adding a space after every word
-  });
+  try {
+    const editor = await window.showTextDocument(activeTextDocument);
+
+    await editor.edit((editBuilder) => {
+      editBuilder.insert(currentPosition, token); // Adding a space after every word
+    });
+
+    // Update currentPosition to point to the new end of the document
+    const docContent = editor.document.getText();
+    currentPosition = editor.document.positionAt(docContent.length);
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
 }
 
+/**
+ * Scans the source folder in the current workspace and returns a record containing file names as keys and their contents as values.
+ * If the workspace is not open or the 'src' folder does not exist, an appropriate error message is displayed to the user.
+ *
+ * @returns Promise<Record<string, string>> - A promise that resolves to a record with file names as keys and their content as values.
+ */
 export async function scanSourceFolder(): Promise<Record<string, string>> {
   const workspaceFolders = vscode.workspace.workspaceFolders;
 
@@ -35,14 +60,27 @@ export async function scanSourceFolder(): Promise<Record<string, string>> {
     return {};
   }
 
-  const files = fs.readdirSync(srcFolderPath);
+  logger.appendLine(`[INFO] reading source folder...`);
   const record: Record<string, string> = {};
 
-  for (const file of files) {
-    const filePath = path.join(srcFolderPath, file);
-    const fileContent = fs.readFileSync(filePath, "utf-8");
-    record[file] = fileContent;
-  }
+  const readDirRecursively = (dirPath: string) => {
+    const files = fs.readdirSync(dirPath);
+    for (const file of files) {
+      const filePath = path.join(dirPath, file);
+      if (fs.lstatSync(filePath).isDirectory()) {
+        readDirRecursively(filePath);
+      } else {
+        try {
+          const fileContent = fs.readFileSync(filePath, "utf-8");
+          record[file] = fileContent;
+        } catch (error) {
+          logger.appendLine(`[ERROR] Could not read file: ${error}`);
+        }
+      }
+    }
+  };
+
+  readDirRecursively(srcFolderPath);
 
   return record;
 }

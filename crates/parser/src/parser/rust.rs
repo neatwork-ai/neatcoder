@@ -62,7 +62,7 @@ fn test_parse_2() -> Result<(), ParseError> {
     let code_str = "use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
 use std::env;
-    
+
 mod config;
 mod controllers;
 mod db;
@@ -73,7 +73,7 @@ mod middlewares;
 mod models;
 mod pagination;
 mod utils;
-    
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();

@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
-import path = require("path");
-import pako = require("pako");
+import * as path from "path";
+import * as pako from "pako";
 import * as wasm from "../pkg/neatcoder";
 
 /// ===== Read ===== ///
@@ -15,13 +15,18 @@ export function readAppState(): wasm.AppState {
     return wasm.AppState.empty();
   }
 
-  // Read the file content
-  const binaryData = fs.readFileSync(filePath);
+  try {
+    // Read the file content
+    const binaryData = fs.readFileSync(filePath);
 
-  // Deserialize the data
-  const state = deserializeAppState(binaryData.buffer as ArrayBuffer);
+    // Deserialize the data
+    const appState = deserializeAppState(binaryData);
 
-  return state;
+    return appState;
+  } catch (e) {
+    vscode.window.showErrorMessage(`Failed to Retrieve cached data: ${e}`);
+    throw e;
+  }
 }
 
 function readDirectoryStructure(
@@ -49,6 +54,11 @@ export function saveAppStateToFile(appState: wasm.AppState): void {
   saveFile(payload, ".neat/cache", "state");
 }
 
+export function saveCump(appState: wasm.AppState): void {
+  const payload = serializeAppState(appState);
+  saveFile(payload, ".neat/cache", "state");
+}
+
 function saveFile(
   payload: ArrayBuffer,
   folder: string,
@@ -69,28 +79,27 @@ function saveFile(
 
 /// ===== Serialize / Deserialize ===== ///
 
-export function serializeAppState(data: wasm.AppState): ArrayBuffer {
-  const jsonString = JSON.stringify(data);
-  const compressedData = pako.deflate(jsonString);
-  return compressedData.buffer as ArrayBuffer;
+export function serializeAppState(appState: wasm.AppState): ArrayBuffer {
+  try {
+    const jsonString = appState.castToString();
+    const compressedData = pako.gzip(jsonString);
+    return compressedData.buffer as ArrayBuffer;
+  } catch (e) {
+    vscode.window.showErrorMessage(`Serialization failed:, ${e}`);
+    throw e;
+  }
 }
 
 function deserializeAppState(buffer: ArrayBuffer): wasm.AppState {
-  const decompressedData = pako.inflate(new Uint8Array(buffer));
-  const jsonString = new TextDecoder().decode(decompressedData);
-  return JSON.parse(jsonString) as wasm.AppState;
-}
-
-function serializeString(data: string): ArrayBuffer {
-  const jsonString = JSON.stringify(data);
-  const compressedData = pako.deflate(jsonString);
-  return compressedData.buffer as ArrayBuffer;
-}
-
-function deserializeString(buffer: ArrayBuffer): string {
-  const decompressedData = pako.inflate(new Uint8Array(buffer));
-  const jsonString = new TextDecoder().decode(decompressedData);
-  return JSON.parse(jsonString) as string;
+  try {
+    const decompressedData = pako.ungzip(new Uint8Array(buffer));
+    const jsonString = new TextDecoder().decode(decompressedData);
+    const appState = wasm.AppState.castFromString(jsonString);
+    return appState;
+  } catch (e) {
+    vscode.window.showErrorMessage(`Deserialization failed:, ${e}`);
+    throw e;
+  }
 }
 
 /// ===== Getters && Others ===== ///
@@ -194,15 +203,18 @@ export function getOrCreateApiSchemaPath(apiName: string): string {
   return apiPath;
 }
 
-export function getOrCreateDatastoreSchemaPath(apiName: string): string {
+export function getOrCreateSchemasPath(
+  interfaceName: string,
+  folderName: string
+): string {
   const root = getRoot();
-  const dbsPath = path.join(root, ".neat/dbs", apiName);
+  const schemasPath = path.join(root, `.neat/${folderName}`, interfaceName);
 
   // Create the directory if it doesn't exist
-  if (!fs.existsSync(dbsPath)) {
-    fs.mkdirSync(dbsPath, { recursive: true });
+  if (!fs.existsSync(schemasPath)) {
+    fs.mkdirSync(schemasPath, { recursive: true });
   }
-  return dbsPath;
+  return schemasPath;
 }
 
 export function getRoot(): string {
@@ -218,4 +230,30 @@ export function getRoot(): string {
 export function getFilename(filepath: string): string {
   const parts = filepath.split(/[/\\]/);
   return parts[parts.length - 1];
+}
+
+export function getOrSetApiKey(): any {
+  let config = vscode.workspace.getConfiguration("extension");
+  let apiKey = config.get("apiKey");
+
+  if (!apiKey) {
+    vscode.window
+      .showInputBox({
+        prompt: "Please enter your API key",
+        ignoreFocusOut: true,
+      })
+      .then((value) => {
+        if (value) {
+          config.update("apiKey", value, vscode.ConfigurationTarget.Global);
+          vscode.window.showInformationMessage("API key saved!");
+        } else {
+          // Handle the case where the input box was dismissed without entering a value
+          vscode.window.showErrorMessage(
+            "API key is required to use this extension."
+          );
+        }
+      });
+  }
+
+  return apiKey;
 }

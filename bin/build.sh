@@ -1,26 +1,28 @@
-#!/bin/sh
+#!/bin/bash
 
-# Remove the pkg directory if it exists
-if [ -d "client/pkg" ]; then
-    rm -rf client/pkg
-    echo "Removed existing pkg directory."
-fi
+# Get the directory
+DIR="$(dirname "$0")"
 
-# Navigate to the wasm-lib directory
-cd crates/neatcoder
+# Run the first script
+bash "$DIR/build_wasm.sh"
 
-# Compile the wasm library (assuming you're using wasm-pack)
-wasm-pack build --target nodejs
-
-# Check if compilation was successful
-if [ $? -ne 0 ]; then
-    echo "Compilation failed!"
+# Check if the first script ran successfully
+if [ $? -eq 0 ]; then
+    echo "Built WASM Library successfully"
+else
+    echo "WASM Lib failed"
     exit 1
 fi
 
-# Move the pkg directory to ../client
-mv pkg ../../client/
+# Run the second script
+bash "$DIR/build_client.sh"
 
-cd ../../
+# Check if the second script ran successfully
+if [ $? -eq 0 ]; then
+    echo "Built VSCE successfully"
+else
+    echo "VSCE failed"
+    exit 1
+fi
 
-echo "Compilation successful!"
+echo "Build complete"

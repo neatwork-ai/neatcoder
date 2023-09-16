@@ -1,7 +1,9 @@
 use std::any::Any;
 
-use crate::endpoints::{
-    scaffold_project::ScaffoldProject, stream_code::CodeGen,
+use crate::{
+    endpoints::{scaffold_project::ScaffoldParams, stream_code::CodeGenParams},
+    utils::log,
+    JsError,
 };
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
@@ -9,8 +11,9 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[wasm_bindgen]
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TaskParams {
-    pub task_type: TaskType,
+    pub(crate) task_type: TaskType,
     pub(crate) inner: TaskParamsInner,
 }
 
@@ -24,66 +27,78 @@ pub enum TaskType {
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct TaskParamsInner {
-    scaffold_project: Option<ScaffoldProject>,
-    stream_code: Option<CodeGen>,
-}
-
-#[wasm_bindgen]
-impl TaskParams {
-    #[wasm_bindgen(getter, js_name = scaffoldProject)]
-    pub fn get_scaffold_project(&self) -> JsValue {
-        match &self.inner.scaffold_project {
-            Some(scaffold_project) => scaffold_project.clone().into(),
-            None => JsValue::NULL,
-        }
-    }
-
-    #[wasm_bindgen(getter, js_name = streamCode)]
-    pub fn get_stream_code(&self) -> JsValue {
-        match &self.inner.stream_code {
-            Some(stream_code) => stream_code.clone().into(),
-            None => JsValue::NULL,
-        }
-    }
+    pub(crate) scaffold_project: Option<ScaffoldParams>,
+    pub(crate) stream_code: Option<CodeGenParams>,
 }
 
 #[wasm_bindgen]
 impl TaskParams {
     #[wasm_bindgen(constructor)]
-    pub fn new(
-        task_type: TaskType,
-        inner: JsValue,
-    ) -> Result<TaskParams, JsValue> {
-        match task_type {
-            TaskType::ScaffoldProject => Ok(TaskParams {
-                task_type,
-                inner: TaskParamsInner {
-                    scaffold_project: Some(
-                        serde_wasm_bindgen::from_value(inner)
-                            .expect("Failed to cast to type `ScaffoldProject`"),
-                    ),
-                    stream_code: None,
-                },
-            }),
-            TaskType::BuildExecutionPlan => Ok(TaskParams {
-                task_type,
-                inner: TaskParamsInner {
-                    scaffold_project: None,
-                    stream_code: None,
-                },
-            }),
-            TaskType::CodeGen => Ok(TaskParams {
-                task_type,
-                inner: TaskParamsInner {
-                    scaffold_project: None,
-                    stream_code: Some(
-                        serde_wasm_bindgen::from_value(inner)
-                            .expect("Failed to cast to type `ScaffoldProject`"),
-                    ),
-                },
-            }),
+    pub fn new(task_type: TaskType, inner: TaskParamsInner) -> TaskParams {
+        Self { task_type, inner }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn inner(&self) -> TaskParamsInner {
+        self.inner.clone()
+    }
+
+    #[wasm_bindgen(getter, js_name = scaffoldProject)]
+    pub fn scaffold_project(&self) -> Option<ScaffoldParams> {
+        match self.task_type {
+            TaskType::ScaffoldProject => self.inner.scaffold_project.clone(),
+            _ => None,
         }
+    }
+
+    #[wasm_bindgen(getter, js_name = streamCode)]
+    pub fn stream_code(&self) -> Option<CodeGenParams> {
+        match self.task_type {
+            TaskType::CodeGen => {
+                log(&format!(
+                    "RETURNING: {:?}",
+                    self.inner.stream_code.clone(),
+                ));
+
+                self.inner.stream_code.clone()
+            }
+            _ => None,
+        }
+    }
+
+    #[wasm_bindgen(getter, js_name = taskType)]
+    pub fn task_type(&self) -> TaskType {
+        self.task_type
+    }
+}
+
+#[wasm_bindgen]
+impl TaskParamsInner {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        scaffold_project: Option<ScaffoldParams>,
+        stream_code: Option<CodeGenParams>,
+    ) -> Result<TaskParamsInner, JsValue> {
+        if scaffold_project.is_some() && stream_code.is_some() {
+            return Err(anyhow!("Cannot accept multiple parameter types."))
+                .map_err(|e| JsError::from_str(&e.to_string()));
+        }
+        Ok(Self {
+            scaffold_project,
+            stream_code,
+        })
+    }
+
+    #[wasm_bindgen(getter, js_name = scaffoldProject)]
+    pub fn scaffold_project(&self) -> Option<ScaffoldParams> {
+        self.scaffold_project.clone()
+    }
+
+    #[wasm_bindgen(getter, js_name = streamCode)]
+    pub fn stream_code(&self) -> Option<CodeGenParams> {
+        self.stream_code.clone()
     }
 }
 
@@ -91,8 +106,7 @@ impl TaskParams {
     pub fn new_(task_type: TaskType, inner: Box<dyn Any>) -> Result<Self> {
         match task_type {
             TaskType::ScaffoldProject => {
-                if let Some(scaffold) = inner.downcast_ref::<ScaffoldProject>()
-                {
+                if let Some(scaffold) = inner.downcast_ref::<ScaffoldParams>() {
                     Ok(TaskParams {
                         task_type,
                         inner: TaskParamsInner {
@@ -112,7 +126,7 @@ impl TaskParams {
                 },
             }),
             TaskType::CodeGen => {
-                if let Some(code_gen) = inner.downcast_ref::<CodeGen>() {
+                if let Some(code_gen) = inner.downcast_ref::<CodeGenParams>() {
                     Ok(TaskParams {
                         task_type,
                         inner: TaskParamsInner {
@@ -127,31 +141,17 @@ impl TaskParams {
         }
     }
 
-    pub fn scaffold_project(self) -> Result<ScaffoldProject> {
+    pub fn scaffold_project_(&self) -> Option<&ScaffoldParams> {
         match self.task_type {
-            TaskType::ScaffoldProject => match self.inner.scaffold_project {
-                Some(scaffold_project) => Ok(scaffold_project),
-                None => return Err(anyhow!("No scaffold project field")),
-            },
-            _ => {
-                return Err(anyhow!(
-                    "No scaffold project field. This error should not occur."
-                ))
-            }
+            TaskType::ScaffoldProject => self.inner.scaffold_project.as_ref(),
+            _ => None,
         }
     }
 
-    pub fn stream_code(self) -> Result<CodeGen> {
+    pub fn stream_code_(&self) -> Option<&CodeGenParams> {
         match self.task_type {
-            TaskType::CodeGen => match self.inner.stream_code {
-                Some(stream_code) => Ok(stream_code),
-                None => return Err(anyhow!("No stream code field")),
-            },
-            _ => {
-                return Err(anyhow!(
-                    "No stream code field. This error should not occur."
-                ))
-            }
+            TaskType::CodeGen => self.inner.stream_code.as_ref(),
+            _ => None,
         }
     }
 }

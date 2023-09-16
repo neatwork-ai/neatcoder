@@ -6,3 +6,9 @@ members = [
 exclude = [
     "examples/projects/*/jobs/codebase",
 ]
+
+[profile.release]
+debug = true
+
+[profile.dev]
+debug = true

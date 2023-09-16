@@ -1,14 +1,16 @@
 use crate::{
+    models::interfaces::ISchemas,
     openai::msg::{GptRole, OpenAIMsg},
-    utils::{jsvalue_to_map, map_to_jsvalue},
+    JsError, WasmType,
 };
 use anyhow::Result;
+use js_sys::JsString;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
+    collections::BTreeMap,
     fmt::{self, Display},
 };
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::{AsContext, SchemaFile};
 
@@ -18,6 +20,7 @@ use super::{AsContext, SchemaFile};
 // TODO: We can increase the configurations here such as SSL stuff, etc.
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Api {
     pub(crate) name: String,
     pub api_type: ApiType,
@@ -25,7 +28,7 @@ pub struct Api {
     custom_type: Option<String>,
     pub port: Option<usize>,
     pub(crate) host: Option<String>,
-    pub(crate) schemas: HashMap<String, SchemaFile>,
+    pub(crate) schemas: BTreeMap<String, SchemaFile>,
 }
 
 #[wasm_bindgen]
@@ -34,18 +37,18 @@ impl Api {
     pub fn new(
         name: String,
         api_type: ApiType,
-        port: Option<usize>,
-        host: Option<String>,
-        schemas: &JsValue,
-    ) -> Api {
-        Api {
+        schemas: ISchemas,
+    ) -> Result<Api, JsError> {
+        let schemas = BTreeMap::from_extern(schemas)?;
+
+        Ok(Api {
             name,
             api_type,
             custom_type: None,
-            port,
-            host,
-            schemas: jsvalue_to_map(schemas),
-        }
+            port: None,
+            host: None,
+            schemas,
+        })
     }
 
     pub fn new_custom(
@@ -53,40 +56,47 @@ impl Api {
         custom_type: String,
         port: Option<usize>,
         host: Option<String>,
-        schemas: &JsValue,
-    ) -> Api {
-        Api {
+        schemas: ISchemas,
+    ) -> Result<Api, JsError> {
+        let schemas = BTreeMap::from_extern(schemas)?;
+
+        Ok(Api {
             name,
             api_type: ApiType::Custom,
             custom_type: Some(custom_type),
             port,
             host,
-            schemas: jsvalue_to_map(schemas),
-        }
+            schemas,
+        })
     }
 
-    #[wasm_bindgen(getter, js_name = name)]
-    pub fn get_name(&self) -> String {
-        self.name.clone()
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> JsString {
+        self.name.clone().into()
     }
 
-    // Get the schemas as a JsValue to return to JavaScript
-    #[wasm_bindgen(getter, js_name = schemas)]
-    pub fn get_schemas(&self) -> JsValue {
-        map_to_jsvalue(&self.schemas)
+    #[wasm_bindgen(setter)]
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
-    #[wasm_bindgen(getter, js_name = host)]
-    pub fn get_host(&self) -> JsValue {
+    // Get the schemas as ISchemas to return to JavaScript
+    #[wasm_bindgen(getter)]
+    pub fn schemas(&self) -> Result<ISchemas, JsError> {
+        BTreeMap::to_extern(self.schemas.clone())
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn host(&self) -> Option<JsString> {
         match &self.host {
-            Some(s) => JsValue::from_str(s),
-            None => JsValue::NULL,
+            Some(host) => Some(host.clone().into()),
+            None => None,
         }
     }
 
-    #[wasm_bindgen(getter, js_name = apiType)]
-    pub fn get_api_type(&self) -> ApiType {
-        self.api_type
+    #[wasm_bindgen(setter)]
+    pub fn set_host(&mut self, host: Option<String>) {
+        self.host = host;
     }
 }
 
@@ -125,6 +135,23 @@ pub enum ApiType {
     /// OpenAPI spec to cover protocols like MQTT, WebSockets, etc.
     Mqtt,
     Custom,
+}
+
+impl Api {
+    pub fn new_(
+        name: String,
+        api_type: ApiType,
+        schemas: BTreeMap<String, SchemaFile>,
+    ) -> Api {
+        Api {
+            name,
+            api_type,
+            custom_type: None,
+            port: None,
+            host: None,
+            schemas,
+        }
+    }
 }
 
 impl AsContext for Api {
@@ -212,4 +239,26 @@ pub fn api_type_from_friendly_ux(api: String) -> ApiType {
         _ => ApiType::Custom,
     };
     api
+}
+
+#[wasm_bindgen(js_name = apiTypeToFriendlyUX)]
+pub fn api_type_to_friendly_ux(api_type: ApiType) -> String {
+    let api = match api_type {
+        ApiType::RestfulApi => "Restful API",
+        ApiType::SoapApi => "Soap API",
+        ApiType::RpcApi => "RPC API",
+        ApiType::GRpcApi => "gRPC API",
+        ApiType::GraphQL => "GraphQL",
+        ApiType::WebHooks => "WebHooks",
+        ApiType::HttpLongPolling => "HTTP Long-Polling",
+        ApiType::ServerSentEvents => "Server-Sent Events",
+        ApiType::HttpServerPush => "HTTP Server Push",
+        ApiType::WebSub => "WebSub",
+        ApiType::WebSockets => "WebSockets",
+        ApiType::TcpSocket => "Raw TCP Socket",
+        ApiType::LibraryIDL => "Library IDL",
+        ApiType::Mqtt => "MQTT",
+        ApiType::Custom => "Custom",
+    };
+    api.to_string()
 }
