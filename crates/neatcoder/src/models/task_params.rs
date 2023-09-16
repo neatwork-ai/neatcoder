@@ -2,6 +2,7 @@ use std::any::Any;
 
 use crate::{
     endpoints::{scaffold_project::ScaffoldParams, stream_code::CodeGenParams},
+    utils::log,
     JsError,
 };
 use anyhow::{anyhow, Result};
@@ -12,7 +13,7 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskParams {
-    pub task_type: TaskType,
+    pub(crate) task_type: TaskType,
     pub(crate) inner: TaskParamsInner,
 }
 
@@ -39,6 +40,11 @@ impl TaskParams {
         Self { task_type, inner }
     }
 
+    #[wasm_bindgen(getter)]
+    pub fn inner(&self) -> TaskParamsInner {
+        self.inner.clone()
+    }
+
     #[wasm_bindgen(getter, js_name = scaffoldProject)]
     pub fn scaffold_project(&self) -> Option<ScaffoldParams> {
         match self.task_type {
@@ -50,9 +56,21 @@ impl TaskParams {
     #[wasm_bindgen(getter, js_name = streamCode)]
     pub fn stream_code(&self) -> Option<CodeGenParams> {
         match self.task_type {
-            TaskType::CodeGen => self.inner.stream_code.clone(),
+            TaskType::CodeGen => {
+                log(&format!(
+                    "RETURNING: {:?}",
+                    self.inner.stream_code.clone(),
+                ));
+
+                self.inner.stream_code.clone()
+            }
             _ => None,
         }
+    }
+
+    #[wasm_bindgen(getter, js_name = taskType)]
+    pub fn task_type(&self) -> TaskType {
+        self.task_type
     }
 }
 

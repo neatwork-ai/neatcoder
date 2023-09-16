@@ -1,15 +1,34 @@
 import * as vscode from "vscode";
 import * as wasm from "./../../pkg/neatcoder";
-import { saveAppStateToFile } from "../utils";
-import { makeRequest } from "../httpClient";
+import { AppStateManager } from "../appStateManager";
+import { addLanguage } from "./addLanguage";
+import { startLoading, stopLoading } from "../statusBar";
 
+/**
+ * Asynchronously initiates a prompt to gather user input and starts processing based on the input.
+ * It goes through the following steps:
+ * 1. Adds a language through the `addLanguage` function.
+ * 2. Prompts the user to input their project description.
+ * 3. If user input is received, it starts a loading indicator, triggers the start of a prompt process through the AppStateManager, and stops the loading indicator once completed.
+ *
+ * @param llmClient - An instance of the OpenAI client used to facilitate the task processing.
+ * @param llmParams - Parameters configuring the OpenAI client for task processing.
+ * @param appManager - The AppStateManager instance responsible for managing the application state, including starting prompts.
+ * @returns Promise<void> - A promise that resolves once the prompt process has initiated and the user has been notified.
+ */
 export async function startPrompt(
   llmClient: wasm.OpenAI,
   llmParams: wasm.OpenAIParams,
-  appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ): Promise<void> {
   {
+    try {
+      await addLanguage(appManager);
+    } catch (error) {
+      vscode.window.showErrorMessage(`Error: ${error}`);
+      throw error;
+    }
+
     const userInput = await vscode.window.showInputBox({
       prompt: "Input your project description",
       value:
@@ -17,61 +36,15 @@ export async function startPrompt(
     });
 
     if (userInput !== undefined) {
-      await scaffold(llmClient, llmParams, appState, userInput);
-      saveAppStateToFile(appState);
+      startLoading();
+      await appManager.startPrompt(llmClient, llmParams, userInput);
+      stopLoading();
 
-      // Use the TCP client to send the command
-      logger.appendLine(`[INFO] Sending InitPrompt command via TCP Socket`);
+      vscode.window.showInformationMessage(
+        `The project scaffold & execution plan is now available.`
+      );
     } else {
       vscode.window.showErrorMessage("Unable to parse prompt.");
     }
-  }
-}
-
-async function scaffold(
-  llmClient: wasm.OpenAI,
-  llmParams: wasm.OpenAIParams,
-  appState: wasm.AppState,
-  userInput: string
-) {
-  const taskType = wasm.TaskType.ScaffoldProject;
-
-  const taskPayload = new wasm.TaskParamsInner(
-    new wasm.ScaffoldParams(userInput)
-  );
-  const taskParams = new wasm.TaskParams(taskType, taskPayload);
-
-  try {
-    await appState.scaffoldProject(
-      llmClient,
-      llmParams,
-      taskParams,
-      makeRequest
-    );
-  } catch (error) {
-    console.error("Error occurred:", error);
-  }
-}
-
-async function schedule(
-  llmClient: wasm.OpenAI,
-  llmParams: wasm.OpenAIParams,
-  appState: wasm.AppState,
-  userInput: string
-) {
-  const taskType = wasm.TaskType.BuildExecutionPlan;
-
-  const taskPayload = new wasm.TaskParamsInner();
-  const taskParams = new wasm.TaskParams(taskType, taskPayload);
-
-  try {
-    await appState.scaffoldProject(
-      llmClient,
-      llmParams,
-      taskParams,
-      makeRequest
-    );
-  } catch (error) {
-    console.error("Error occurred:", error);
   }
 }

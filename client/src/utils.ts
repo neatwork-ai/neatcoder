@@ -24,9 +24,7 @@ export function readAppState(): wasm.AppState {
 
     return appState;
   } catch (e) {
-    vscode.window.showInformationMessage(
-      `Failed to Retrieve cached data: ${e}`
-    );
+    vscode.window.showErrorMessage(`Failed to Retrieve cached data: ${e}`);
     throw e;
   }
 }
@@ -52,6 +50,11 @@ function readDirectoryStructure(
 /// ===== Write ===== ///
 
 export function saveAppStateToFile(appState: wasm.AppState): void {
+  const payload = serializeAppState(appState);
+  saveFile(payload, ".neat/cache", "state");
+}
+
+export function saveCump(appState: wasm.AppState): void {
   const payload = serializeAppState(appState);
   saveFile(payload, ".neat/cache", "state");
 }
@@ -227,4 +230,30 @@ export function getRoot(): string {
 export function getFilename(filepath: string): string {
   const parts = filepath.split(/[/\\]/);
   return parts[parts.length - 1];
+}
+
+export function getOrSetApiKey(): any {
+  let config = vscode.workspace.getConfiguration("extension");
+  let apiKey = config.get("apiKey");
+
+  if (!apiKey) {
+    vscode.window
+      .showInputBox({
+        prompt: "Please enter your API key",
+        ignoreFocusOut: true,
+      })
+      .then((value) => {
+        if (value) {
+          config.update("apiKey", value, vscode.ConfigurationTarget.Global);
+          vscode.window.showInformationMessage("API key saved!");
+        } else {
+          // Handle the case where the input box was dismissed without entering a value
+          vscode.window.showErrorMessage(
+            "API key is required to use this extension."
+          );
+        }
+      });
+  }
+
+  return apiKey;
 }

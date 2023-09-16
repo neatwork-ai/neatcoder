@@ -2,6 +2,8 @@ use js_sys::JsString;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
+use crate::models::task_params::TaskType;
+
 use super::task_params::TaskParams;
 
 #[wasm_bindgen]
@@ -45,5 +47,10 @@ impl Task {
     #[wasm_bindgen(getter, js_name = taskParams)]
     pub fn task_params(&self) -> TaskParams {
         self.task_params.clone()
+    }
+
+    #[wasm_bindgen(js_name = taskType)]
+    pub fn task_type(&self) -> TaskType {
+        self.task_params.task_type
     }
 }

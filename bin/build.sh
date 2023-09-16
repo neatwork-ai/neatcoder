@@ -25,4 +25,4 @@ else
     exit 1
 fi
 
-echo "Full build complete"
+echo "Build complete"

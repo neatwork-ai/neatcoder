@@ -3,12 +3,9 @@ import * as fs from "fs";
 import * as rimraf from "rimraf"; // Used for recursive directory deletion
 import InterfaceItem from "../../providers/interfaceItem";
 import { getConfig, getOrCreateConfigPath, getPath } from "../../utils";
-import * as wasm from "../../../pkg/neatcoder";
+import { logger } from "../../logger";
 
-export function removeInterface(
-  item: InterfaceItem,
-  logger: vscode.OutputChannel
-) {
+export function removeInterface(item: InterfaceItem) {
   if (!item) {
     vscode.window.showErrorMessage("Please select an interface to remove.");
     return;
@@ -28,14 +25,10 @@ export function removeInterface(
   // Delete schemas comes after removing the interface as the
   // intention is that by removing the interface first the schema watchers
   // should be garbage collected
-  _deleteSchemas(schemasPathObj, interfaceName, logger);
+  _deleteSchemas(schemasPathObj, interfaceName);
 }
 
-function _deleteSchemas(
-  schemasPathObj: any,
-  interfaceName: string,
-  logger: vscode.OutputChannel
-): void {
+function _deleteSchemas(schemasPathObj: any, interfaceName: string): void {
   if (!schemasPathObj) {
     // TODO: Incorrect because the folder still exists..
     logger.appendLine(

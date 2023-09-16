@@ -31,14 +31,10 @@ export class InterfaceItem extends vscode.TreeItem {
     } else if (this.type === ItemType.api) {
       this.contextValue = "apiItem";
       this.iconPath = path.join(__filename, "..", "..", "assets", "api-2.svg");
-      // Add icon for file if needed
-      // this.iconPath = { ... };
     } else if (this.type === ItemType.file) {
       this.contextValue = "fileItem";
-      // Add icon for file if needed
-      // this.iconPath = { ... };
     }
   }
 }
 
-export default InterfaceItem; // Export it if you want to use it in other modules.
+export default InterfaceItem;

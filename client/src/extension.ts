@@ -10,21 +10,18 @@ import { addSchema } from "./commands/schemas/addSchema";
 import { setupSchemaWatchers } from "./watchers/schemaWatcher";
 import { startJob } from "./commands/startJob";
 import { startPrompt } from "./commands/startPrompt";
-import { setupSrcFolderWatcher } from "./watchers/sourceWatcher";
 import { removeInterface } from "./commands/interfaces/removeInterface";
 import { removeSchema } from "./commands/schemas/removeSchema";
 import InterfaceItem from "./providers/interfaceItem";
-import * as wasm from "./../pkg/neatcoder";
-import { readAppState } from "./utils";
 import { TaskView } from "./models/task";
 import { addInterface } from "./commands/interfaces/addInterface";
-
-import fetch from "node-fetch";
-import { Headers, Request } from "node-fetch";
-
-(global as any).fetch = fetch;
-(global as any).Headers = Headers;
-(global as any).Request = Request;
+import * as wasm from "./../pkg/neatcoder";
+import { AppStateManager } from "./appStateManager";
+import { getOrSetApiKey } from "./utils";
+import { removeJob } from "./commands/removeJob";
+import { removeAllJobs } from "./commands/removeAllJobs";
+import { initStatusBar } from "./statusBar";
+import { logger } from "./logger";
 
 let configWatcher: fs.FSWatcher | undefined;
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
@@ -38,28 +35,30 @@ export async function activate(context: vscode.ExtensionContext) {
     return;
   }
 
-  // Read or Initialize Application state
-  let appState = readAppState();
-  let llmClient = new wasm.OpenAI("TODO");
-  let llmParams = wasm.OpenAIParams.empty(wasm.OpenAIModels.Gpt35Turbo16k);
+  initStatusBar(context);
+  getOrSetApiKey();
 
   // Create the output channel for logging
-  let logger = vscode.window.createOutputChannel("Neatcoder");
   logger.appendLine("[INFO] Extension Name: Neatcoder");
 
   // === Init Providers ===
 
-  const jobQueueProvider = new TaskPoolProvider(appState, logger);
-  const auditTrailProvider = new TasksCompletedProvider(appState, logger);
+  const jobQueueProvider = new TaskPoolProvider();
+  const auditTrailProvider = new TasksCompletedProvider();
   const interfacesProvider = new InterfacesProvider();
+
+  // Read or Initialize Application state
+
+  let appManager = new AppStateManager(jobQueueProvider, auditTrailProvider);
+  let llmClient = new wasm.OpenAI("TODO");
+  let llmParams = wasm.OpenAIParams.empty(wasm.OpenAIModels.Gpt35Turbo16k);
 
   // === Setup File Watchers ===
 
   // Setup File Watcher which checks for changes in the `.neat` and
   // communicates them to the server if relevant
-  setupSchemaWatchers(schemaWatchers, interfacesProvider, appState, logger);
-  setupConfigWatcher(schemaWatchers, interfacesProvider, appState, logger);
-  setupSrcFolderWatcher(logger); // TODO: Redo
+  setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager);
+  setupConfigWatcher(schemaWatchers, interfacesProvider, appManager);
 
   // === Registration & Garbage Collection ===
 
@@ -85,20 +84,20 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.startPrompt", () => {
-      startPrompt(llmClient, llmParams, appState, logger);
+    vscode.commands.registerCommand("extension.startPrompt", async () => {
+      startPrompt(llmClient, llmParams, appManager);
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addDatastore", () => {
-      addInterface(wasm.InterfaceType.Database, interfacesProvider, logger);
+    vscode.commands.registerCommand("extension.addDatastore", async () => {
+      addInterface(wasm.InterfaceType.Database, interfacesProvider);
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addApi", () => {
-      addInterface(wasm.InterfaceType.Api, interfacesProvider, logger);
+    vscode.commands.registerCommand("extension.addApi", async () => {
+      addInterface(wasm.InterfaceType.Api, interfacesProvider);
     })
   );
 
@@ -110,16 +109,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.removeInterface",
       (item: InterfaceItem) => {
-        removeInterface(item, logger);
-      }
-    )
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "extension.startJob",
-      (taskView: TaskView) => {
-        startJob(taskView, llmClient, llmParams, appState, logger);
+        removeInterface(item);
       }
     )
   );
@@ -134,8 +124,26 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.debugAppState", function () {
-      vscode.window.showInformationMessage(JSON.stringify(appState, null, 2));
+    vscode.commands.registerCommand(
+      "extension.startJob",
+      async (taskView: TaskView) => {
+        await startJob(taskView, llmClient, llmParams, appManager);
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "extension.removeJob",
+      (taskView: TaskView) => {
+        removeJob(taskView, appManager);
+      }
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("extension.removeAllJobs", () => {
+      removeAllJobs(appManager);
     })
   );
 }

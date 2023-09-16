@@ -1,26 +1,23 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import {
-  getFilename,
-  getOrCreateConfigPath,
-  saveAppStateToFile,
-} from "../utils";
+import { getFilename, getOrCreateConfigPath } from "../utils";
 import { InterfacesProvider } from "../providers/interfaces";
-import * as wasm from "../../pkg/neatcoder";
+import { AppStateManager } from "../appStateManager";
+import { logger } from "../logger";
 
 /**
- * Sets up watchers for schema directories defined in a configuration file.
- * Sends changes (addition, modification) to a TCP server.
+ * Set up watchers for schemas specified in the configuration file.
  *
- * @param appState - A mutable reference to the application state
- * @param logger - Output channel for logging events.
+ * @param schemaWatchers - An object holding fs.FSWatcher instances associated with different paths.
+ * @param interfacesProvider - Instance of InterfacesProvider to refresh interface views.
+ * @param appManager - Instance of AppStateManager to manage the app's state.
+ * @returns An array of fs.FSWatcher instances created during the setup process (if any).
  */
 export function setupSchemaWatchers(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
-  appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ) {
   if (!vscode.workspace.workspaceFolders) {
     return [];
@@ -51,20 +48,27 @@ export function setupSchemaWatchers(
           name,
           absolutePath,
           interfacesProvider,
-          appState,
-          logger
+          appManager
         );
       }
     });
   }
 }
 
+/**
+ * Set up a watcher for a specific interface.
+ *
+ * @param name - Name of the interface.
+ * @param absolutePath - Absolute path to the interface schema.
+ * @param interfacesProvider - Instance of InterfacesProvider to refresh interface views.
+ * @param appManager - Instance of AppStateManager to manage the app's state.
+ * @returns The fs.FSWatcher instance created for the specified interface.
+ */
 function setupWatcherForInterface(
   name: string,
   absolutePath: string,
   interfacesProvider: InterfacesProvider,
-  appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ): fs.FSWatcher {
   logger.appendLine("[INFO] Setting up schema watcher for " + name);
   // Your existing watcher setup logic here, but return the watcher
@@ -78,13 +82,13 @@ function setupWatcherForInterface(
         if (event === "rename") {
           if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
             // File was added or renamed
-            handleNewFile(name, fullPath, appState, logger);
+            handleNewFile(name, fullPath, appManager);
 
             // Refresh the view
             interfacesProvider.refresh();
           } else {
             // File was deleted
-            handleFileDelete(name, filename, appState, logger);
+            handleFileDelete(name, filename, appManager);
 
             // Refresh the view
             interfacesProvider.refresh();
@@ -94,7 +98,7 @@ function setupWatcherForInterface(
           fs.existsSync(fullPath) &&
           fs.statSync(fullPath).isFile()
         ) {
-          handleFileEdit(name, fullPath, appState, logger);
+          handleFileEdit(name, fullPath, appManager);
         }
       }
     }
@@ -103,50 +107,59 @@ function setupWatcherForInterface(
   return watcher;
 }
 
+/**
+ * Handle the addition of a new file in the watched directory.
+ *
+ * @param interfaceName - Name of the interface associated with the new file.
+ * @param filePath - Path to the new file.
+ * @param appManager - Instance of AppStateManager to manage the app's state.
+ */
 function handleNewFile(
   interfaceName: string,
   filePath: string,
-  appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ) {
   const schema = fs.readFileSync(filePath, "utf8");
   const schemaName = getFilename(filePath);
 
-  appState.addSchema(interfaceName, schemaName, schema);
-  saveAppStateToFile(appState);
-
+  appManager.addSchema(interfaceName, schemaName, schema);
   logger.appendLine(`[INFO] Adding Schema ${schemaName}`);
 }
 
 /**
- * Handles the creation of a new schema file by sending its details to the TCP server.
+ * Handle the modification of a file in the watched directory.
  *
- * @param interfaceName - The name of the interface for the schema.
- * @param filePath - Absolute path to the new schema file.
- * @param appState - A mutable reference to the application state
+ * @param interfaceName - Name of the interface associated with the modified file.
+ * @param filePath - Path to the modified file.
+ * @param appManager - Instance of AppStateManager to manage the app's state.
  */
 function handleFileEdit(
   interfaceName: string,
   filePath: string,
-  appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ) {
   const schema = fs.readFileSync(filePath, "utf8");
   const schemaName = getFilename(filePath);
 
   // It will replace the previous schema state
-  appState.addSchema(interfaceName, schemaName, schema);
+  appManager.addSchema(interfaceName, schemaName, schema);
   logger.appendLine(`[INFO] Editing Schema ${schemaName}`);
 }
 
+/**
+ * Handle the deletion of a file in the watched directory.
+ *
+ * @param interfaceName - Name of the interface associated with the deleted file.
+ * @param filename - Name of the deleted file.
+ * @param appManager - Instance of AppStateManager to manage the app's state.
+ */
 function handleFileDelete(
   interfaceName: string,
   filename: string,
-  appState: wasm.AppState,
-  logger: vscode.OutputChannel
+  appManager: AppStateManager
 ) {
   const schemaName = getFilename(filename);
 
   logger.appendLine(`[INFO] Removing Schema ${schemaName}`);
-  appState.removeSchema(interfaceName, schemaName);
+  appManager.removeSchema(interfaceName, schemaName);
 }
