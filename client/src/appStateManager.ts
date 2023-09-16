@@ -186,7 +186,6 @@ export class AppStateManager {
         logger.appendLine(`[INFO] Opening code editor`);
         const activeTextDocument = await workspace.openTextDocument(filePath);
 
-        logger.appendLine(`[INFO] Showing text`);
         await window.showTextDocument(activeTextDocument, {
           preview: false,
         });
@@ -313,18 +312,12 @@ export class AppStateManager {
     try {
       const tasksDone: wasm.Task[] = this.appState.getDoneTasks();
 
-      window.showInformationMessage(
-        `HERE ARE THE TASKS DONE: ${JSON.stringify(tasksDone)}`
-      );
-
       // Update the local task list
       this.tasksCompletedProvider.tasks = toTaskView(tasksDone);
 
       // Refresh the view
       this.tasksCompletedProvider.refresh();
     } catch (error) {
-      window.showInformationMessage(`HERRRRRRRO: ${error}`);
-
       console.error("Error while updating FE AuditPool:", error);
     }
   }

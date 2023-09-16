@@ -142,7 +142,7 @@ async function handleSelection(
 
     interfacesProvider.refresh();
   } catch (error) {
-    logger.appendLine(`[INFO] Failed to update config: ${error}`);
+    logger.appendLine(`[ERROR] Failed to update config: ${error}`);
   }
 }
 

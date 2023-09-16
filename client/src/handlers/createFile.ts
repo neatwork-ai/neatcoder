@@ -29,9 +29,6 @@ export async function createFile(
   try {
     // Create an empty file
     await workspace.fs.writeFile(fileUri, new Uint8Array());
-
-    // Show success message
-    window.showInformationMessage(`File '${fileName}' created successfully.`);
   } catch (err) {
     // Log error message
     logger.appendLine(`[ERROR] Failed to create file '${fileName}': ${err}`);

@@ -34,9 +34,6 @@ function _deleteSchemas(schemasPathObj: any, interfaceName: string): void {
     logger.appendLine(
       `[WARN] No folder found for the interface ${interfaceName} schemas.`
     );
-    vscode.window.showInformationMessage(
-      `Interface named ${interfaceName} removed successfully.`
-    );
     return;
   }
 

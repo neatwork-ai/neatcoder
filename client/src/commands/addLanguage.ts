@@ -101,6 +101,6 @@ function handleSelection(
     const lang = new wasm.Language(langType);
     appManager.addLanguage(lang);
   } catch (error) {
-    logger.appendLine(`[INFO] Failed to add programming language: ${error}`);
+    logger.appendLine(`[ERROR] Failed to add programming language: ${error}`);
   }
 }

@@ -169,7 +169,6 @@ export async function makeStreamingRequest(
                 } else {
                   if (checkIfCodeBlockIsStarting(token)) {
                     logger.appendLine(`[INFO] Starting Code Stream: ${token}`);
-                    console.log(`[INFO] Start Code Stream: ${token}`);
                     prepareStartStreaming();
                   } else {
                     isCodeBlockMaybeEnding = false;

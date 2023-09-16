@@ -134,9 +134,6 @@ export function getConfig(): any {
 
     // Write the default config to the file
     fs.writeFileSync(configPath, JSON.stringify(config, null, 4));
-    vscode.window.showInformationMessage(
-      `Configuration file created at ${configPath}`
-    );
   } else {
     const configContent = fs.readFileSync(configPath, "utf-8");
     config = JSON.parse(configContent);

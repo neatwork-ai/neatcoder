@@ -70,8 +70,6 @@ async function copyFilesToDestination(
     fs.copyFile(file.fsPath, destFilePath, (err) => {
       if (err) {
         vscode.window.showErrorMessage(`Failed to copy file: ${err.message}`);
-      } else {
-        vscode.window.showInformationMessage(`File copied to ${destFilePath}`);
       }
     });
   }
