@@ -1,8 +1,4 @@
-import * as net from "net";
 import * as vscode from "vscode";
-import { EventEmitter } from "events";
-import { OutputChannel, window, workspace } from "vscode";
-import { writeHeapSnapshot } from "v8";
 
 /**
  * Creates a file in the root of the current workspace.
@@ -13,13 +9,16 @@ export async function createFile(
   logger: vscode.OutputChannel
 ): Promise<void> {
   // Check if there are workspace folders
-  if (!workspace.workspaceFolders || workspace.workspaceFolders.length === 0) {
+  if (
+    !vscode.workspace.workspaceFolders ||
+    vscode.workspace.workspaceFolders.length === 0
+  ) {
     logger.appendLine("[ERROR] No workspace folder found. Cannot create file.");
     return;
   }
 
   // Get the root workspace folder
-  const workspaceRoot = workspace.workspaceFolders[0].uri;
+  const workspaceRoot = vscode.workspace.workspaceFolders[0].uri;
 
   // Create the file URI
   const fileUri = workspaceRoot.with({
@@ -28,12 +27,12 @@ export async function createFile(
 
   try {
     // Create an empty file
-    await workspace.fs.writeFile(fileUri, new Uint8Array());
+    await vscode.workspace.fs.writeFile(fileUri, new Uint8Array());
   } catch (err) {
     // Log error message
     logger.appendLine(`[ERROR] Failed to create file '${fileName}': ${err}`);
 
     // Show error message
-    window.showErrorMessage(`Failed to create file '${fileName}'`);
+    vscode.window.showErrorMessage(`Failed to create file '${fileName}'`);
   }
 }
