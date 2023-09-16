@@ -58,9 +58,12 @@ export async function makeStreamingRequest(
   body: string,
   activeTextDocument: TextDocument
 ): Promise<void> {
+  cleanup();
+
   return new Promise((resolve, reject) => {
     let responseLogRaw: string[] = [];
     let responseLog: string[] = [];
+    let streamedTokens = 0;
 
     const apiKey = getOrSetApiKey();
     try {
@@ -109,6 +112,13 @@ export async function makeStreamingRequest(
                   cleanup();
                   isProcessing = false;
 
+                  if (streamedTokens === 0) {
+                    reject(
+                      "Error: LLM failed to produce a coherent code block."
+                    );
+                    return;
+                  }
+
                   resolve(); // Resolves the promise
                   return;
                 }
@@ -118,6 +128,11 @@ export async function makeStreamingRequest(
                 // Here `json` will be an individual message object
                 // You can then access json.choices[0].delta.content and proceed with your existing logic
                 const token = json.choices[0].delta.content;
+
+                if (token === null || token === undefined) {
+                  // Skipping
+                  return;
+                }
 
                 responseLog.push(token);
 
@@ -149,6 +164,7 @@ export async function makeStreamingRequest(
                   if (checkIfCanStream()) {
                     console.log(`[INFO] Streaming token: ${token}`);
                     await streamCode(token, activeTextDocument);
+                    streamedTokens += 1;
                   }
                 } else {
                   if (checkIfCodeBlockIsStarting(token)) {
