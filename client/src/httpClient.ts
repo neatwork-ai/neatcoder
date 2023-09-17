@@ -1,5 +1,6 @@
 import fetch from "node-fetch";
 import * as fs from "fs";
+import * as vscode from "vscode";
 import * as path from "path";
 import { getOrSetApiKey, getRoot } from "./utils";
 import { TextDocument } from "vscode";
@@ -7,6 +8,7 @@ import { streamCode } from "./commands/streamCode";
 import * as https from "https";
 import * as url from "url";
 import { logger } from "./logger";
+import { startLoading, stopLoading } from "./statusBar";
 
 let isProcessing = false;
 let isCodeBlock = false;
@@ -102,13 +104,18 @@ export async function makeStreamingRequest(
             // Split the chunk by double newline to get individual messages
             const chunkAsString = chunk.toString("utf8"); // .substring(6); // removes the prefix "data: "
             const messages: string[] = chunkAsString.split("\n\n");
+            console.log(messages);
 
             for (const message of messages) {
               if (message.startsWith("data: ") && message.trim().length > 0) {
                 const rawData = message.substring(6); // remove 'data: ' prefix
 
                 if (rawData.trim() === "[DONE]") {
+                  vscode.window.showInformationMessage(
+                    "Streamed code finished."
+                  );
                   console.log(`[INFO] Streaming process completed.`);
+                  stopLoading();
                   cleanup();
                   isProcessing = false;
 
@@ -130,8 +137,9 @@ export async function makeStreamingRequest(
                 const token = json.choices[0].delta.content;
 
                 if (token === null || token === undefined) {
+                  // TODO: If finish_reason === "stop" then return, else continue...
                   // Skipping
-                  return;
+                  continue;
                 }
 
                 responseLog.push(token);
@@ -158,6 +166,7 @@ export async function makeStreamingRequest(
                   if (checkForStreamStartSignal(token)) {
                     console.log(`[INFO] Stream is about to start.`);
                     waitingForNewline = false;
+                    startLoading("Streaming");
                     continue;
                   }
 
@@ -183,6 +192,7 @@ export async function makeStreamingRequest(
         res.on("end", () => {
           cleanup();
           isProcessing = false;
+          stopLoading();
           console.log("No more data in response.");
           resolve();
         });

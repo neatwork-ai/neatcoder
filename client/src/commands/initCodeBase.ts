@@ -36,7 +36,7 @@ export async function initCodeBase(
     });
 
     if (userInput !== undefined) {
-      startLoading();
+      startLoading("Prompting the LLM..");
       await appManager.initCodeBase(llmClient, llmParams, userInput);
       stopLoading();
 

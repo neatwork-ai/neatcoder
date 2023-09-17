@@ -42,7 +42,11 @@ export function stopLoading() {
  * Initiates a loading animation on the status bar item. The animation cycles through different steps,
  * changing the status bar item's text and icon at a regular interval of 500 milliseconds.
  */
-export function startLoading() {
+export function startLoading(message: string) {
+  if (statusBar) {
+    clearInterval(loadingInterval);
+  }
+
   console.log("We are in the loading scope..");
 
   if (statusBar) {
@@ -53,7 +57,7 @@ export function startLoading() {
 
     let loadingStep = 0;
     loadingInterval = setInterval(() => {
-      statusBar.text = `${getLoadingStep(loadingStep)} Prompting LLM...`;
+      statusBar.text = `${getLoadingStep(loadingStep)} ${message}...`;
       loadingStep = (loadingStep + 1) % 4; // cycle between 0 and 3
     }, 500); // update every 500 ms
     statusBar.show();

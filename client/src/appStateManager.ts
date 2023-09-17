@@ -9,6 +9,7 @@ import { toTaskView } from "./models/task";
 import { makeRequest, makeStreamingRequest } from "./httpClient";
 import { scanSourceFolder, streamCode } from "./commands/streamCode";
 import { logger } from "./logger";
+import { startLoading } from "./statusBar";
 
 /**
  * A class to manage the application state, including functionalities such as
@@ -193,6 +194,8 @@ export class AppStateManager {
         const codebase = await scanSourceFolder();
 
         logger.appendLine(`[INFO] Making StreamCode call to WASM Module.`);
+        startLoading("Awaiting Code Stream");
+
         let requestBody = this.appState.streamCode(
           llmClient,
           llmParams,
