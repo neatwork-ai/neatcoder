@@ -4,7 +4,7 @@ All notable changes to the "neatcoder" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [0.1.0-alpha]
+## [0.1.0-alpha] - 18/09/2023
 
 ### Added
 - Initial release with basic scaffolding for the Neatcoder project.
