@@ -106,16 +106,20 @@ export async function makeStreamingRequest(
               console.log(message);
 
               if (message === "[DONE]") {
-                vscode.window.showInformationMessage("Streamed code finished.");
-                console.log(`[INFO] Streaming process completed.`);
                 stopLoading();
                 cleanup();
                 isProcessing = false;
 
                 if (streamedTokens === 0) {
+                  vscode.window.showErrorMessage(
+                    `Error: LLM failed to produce a coherent code block. Please try again.`
+                  );
                   reject("Error: LLM failed to produce a coherent code block.");
                   return;
                 }
+
+                vscode.window.showInformationMessage("Streamed code finished.");
+                console.log(`[INFO] Streaming process completed.`);
 
                 resolve(); // Resolves the promise
                 return;
