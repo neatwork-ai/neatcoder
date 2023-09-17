@@ -1,18 +1,47 @@
 # Neatcoder
 Turn your IDE into an AI Sofware engineer.
 
-To run, first build the WASM library with `./bin/build.sh` and then build the client with `.bin/build_client.sh`.
+Neatcoder is an IDE extension designed to serve as an AI Pair Programmer. In other words, it's the developers' best friend.
+
+As it stands, Neatcoder has the ability to initialise and scaffold any codebase in a programming language of your choice. Neatcoder also allows developers to index foreign interfaces such as databases and APIs of any given protocol or framework.
+
+## The structure
+There are two parts to the codebase: The frontend of the extension which can be found in the `client` folder and the backend of the extension which can be found in `crates/neatcoder`.
+
+The client is written in Typescript and utilizes directly the VSCode API, whereas the backed is written in Rust WebAssembly.
 
 
+### WASM Library
 
-cargo install wasm-bindgen-cli
+The WASM library contains the core types and primitives that manage the state of the application. This state management is mostly done via the struct `AppState`, which serves as a central data structure to maintain the state of the application.
 
-wasm-bindgen your_project_bg.wasm --out-dir . --debug
+It holds information about the project language, initial specifications (from a prompt), project scaffold structure (as a JSON string), interfaces, and a task pool to manage various tasks or jobs in the application.
 
-cargo +nightly rustc -- -Zunstable-options -Zunpretty=expanded >> expanded.rs
+### VSCE Extension
+The VSCE extension contains all the code that interfaces with the VSCode API and therefore is responsible for guising the User Experience as well to perform the function calls to the WASM library to perform state transitions. Given the access to the VSCode API, the VSCE extension is also responsible for keeping touch with the user's file system as well as other embedded VSCode features such as language servers and compiler frontends.
+
+## Dependencies
+
+To run this codebase you will need the following languages installed:
+
+Rust
+Nodejs
+Typescript
+
+And the following:
+
+WASM Bindgen CLI: `cargo install wasm-bindgen-cli`
+vsce: `npm install --global vsce`
+
+## Running
+
+To run tests:
+
+- WASM: `./bin/test_wasm.sh`
+- VSCE: `./bin/test_client.sh`
 
 
-
-export NODE_OPTIONS="--loader ../../client/node_modules/ts-node/esm/transpile-only"
-
-full command: cd "/Users/nuno/Documents/Programs/neatwork/neatcode/crates/neatcoder" && CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER="/Users/nuno/.cargo/bin/wasm-bindgen-test-runner" WASM_BINDGEN_TEST_ONLY_NODE="2" "cargo" "test" "--target" "wasm32-unknown-unknown"
+To build:
+- WASM: `./bin/build_wasm.sh`
+- VSCE: `./bin/build_client.sh`
+- Full: `./bin/build.sh`
