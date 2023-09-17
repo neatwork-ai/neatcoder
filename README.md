@@ -24,20 +24,22 @@ The VSCE extension contains all the code that interfaces with the VSCode API and
 
 To run this codebase you will need the following languages installed:
 
-Rust
-Nodejs
-Typescript
+- Rust
+- Nodejs
+- Typescript
 
 And the following:
 
-WASM Bindgen CLI: `cargo install wasm-bindgen-cli`
-vsce: `npm install --global vsce`
+- Wasm Pack: cargo install wasm-pack
+- Wasm Bindgen CLI: `cargo install wasm-bindgen-cli`
+- Wasm Compilation Target: `rustup target add wasm32-unknown-unknown`
+- VSCE: `npm install --global vsce`
 
 ## Running
 
 To run tests:
 
-- WASM: `./bin/test_wasm.sh`
+- Wasm: `./bin/test_wasm.sh`
 - VSCE: `./bin/test_client.sh`
 
 
