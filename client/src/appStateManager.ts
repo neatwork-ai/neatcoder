@@ -187,10 +187,7 @@ export class AppStateManager {
         logger.appendLine(`[INFO] Opening code editor`);
         const activeTextDocument = await workspace.openTextDocument(filePath);
 
-        await window.showTextDocument(activeTextDocument, {
-          preview: false,
-        });
-
+        await window.showTextDocument(activeTextDocument);
         const codebase = await scanSourceFolder();
 
         logger.appendLine(`[INFO] Making StreamCode call to WASM Module.`);

@@ -17,22 +17,48 @@ let currentPosition = new Position(0, 0);
  * @param activeTextDocument - The currently active text document in the VS Code editor.
  * @returns Promise<void> - A promise that resolves once the token has been streamed to the document.
  */
+// export async function streamCode(
+//   token: string,
+//   activeTextDocument: TextDocument
+// ): Promise<void> {
+//   try {
+//     const editor = await window.showTextDocument(activeTextDocument, {
+//       preview: false,
+//       preserveFocus: true,
+//     });
+
+//     await editor.edit((editBuilder) => {
+//       editBuilder.insert(currentPosition, token); // Adding a space after every word
+//     });
+
+//     // Update currentPosition to point to the new end of the document
+//     const docContent = editor.document.getText();
+//     currentPosition = editor.document.positionAt(docContent.length);
+//   } catch (error) {
+//     console.log(error);
+//     throw error;
+//   }
+// }
+
 export async function streamCode(
   token: string,
   activeTextDocument: TextDocument
 ): Promise<void> {
   try {
-    const editor = await window.showTextDocument(activeTextDocument);
-
-    await editor.edit((editBuilder) => {
-      editBuilder.insert(currentPosition, token); // Adding a space after every word
-    });
+    // Create a WorkspaceEdit instance to represent the edit
+    const workspaceEdit = new vscode.WorkspaceEdit();
 
     // Update currentPosition to point to the new end of the document
-    const docContent = editor.document.getText();
-    currentPosition = editor.document.positionAt(docContent.length);
+    const docContent = activeTextDocument.getText();
+    currentPosition = activeTextDocument.positionAt(docContent.length);
+
+    // Insert the token at the current position
+    workspaceEdit.insert(activeTextDocument.uri, currentPosition, token);
+
+    // Apply the edit to the document
+    await vscode.workspace.applyEdit(workspaceEdit);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     throw error;
   }
 }
