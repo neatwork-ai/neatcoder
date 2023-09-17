@@ -67,6 +67,8 @@ export async function makeStreamingRequest(
     let responseLog: string[] = [];
     let streamedTokens = 0;
 
+    let messageBuffer = new MessageBuffer();
+
     const apiKey = getOrSetApiKey();
     try {
       const urlString = "https://api.openai.com/v1/chat/completions";
@@ -95,93 +97,81 @@ export async function makeStreamingRequest(
           let chunk;
           while (null !== (chunk = res.read())) {
             // Assuming 'chunk' is a Buffer, convert it to a string
-            const chunkAsString0 = chunk.toString("utf8");
+            const chunkString = chunk.toString("utf8");
 
-            responseLogRaw.push(chunkAsString0);
-
-            writeRawLogs(responseLogRaw);
-
-            // Split the chunk by double newline to get individual messages
-            const chunkAsString = chunk.toString("utf8"); // .substring(6); // removes the prefix "data: "
-            const messages: string[] = chunkAsString.split("\n\n");
-            console.log(messages);
+            // Processes chunk and returns valid messages
+            const messages = messageBuffer.process(chunkString);
 
             for (const message of messages) {
-              if (message.startsWith("data: ") && message.trim().length > 0) {
-                const rawData = message.substring(6); // remove 'data: ' prefix
+              console.log(message);
 
-                if (rawData.trim() === "[DONE]") {
-                  vscode.window.showInformationMessage(
-                    "Streamed code finished."
-                  );
-                  console.log(`[INFO] Streaming process completed.`);
-                  stopLoading();
-                  cleanup();
-                  isProcessing = false;
+              if (message === "[DONE]") {
+                vscode.window.showInformationMessage("Streamed code finished.");
+                console.log(`[INFO] Streaming process completed.`);
+                stopLoading();
+                cleanup();
+                isProcessing = false;
 
-                  if (streamedTokens === 0) {
-                    reject(
-                      "Error: LLM failed to produce a coherent code block."
-                    );
-                    return;
-                  }
-
-                  resolve(); // Resolves the promise
+                if (streamedTokens === 0) {
+                  reject("Error: LLM failed to produce a coherent code block.");
                   return;
                 }
 
-                const json = JSON.parse(rawData); // JSONify response
+                resolve(); // Resolves the promise
+                return;
+              }
 
-                // Here `json` will be an individual message object
-                // You can then access json.choices[0].delta.content and proceed with your existing logic
-                const token = json.choices[0].delta.content;
+              const json = JSON.parse(message); // JSONify response
 
-                if (token === null || token === undefined) {
-                  // TODO: If finish_reason === "stop" then return, else continue...
-                  // Skipping
+              // Here `json` will be an individual message object
+              // You can then access json.choices[0].delta.content and proceed with your existing logic
+              const token = json.choices[0].delta.content;
+
+              if (token === null || token === undefined) {
+                // TODO: If finish_reason === "stop" then return, else continue...
+                // Skipping
+                continue;
+              }
+
+              responseLog.push(token);
+
+              writeLogs(responseLog);
+
+              if (isCodeBlock) {
+                if (checkIfCodeBlockMaybeEnding(token)) {
+                  // If we get `` then it means the end of the code block may
+                  // be near so we signal that
+                  isCodeBlockMaybeEnding = true;
                   continue;
                 }
 
-                responseLog.push(token);
+                if (checkIfCodeBlockEnds(token)) {
+                  // Here we have gotten the confirmation that the code block
+                  // is completed
+                  cleanup();
+                  continue;
+                }
 
-                writeLogs(responseLog);
+                isCodeBlockMaybeEnding = false;
 
-                if (isCodeBlock) {
-                  if (checkIfCodeBlockMaybeEnding(token)) {
-                    // If we get `` then it means the end of the code block may
-                    // be near so we signal that
-                    isCodeBlockMaybeEnding = true;
-                    continue;
-                  }
+                if (checkForStreamStartSignal(token)) {
+                  console.log(`[INFO] Stream is about to start.`);
+                  waitingForNewline = false;
+                  startLoading("Streaming");
+                  continue;
+                }
 
-                  if (checkIfCodeBlockEnds(token)) {
-                    // Here we have gotten the confirmation that the code block
-                    // is completed
-                    cleanup();
-                    continue;
-                  }
-
-                  isCodeBlockMaybeEnding = false;
-
-                  if (checkForStreamStartSignal(token)) {
-                    console.log(`[INFO] Stream is about to start.`);
-                    waitingForNewline = false;
-                    startLoading("Streaming");
-                    continue;
-                  }
-
-                  if (checkIfCanStream()) {
-                    console.log(`[INFO] Streaming token: ${token}`);
-                    await streamCode(token, activeTextDocument);
-                    streamedTokens += 1;
-                  }
+                if (checkIfCanStream()) {
+                  console.log(`[INFO] Streaming token: ${token}`);
+                  await streamCode(token, activeTextDocument);
+                  streamedTokens += 1;
+                }
+              } else {
+                if (checkIfCodeBlockIsStarting(token)) {
+                  logger.appendLine(`[INFO] Starting Code Stream: ${token}`);
+                  prepareStartStreaming();
                 } else {
-                  if (checkIfCodeBlockIsStarting(token)) {
-                    logger.appendLine(`[INFO] Starting Code Stream: ${token}`);
-                    prepareStartStreaming();
-                  } else {
-                    isCodeBlockMaybeEnding = false;
-                  }
+                  isCodeBlockMaybeEnding = false;
                 }
               }
             }
@@ -324,5 +314,56 @@ function writeLogs(responseLog: string[]) {
   } catch (error) {
     console.error(error);
     throw error;
+  }
+}
+
+class MessageBuffer {
+  private buffer: string;
+
+  constructor() {
+    this.buffer = "";
+  }
+
+  private append(chunk: string): void {
+    this.buffer += chunk;
+  }
+
+  private flush(index: number): string {
+    const message = this.buffer.substring(0, index);
+    this.buffer = this.buffer.substring(index + 2);
+    return message;
+  }
+
+  process(chunkString: string): string[] {
+    // 1. Attach incoming messages to the buffer
+    this.append(chunkString);
+
+    let index: number;
+    let flushedMessages: string[] = [];
+
+    while ((index = this.buffer.indexOf("\n\n")) >= 0) {
+      const message = this.flush(index);
+
+      if (message.startsWith("data: ")) {
+        try {
+          const payload = JSON.parse(message.substring(6)); // TODO: this is redundant?
+          flushedMessages.push(JSON.stringify(payload));
+        } catch (err) {
+          let payload = message.substring(6);
+          if (payload === "[DONE]") {
+            flushedMessages.push(payload);
+          } else {
+            console.error(
+              `Unable to parse message in HTTP stream into JSON object: ${message}`,
+              err
+            );
+          }
+        }
+      } else {
+        throw new Error(`Unable to parse message in HTTP stream: ${message}`);
+      }
+    }
+
+    return flushedMessages;
   }
 }
