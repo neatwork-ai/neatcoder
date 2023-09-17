@@ -1,8 +1,8 @@
 {
   "name": "neatcoder",
   "displayName": "NeatCoder",
-  "description": "AI agent for writing large scale, production-grade software",
-  "version": "0.0.1",
+  "description": "Turn your IDE into an AI Sofware engineer.",
+  "version": "0.1.0-alpha",
   "icon": "assets/neatwork-logo.png",
   "repository": {
     "url": "https://github.com/neatwork-ai/neatcode.git",
