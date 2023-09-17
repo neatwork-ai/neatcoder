@@ -43,8 +43,6 @@ export async function initCodeBase(
       vscode.window.showInformationMessage(
         `The project tasks are now available.`
       );
-    } else {
-      vscode.window.showErrorMessage("Unable to parse prompt.");
     }
   }
 }

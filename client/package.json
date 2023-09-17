@@ -33,7 +33,7 @@
       },
       {
         "command": "extension.initCodeBase",
-        "title": "Workflow: Init Codebase",
+        "title": "Init Codebase",
         "icon": "$(bracket-dot)"
       },
       {

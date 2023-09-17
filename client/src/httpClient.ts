@@ -118,7 +118,9 @@ export async function makeStreamingRequest(
                   return;
                 }
 
-                vscode.window.showInformationMessage("Streamed code finished.");
+                vscode.window.showInformationMessage(
+                  "Streaming process completed."
+                );
                 console.log(`[INFO] Streaming process completed.`);
 
                 resolve(); // Resolves the promise

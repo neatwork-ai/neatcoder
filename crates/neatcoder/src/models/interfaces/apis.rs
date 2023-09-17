@@ -222,18 +222,18 @@ impl Display for ApiType {
 #[wasm_bindgen(js_name = apiTypeFromFriendlyUX)]
 pub fn api_type_from_friendly_ux(api: String) -> ApiType {
     let api = match api.as_str() {
-        "Restful API" => ApiType::RestfulApi,
-        "Soap API" => ApiType::SoapApi,
+        "RESTful API" => ApiType::RestfulApi,
+        "SOAP API" => ApiType::SoapApi,
         "RPC API" => ApiType::RpcApi,
         "gRPC API" => ApiType::GRpcApi,
         "GraphQL" => ApiType::GraphQL,
         "WebHooks" => ApiType::WebHooks,
-        "HTTP Long-Polling" => ApiType::HttpLongPolling,
-        "Server-Sent Events" => ApiType::ServerSentEvents,
+        "HTTP Long Polling" => ApiType::HttpLongPolling,
+        "Server Sent Events" => ApiType::ServerSentEvents,
         "HTTP Server Push" => ApiType::HttpServerPush,
         "WebSub" => ApiType::WebSub,
         "WebSockets" => ApiType::WebSockets,
-        "Raw TCP Socket" => ApiType::TcpSocket,
+        "TCP Socket" => ApiType::TcpSocket,
         "Library IDL" => ApiType::LibraryIDL,
         "MQTT" => ApiType::Mqtt,
         _ => ApiType::Custom,
