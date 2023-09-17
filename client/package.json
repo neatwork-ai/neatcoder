@@ -33,7 +33,8 @@
       },
       {
         "command": "extension.initCodeBase",
-        "title": "Workflow: Init Codebase"
+        "title": "Workflow: Init Codebase",
+        "icon": "$(bracket-dot)"
       },
       {
         "command": "extension.addDatastore",
@@ -94,7 +95,7 @@
     "menus": {
       "view/title": [
         {
-          "command": "extension.runTask",
+          "command": "extension.initCodeBase",
           "when": "view == taskPoolView",
           "group": "navigation@1"
         },
@@ -121,6 +122,16 @@
       ],
       "view/item/context": [
         {
+          "command": "extension.runTask",
+          "when": "view == taskPoolView",
+          "group": "inline@1"
+        },
+        {
+          "command": "extension.removeTask",
+          "when": "view == taskPoolView",
+          "group": "inline@2"
+        },
+        {
           "command": "extension.addSchema",
           "when": "view == interfacesView && (viewItem == databaseItem || viewItem == apiItem)",
           "group": "inline"
@@ -128,11 +139,6 @@
         {
           "command": "extension.removeSchema",
           "when": "view == interfacesView && viewItem == fileItem",
-          "group": "inline"
-        },
-        {
-          "command": "extension.removeTask",
-          "when": "view == taskPoolView",
           "group": "inline"
         }
       ]
