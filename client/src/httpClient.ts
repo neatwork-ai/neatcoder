@@ -14,6 +14,7 @@ let isProcessing = false;
 let isCodeBlock = false;
 let isCodeBlockMaybeEnding = false;
 let waitingForNewline = false;
+let isCodeBlockEnded = false;
 
 /**
  * This function makes an HTTP POST request to the OpenAI API
@@ -63,7 +64,6 @@ export async function makeStreamingRequest(
   cleanup();
 
   return new Promise((resolve, reject) => {
-    let responseLogRaw: string[] = [];
     let responseLog: string[] = [];
     let streamedTokens = 0;
 
@@ -155,6 +155,7 @@ export async function makeStreamingRequest(
                   // Here we have gotten the confirmation that the code block
                   // is completed
                   cleanup();
+                  isCodeBlockEnded = true;
                   continue;
                 }
 
@@ -286,7 +287,7 @@ function checkIfCanStream(): boolean {
  * @return {boolean} - True if a code block is starting, false otherwise.
  */
 function checkIfCodeBlockIsStarting(token: any): boolean {
-  return !isCodeBlock && token === "```";
+  return !isCodeBlock && token === "```" && !isCodeBlockEnded;
 }
 
 // TODO: Produce this only in debug mode
