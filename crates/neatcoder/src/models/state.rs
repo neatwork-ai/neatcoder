@@ -9,7 +9,6 @@ use crate::models::task::Task;
 use crate::models::task_pool::Pipeline;
 use crate::{
     endpoints::{
-        execution_plan::{build_execution_plan, Files},
         scaffold_project::scaffold_project,
         stream_code::{stream_code, CodeGenParams},
     },
@@ -293,7 +292,7 @@ impl AppState {
             JsError::from_str("Failed to retrieve a language")
         })?;
 
-        let scaffold_json = scaffold_project(
+        let (scaffold_json, files) = scaffold_project(
             language,
             client,
             ai_params,
@@ -303,47 +302,29 @@ impl AppState {
         .await
         .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-        self.scaffold = Some(scaffold_json.to_string());
-
-        Ok(())
-    }
-
-    #[wasm_bindgen(js_name = buildExecutionPlan)]
-    pub async fn build_execution_plan(
-        &mut self,
-        client: &OpenAI,
-        ai_params: &OpenAIParams,
-        request_callback: &Function,
-    ) -> Result<(), JsError> {
-        let language = self.language.as_ref().ok_or_else(|| {
-            JsError::from_str("Failed to retrieve a language")
-        })?;
-
-        let plan = build_execution_plan(
-            language,
-            client,
-            ai_params,
-            self,
-            request_callback,
-        )
-        .await
-        .map_err(|e| JsError::from_str(&e.to_string()))?;
-
-        let files = Files::from_schedule(&plan, language)
-            .map_err(|e| JsError::from_str(&e.to_string()))?;
-
         // Add code writing jobs to the task pool
         for file in files.iter() {
-            let file_ = file.clone();
+            let filename = file.name.clone();
+            let description = file.description.clone();
 
             let task_params = TaskParams::new_(
                 TaskType::CodeGen,
-                Box::new(CodeGenParams { filename: file_ }),
+                Box::new(CodeGenParams {
+                    filename,
+                    description,
+                }),
             )
             .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-            self.task_pool.add_todo(&format!("{}", file), task_params);
+            self.task_pool.add_todo(
+                &file.name,
+                &file.description,
+                task_params,
+                file.parent.clone(),
+            );
         }
+
+        self.scaffold = Some(scaffold_json.to_string());
 
         Ok(())
     }
@@ -557,26 +538,35 @@ pub mod tests {
         let task_1 = Task::new(
             1,
             "Task1",
+            "Description1",
             TaskParams::new_(
                 TaskType::ScaffoldProject,
                 Box::new(ScaffoldParams::new(String::from("specs"))),
             )
             .unwrap(),
+            None,
         );
         let task_2 = Task::new(
             2,
             "Task2",
+            "Description2",
             TaskParams::new_(TaskType::BuildExecutionPlan, Box::new(0))
                 .unwrap(),
+            None,
         );
         let task_3 = Task::new(
             3,
             "Task3",
+            "Description3",
             TaskParams::new_(
                 TaskType::CodeGen,
-                Box::new(CodeGenParams::new(String::from("filename.rs"))),
+                Box::new(CodeGenParams::new(
+                    String::from("filename.rs"),
+                    String::from("description"),
+                )),
             )
             .unwrap(),
+            None,
         );
 
         let todo = Pipeline::new_(

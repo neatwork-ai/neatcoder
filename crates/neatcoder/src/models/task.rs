@@ -12,8 +12,10 @@ use super::task_params::TaskParams;
 pub struct Task {
     pub id: usize,
     pub(crate) name: String,
+    pub(crate) description: String,
     pub(crate) task_params: TaskParams,
     pub status: TaskStatus,
+    pub(crate) parent: Option<String>,
 }
 
 #[wasm_bindgen]
@@ -26,12 +28,20 @@ pub enum TaskStatus {
 #[wasm_bindgen]
 impl Task {
     #[wasm_bindgen(constructor)]
-    pub fn new(id: usize, name: &str, task_params: TaskParams) -> Self {
+    pub fn new(
+        id: usize,
+        name: &str,
+        description: &str,
+        task_params: TaskParams,
+        parent: Option<String>,
+    ) -> Self {
         Task {
             id,
             name: name.to_string(),
+            description: description.to_string(),
             task_params,
             status: TaskStatus::Todo,
+            parent,
         }
     }
 

@@ -34,11 +34,23 @@ impl TaskPool {
         }
     }
 
-    pub fn add_todo(&mut self, name: &str, task_params: TaskParams) -> usize {
+    pub fn add_todo(
+        &mut self,
+        name: &str,
+        description: &str,
+        task_params: TaskParams,
+        parent: Option<String>,
+    ) -> usize {
         self.counter += 1;
         let task_id = self.counter;
 
-        self.todo.push_back(Task::new(task_id, name, task_params));
+        self.todo.push_back(Task::new(
+            task_id,
+            name,
+            description,
+            task_params,
+            parent,
+        ));
 
         task_id
     }

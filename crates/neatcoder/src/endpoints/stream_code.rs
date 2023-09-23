@@ -19,13 +19,17 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct CodeGenParams {
     pub(crate) filename: String,
+    pub(crate) description: String,
 }
 
 #[wasm_bindgen]
 impl CodeGenParams {
     #[wasm_bindgen(constructor)]
-    pub fn new(filename: String) -> CodeGenParams {
-        CodeGenParams { filename }
+    pub fn new(filename: String, description: String) -> CodeGenParams {
+        CodeGenParams {
+            filename,
+            description,
+        }
     }
 
     #[wasm_bindgen(getter)]
@@ -49,7 +53,10 @@ pub fn stream_code(
 
     let mut prompts = Vec::new();
 
-    let CodeGenParams { filename } = task_params;
+    let CodeGenParams {
+        filename,
+        description,
+    } = task_params;
 
     log(&format!("[INFO] Running `CodeGen` Job: {}", filename));
 
@@ -105,10 +112,12 @@ pub fn stream_code(
         "
         You are an engineer tasked with creating a in {}.
         You are assigned to build the API based on the project folder structure
-        Your current task is to write the module `{}.rs`
+        Your current task is to write the module `{}.rs`.
+        Consider the description of the module: {}
         ",
         language.name(),
-        filename
+        filename,
+        description
     );
 
     prompts.push(OpenAIMsg {
