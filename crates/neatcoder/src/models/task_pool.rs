@@ -39,18 +39,12 @@ impl TaskPool {
         name: &str,
         description: &str,
         task_params: TaskParams,
-        parent: Option<String>,
     ) -> usize {
         self.counter += 1;
         let task_id = self.counter;
 
-        self.todo.push_back(Task::new(
-            task_id,
-            name,
-            description,
-            task_params,
-            parent,
-        ));
+        self.todo
+            .push_back(Task::new(task_id, name, description, task_params));
 
         task_id
     }

@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
-    path::Path,
+    path::{Path, PathBuf},
 };
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -85,7 +85,7 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
 
     if src_json.is_object() {
         for (key, value) in src_json.as_object().unwrap() {
-            files.add_files(value, key, None);
+            files.add_files(value, key, &mut PathBuf::new())?;
         }
     } else {
         return Err(anyhow!("Unable to parse scaffold json."));
@@ -128,7 +128,6 @@ pub struct Files(pub VecDeque<File>);
 pub struct File {
     pub name: String,
     pub description: String,
-    pub parent: Option<String>,
 }
 
 impl AsRef<VecDeque<File>> for Files {
@@ -164,23 +163,34 @@ impl Files {
         &mut self,
         json: &Value,
         current_key: &str,
-        parent_key: Option<&str>,
-    ) {
+        path: &mut PathBuf,
+    ) -> Result<()> {
         match json {
             Value::Object(map) => {
                 for (key, value) in map.iter() {
-                    self.add_files(value, key, Some(current_key));
+                    let mut new_path = path.join(current_key);
+                    self.add_files(value, key, &mut new_path)?;
                 }
             }
             // For other types of Value (Number, String, Bool, Null), consider them as leaf values.
             _ => {
+                let full_path = path.join(current_key);
+                let filename = full_path
+                    .as_path()
+                    .to_str()
+                    .map(|s| s.to_string())
+                    .ok_or_else(|| {
+                        anyhow!("Unable to convert filename path to string :(")
+                    })?;
+
                 self.push_back(File {
-                    name: current_key.to_string(),
+                    name: filename,
                     description: json.to_string(),
-                    parent: parent_key.map(|s| s.to_string()),
                 });
             }
         }
+
+        Ok(())
     }
 
     pub fn cleanup(&mut self, language: &Language) -> Result<()> {

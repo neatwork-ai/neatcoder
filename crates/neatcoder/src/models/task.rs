@@ -15,7 +15,6 @@ pub struct Task {
     pub(crate) description: String,
     pub(crate) task_params: TaskParams,
     pub status: TaskStatus,
-    pub(crate) parent: Option<String>,
 }
 
 #[wasm_bindgen]
@@ -33,7 +32,6 @@ impl Task {
         name: &str,
         description: &str,
         task_params: TaskParams,
-        parent: Option<String>,
     ) -> Self {
         Task {
             id,
@@ -41,7 +39,6 @@ impl Task {
             description: description.to_string(),
             task_params,
             status: TaskStatus::Todo,
-            parent,
         }
     }
 
@@ -57,14 +54,6 @@ impl Task {
     #[wasm_bindgen(getter)]
     pub fn description(&self) -> JsString {
         self.description.clone().into()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn parent(&self) -> Option<JsString> {
-        match &self.parent {
-            Some(parent) => Some(parent.clone().into()),
-            None => None,
-        }
     }
 
     #[wasm_bindgen(getter, js_name = taskParams)]

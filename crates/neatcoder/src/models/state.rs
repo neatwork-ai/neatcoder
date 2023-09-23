@@ -316,12 +316,8 @@ impl AppState {
             )
             .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-            self.task_pool.add_todo(
-                &file.name,
-                &file.description,
-                task_params,
-                file.parent.clone(),
-            );
+            self.task_pool
+                .add_todo(&file.name, &file.description, task_params);
         }
 
         self.scaffold = Some(scaffold_json.to_string());
@@ -544,7 +540,6 @@ pub mod tests {
                 Box::new(ScaffoldParams::new(String::from("specs"))),
             )
             .unwrap(),
-            None,
         );
         let task_2 = Task::new(
             2,
@@ -558,7 +553,6 @@ pub mod tests {
                 )),
             )
             .unwrap(),
-            None,
         );
 
         let todo = Pipeline::new_(
