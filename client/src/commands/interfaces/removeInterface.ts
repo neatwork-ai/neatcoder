@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as rimraf from "rimraf"; // Used for recursive directory deletion
-import InterfaceItem from "../../providers/interfaceItem";
+import InterfaceItem from "../../models/interfaceItem";
 import { getConfig, getOrCreateConfigPath, getPath } from "../../utils";
 import { logger } from "../../logger";
 

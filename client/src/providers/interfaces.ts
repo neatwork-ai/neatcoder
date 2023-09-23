@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { InterfaceItem, ItemType } from "./interfaceItem";
+import { InterfaceItem, ItemType } from "../models/interfaceItem";
 import { getOrCreateConfigPath } from "../utils";
 import * as wasm from "../../pkg/neatcoder";
 

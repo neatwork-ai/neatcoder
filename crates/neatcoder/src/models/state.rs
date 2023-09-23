@@ -550,14 +550,6 @@ pub mod tests {
             2,
             "Task2",
             "Description2",
-            TaskParams::new_(TaskType::BuildExecutionPlan, Box::new(0))
-                .unwrap(),
-            None,
-        );
-        let task_3 = Task::new(
-            3,
-            "Task3",
-            "Description3",
             TaskParams::new_(
                 TaskType::CodeGen,
                 Box::new(CodeGenParams::new(
@@ -570,7 +562,7 @@ pub mod tests {
         );
 
         let todo = Pipeline::new_(
-            BTreeMap::from([(3, task_3), (2, task_2)]),
+            BTreeMap::from([(2, task_2)]),
             VecDeque::from([3, 2]),
         );
 
@@ -596,7 +588,7 @@ pub mod tests {
             .unwrap();
 
         let expected = String::from(
-            r#"{"language":{"language":"Rust","custom":null},"specs":"specs","scaffold":"scaffold","interfaces":{"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","apiType":"RestfulApi","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}},"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}}},"taskPool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","taskParams":{"taskType":"BuildExecutionPlan","inner":{"scaffoldProject":null,"streamCode":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","taskParams":{"taskType":"CodeGen","inner":{"scaffoldProject":null,"streamCode":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","taskParams":{"taskType":"ScaffoldProject","inner":{"scaffoldProject":{"specs":"specs"},"streamCode":null}},"status":"Todo"}},"order":[1]}}}"#,
+            r#"{"language":{"language":"Rust","custom":null},"specs":"specs","scaffold":"scaffold","interfaces":{"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","apiType":"RestfulApi","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}},"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}}},"taskPool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","description": "Description2","taskParams":{"taskType":"CodeGen","inner":{"scaffoldProject":null,"streamCode":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","description": "Description1", "taskParams":{"taskType":"ScaffoldProject","inner":{"scaffoldProject":{"specs":"specs"},"streamCode":null}},"status":"Todo"}},"order":[1]}}}"#,
         );
 
         assert_eq!(actual, expected);

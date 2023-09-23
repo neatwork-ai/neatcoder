@@ -161,14 +161,6 @@ export class AppStateManager {
         );
       }
 
-      if (taskType === wasm.TaskType.BuildExecutionPlan) {
-        await this.appState.buildExecutionPlan(
-          llmClient,
-          llmParams,
-          makeRequest
-        );
-      }
-
       if (taskType === wasm.TaskType.CodeGen) {
         // If a new file should be created (or overwritten)
         const relPath: string = taskParams.streamCode!.filename;
@@ -229,7 +221,6 @@ export class AppStateManager {
     userInput: string
   ) {
     await this.scaffoldProject(llmClient, llmParams, userInput);
-    await this.buildExecutionPlan(llmClient, llmParams);
     saveAppStateToFile(this.appState);
 
     // Update providers
@@ -263,24 +254,6 @@ export class AppStateManager {
         taskParams,
         makeRequest
       );
-    } catch (error) {
-      console.error("Error occurred:", error);
-    }
-  }
-
-  /**
-   * Initiates a build execution plan operation using specified OpenAI client and parameters.
-   * This method invokes the buildExecutionPlan method from the appState object.
-   *
-   * @param {wasm.OpenAI} llmClient - The OpenAI client instance to be used in this operation.
-   * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
-   */
-  async buildExecutionPlan(
-    llmClient: wasm.OpenAI,
-    llmParams: wasm.OpenAIParams
-  ) {
-    try {
-      await this.appState.buildExecutionPlan(llmClient, llmParams, makeRequest);
     } catch (error) {
       console.error("Error occurred:", error);
     }

@@ -12,7 +12,7 @@ import { runTask } from "./commands/runTask";
 import { initCodeBase } from "./commands/initCodeBase";
 import { removeInterface } from "./commands/interfaces/removeInterface";
 import { removeSchema } from "./commands/schemas/removeSchema";
-import InterfaceItem from "./providers/interfaceItem";
+import InterfaceItem from "./models/interfaceItem";
 import { TaskView } from "./models/task";
 import { addInterface } from "./commands/interfaces/addInterface";
 import * as wasm from "./../pkg/neatcoder";

@@ -54,6 +54,19 @@ impl Task {
         self.name.clone().into()
     }
 
+    #[wasm_bindgen(getter)]
+    pub fn description(&self) -> JsString {
+        self.description.clone().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn parent(&self) -> Option<JsString> {
+        match &self.parent {
+            Some(parent) => Some(parent.clone().into()),
+            None => None,
+        }
+    }
+
     #[wasm_bindgen(getter, js_name = taskParams)]
     pub fn task_params(&self) -> TaskParams {
         self.task_params.clone()

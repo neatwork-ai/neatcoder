@@ -111,7 +111,7 @@ pub fn stream_code(
     let main_prompt = format!(
         "
         You are an engineer tasked with creating a in {}.
-        You are assigned to build the API based on the project folder structure
+        You are assigned to build the project defined in the previousl prompts.
         Your current task is to write the module `{}.rs`.
         Consider the description of the module: {}
         ",
