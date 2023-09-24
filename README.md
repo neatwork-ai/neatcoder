@@ -3,7 +3,7 @@ Turn your IDE into an AI Sofware engineer.
 
 Neatcoder is an IDE extension designed to serve as an AI Pair Programmer. In other words, it's the developers' best friend.
 
-As it stands, Neatcoder has the ability to initialise and scaffold any codebase in a programming language of your choice. Neatcoder also allows developers to index foreign interfaces such as databases and APIs of any given protocol or framework.
+As it stands, Neatcoder has the ability to initialise and scaffold any codebase in a programming language of your choice. Neatcoder also allows developers to index external interfaces such as databases and APIs of any given protocol or framework.
 
 ## The structure
 There are two parts to the codebase: The frontend of the extension which can be found in the `client` folder and the backend of the extension which can be found in `crates/neatcoder`.
