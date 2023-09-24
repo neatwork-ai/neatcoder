@@ -169,7 +169,7 @@ export function getOrCreateConfigPath(): string {
     // Write the default config to the file
     fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 4));
     vscode.window.showInformationMessage(
-      `Configuration file created at ${configPath}`
+      `Configuration file created at .neat/config.json`
     );
   }
 
