@@ -11,6 +11,6 @@ export async function removeTask(
   taskView: TaskView,
   appManager: AppStateManager
 ): Promise<void> {
-  const taskId = taskView.task.id;
+  const taskId = taskView.task!.id;
   appManager.removeTask(taskId);
 }

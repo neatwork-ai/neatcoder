@@ -17,7 +17,7 @@ export async function runTask(
   llmParams: wasm.OpenAIParams,
   appManager: AppStateManager
 ): Promise<void> {
-  const taskId = taskView.task.id;
+  const taskId = taskView.task!.id;
 
   await appManager.runTask(taskId, llmClient, llmParams);
 }

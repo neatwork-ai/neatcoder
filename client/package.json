@@ -123,12 +123,12 @@
       "view/item/context": [
         {
           "command": "extension.runTask",
-          "when": "view == taskPoolView",
+          "when": "view == taskPoolView && viewItem == taskItem",
           "group": "inline@1"
         },
         {
           "command": "extension.removeTask",
-          "when": "view == taskPoolView",
+          "when": "view == taskPoolView && viewItem == taskItem",
           "group": "inline@2"
         },
         {

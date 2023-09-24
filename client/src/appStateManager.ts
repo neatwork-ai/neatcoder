@@ -5,7 +5,7 @@ import * as path from "path";
 import { getRoot, readAppState, saveAppStateToFile } from "./utils";
 import { TaskPoolProvider } from "./providers/taskPool";
 import { TasksCompletedProvider } from "./providers/tasksCompleted";
-import { toTaskView } from "./models/task";
+import { buildTreeFromTasks } from "./models/task";
 import { makeRequest, makeStreamingRequest } from "./httpClient";
 import { scanSourceFolder, streamCode } from "./commands/streamCode";
 import { logger } from "./logger";
@@ -268,7 +268,7 @@ export class AppStateManager {
       const tasksTodo: wasm.Task[] = this.appState.getTodoTasks();
 
       // Update the local task list
-      this.taskPoolProvider.tasks = toTaskView(tasksTodo);
+      this.taskPoolProvider.root = buildTreeFromTasks(tasksTodo);
 
       // Refresh the view
       this.taskPoolProvider.refresh();
@@ -286,7 +286,7 @@ export class AppStateManager {
       const tasksDone: wasm.Task[] = this.appState.getDoneTasks();
 
       // Update the local task list
-      this.tasksCompletedProvider.tasks = toTaskView(tasksDone);
+      this.tasksCompletedProvider.root = buildTreeFromTasks(tasksDone);
 
       // Refresh the view
       this.tasksCompletedProvider.refresh();

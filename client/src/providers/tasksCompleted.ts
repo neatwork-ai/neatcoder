@@ -9,8 +9,7 @@ import { TaskView } from "../models/task";
 export class TasksCompletedProvider
   implements vscode.TreeDataProvider<TaskView>
 {
-  /** Holds the list of completed tasks that will be displayed in the tree view. */
-  tasks: TaskView[] = [];
+  root: TaskView = new TaskView("root");
 
   /**
    * A private event emitter instance which is used to notify when there are changes
@@ -52,29 +51,10 @@ export class TasksCompletedProvider
     return element;
   }
 
-  /**
-   * Returns the child tasks of a given tree item. If no tree item is specified,
-   * it returns the list of all root tasks. Since tasks do not have child items
-   * in this implementation, it returns an empty array if a task is specified.
-   *
-   * @param element - The parent tree item, if any.
-   * @returns A promise that resolves to the array of child tasks.
-   */
   getChildren(element?: TaskView): Thenable<TaskView[]> {
-    if (!element) {
-      return Promise.resolve(this.tasks);
+    if (!element || element === this.root) {
+      return Promise.resolve(this.root.children);
     }
-    return Promise.resolve([]);
-  }
-
-  /**
-   * Adds a new task to the list of completed tasks and triggers a refresh of
-   * the tree view so the new task is displayed.
-   *
-   * @param task - The new TaskView instance to add to the list of completed tasks.
-   */
-  addTask(task: TaskView) {
-    this.tasks.push(task);
-    this.refresh();
+    return Promise.resolve(element.children);
   }
 }
