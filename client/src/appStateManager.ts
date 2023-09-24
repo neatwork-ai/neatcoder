@@ -108,7 +108,7 @@ export class AppStateManager {
    * @param {number} taskId - The ID of the task to be removed.
    */
   public removeTask(taskId: number) {
-    this.appState.removeTodo(taskId);
+    this.appState.popTodo(taskId);
     saveAppStateToFile(this.appState);
 
     // Update providers
@@ -142,16 +142,15 @@ export class AppStateManager {
     const task = this.appState.popTodo(taskId);
     const taskType = task.taskType();
     const taskParams = task.taskParams;
-    this.appState.addDone(task);
 
     this.refresh();
-
-    if (taskType === undefined) {
-      window.showErrorMessage(`[ERROR] Task Type is undefined.`);
-    }
-
-    // The pattern matching should be offloaded to Rust
     try {
+      if (taskType === undefined) {
+        window.showErrorMessage(`[ERROR] Task Type is undefined.`);
+        throw new Error(`[ERROR] Task Type is undefined.`);
+      }
+
+      // The pattern matching should be offloaded to Rust
       if (taskType === wasm.TaskType.ScaffoldProject) {
         await this.appState.scaffoldProject(
           llmClient,
@@ -192,20 +191,20 @@ export class AppStateManager {
           codebase
         );
 
-        await makeStreamingRequest(requestBody, activeTextDocument).catch(
-          console.error
-        );
+        await makeStreamingRequest(requestBody, activeTextDocument);
       }
 
+      // Update Task Pool
+      this.appState.addDone(task);
+      // Persist updated state
       saveAppStateToFile(this.appState);
-      this.refresh();
     } catch (error) {
+      this.appState.addBackTodo(task);
       console.error("Error while performing Task:", error);
-      throw error;
+      window.showErrorMessage(`Error while performing Task: ${error}`);
     }
 
-    // Update providers
-    this.refresh();
+    this.refresh(); // need to refresh to reflect the state rollback
   }
 
   /**

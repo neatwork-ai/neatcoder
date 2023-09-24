@@ -201,16 +201,14 @@ impl AppState {
         self.task_pool.pop_todo(task_id)
     }
 
-    #[wasm_bindgen(js_name = removeTodo)]
-    pub fn remove_todo(&mut self, task_id: usize) -> Result<(), JsError> {
-        self.task_pool.pop_todo(task_id)?;
-
-        Ok(())
-    }
-
     #[wasm_bindgen(js_name = addDone)]
     pub fn add_done(&mut self, task: Task) {
         self.task_pool.add_done(task)
+    }
+
+    #[wasm_bindgen(js_name = addBackTodo)]
+    pub fn add_back_todo(&mut self, task: Task) {
+        self.task_pool.add_back_todo(task)
     }
 
     #[wasm_bindgen(js_name = setInterfaces)]

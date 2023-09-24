@@ -108,7 +108,8 @@ export async function makeStreamingRequest(
               if (message === "[DONE]") {
                 stopLoading();
                 cleanup();
-                isProcessing = false;
+                isProcessing = false; // Reset state
+                isCodeBlockEnded = false; // Reset state
 
                 if (streamedTokens === 0) {
                   vscode.window.showErrorMessage(
@@ -188,7 +189,8 @@ export async function makeStreamingRequest(
 
         res.on("end", () => {
           cleanup();
-          isProcessing = false;
+          isProcessing = false; // Reset state
+          isCodeBlockEnded = false; // Reset state
           stopLoading();
           console.log("No more data in response.");
           resolve();

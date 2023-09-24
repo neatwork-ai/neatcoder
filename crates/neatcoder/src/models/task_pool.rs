@@ -62,6 +62,10 @@ impl TaskPool {
         self.done.push_back(task);
     }
 
+    pub fn add_back_todo(&mut self, task: Task) {
+        self.todo.push_back(task);
+    }
+
     pub fn finish_task_by_id(&mut self, task_id: usize) {
         let mut task = self
             .todo
