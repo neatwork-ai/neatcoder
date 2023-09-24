@@ -5,7 +5,7 @@ import * as fs from "fs";
 import { TaskPoolProvider } from "./providers/taskPool";
 import { InterfacesProvider } from "./providers/interfaces";
 import { TasksCompletedProvider } from "./providers/tasksCompleted";
-import { setupConfigWatcher } from "./watchers/configWatcher";
+import { setupDotNeatWatcher } from "./watchers/configWatcher";
 import { addSchema } from "./commands/schemas/addSchema";
 import { setupSchemaWatchers } from "./watchers/schemaWatcher";
 import { runTask } from "./commands/runTask";
@@ -58,8 +58,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Setup File Watcher which checks for changes in the `.neat` and
   // communicates them to the server if relevant
-  setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager);
-  setupConfigWatcher(schemaWatchers, interfacesProvider, appManager);
+  setupDotNeatWatcher(schemaWatchers, interfacesProvider, appManager);
 
   // === Registration & Garbage Collection ===
 

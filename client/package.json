@@ -49,7 +49,7 @@
       {
         "command": "extension.removeInterface",
         "title": "Remove Interface",
-        "icon": "$(trash)"
+        "icon": "$(remove)"
       },
       {
         "command": "extension.removeSchema",
@@ -113,11 +113,6 @@
           "command": "extension.addApi",
           "when": "view == interfacesView",
           "group": "navigation@2"
-        },
-        {
-          "command": "extension.removeInterface",
-          "when": "view == interfacesView",
-          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -132,9 +127,14 @@
           "group": "inline@2"
         },
         {
+          "command": "extension.removeInterface",
+          "when": "view == interfacesView && (viewItem == databaseItem || viewItem == apiItem)",
+          "group": "inline@2"
+        },
+        {
           "command": "extension.addSchema",
           "when": "view == interfacesView && (viewItem == databaseItem || viewItem == apiItem)",
-          "group": "inline"
+          "group": "inline@1"
         },
         {
           "command": "extension.removeSchema",

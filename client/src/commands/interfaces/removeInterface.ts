@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as rimraf from "rimraf"; // Used for recursive directory deletion
 import InterfaceItem from "../../models/interfaceItem";
-import { getConfig, getOrCreateConfigPath, getPath } from "../../utils";
+import { getConfigIfAny, getOrCreateConfigPath, getPath } from "../../utils";
 import { logger } from "../../logger";
 
 export function removeInterface(item: InterfaceItem) {
@@ -12,7 +12,12 @@ export function removeInterface(item: InterfaceItem) {
   }
 
   const interfaceName = item.label; // Extracting interface name from the clicked item
-  const config = getConfig();
+  const config = getConfigIfAny();
+
+  if (config === null) {
+    vscode.window.showErrorMessage("No config available.");
+    return;
+  }
 
   // We need to get the variable before removing the interface from the config
   const schemasPathObj = config.paths.find(

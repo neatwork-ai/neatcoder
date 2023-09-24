@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { InterfaceItem, ItemType } from "../models/interfaceItem";
-import { getOrCreateConfigPath } from "../utils";
+import { getConfigIfAny } from "../utils";
 import * as wasm from "../../pkg/neatcoder";
 
 /**
@@ -11,6 +11,14 @@ import * as wasm from "../../pkg/neatcoder";
 export type DbEntry = {
   name: string;
   dbType: string;
+};
+
+/**
+ * Type definition representing a database entry.
+ */
+export type PathEntry = {
+  name: string;
+  path: string;
 };
 
 /**
@@ -83,12 +91,14 @@ export class InterfacesProvider
     if (vscode.workspace.workspaceFolders) {
       const root = vscode.workspace.workspaceFolders[0].uri.fsPath;
 
+      // The root call for getChildren has no element
       if (!element) {
-        // If no element provided, return the database and API list
-        const configPath = getOrCreateConfigPath();
-        const configContent = fs.readFileSync(configPath, "utf-8");
-        const config: { dbs: DbEntry[]; apis: ApiEntry[] } =
-          JSON.parse(configContent); // Assuming your config has an 'apis' array similar to 'dbs'
+        const config = getConfigIfAny();
+
+        if (config === null) {
+          // If no config available then if means there are no interfaces...
+          return Promise.resolve([]);
+        }
 
         const dbItems = config.dbs
           ? config.dbs.map((db) => {

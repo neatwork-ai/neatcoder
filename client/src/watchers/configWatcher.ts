@@ -10,6 +10,52 @@ import { logger } from "../logger";
 
 let originalConfig: any;
 
+export function setupDotNeatWatcher(
+  schemaWatchers: { [key: string]: fs.FSWatcher },
+  interfacesProvider: InterfacesProvider,
+  appManager: AppStateManager
+) {
+  if (!vscode.workspace.workspaceFolders) {
+    return;
+  }
+
+  const root = getRoot();
+  const configDir = path.join(root, ".neat");
+  const configPath = path.join(configDir, "config.json");
+
+  if (fs.existsSync(configDir)) {
+    if (fs.existsSync(configPath)) {
+      setupFileWatcher(schemaWatchers, interfacesProvider, appManager);
+      setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager);
+    } else {
+      watchForFileCreation(configDir, "config.json", () => {
+        setupFileWatcher(schemaWatchers, interfacesProvider, appManager);
+        setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager);
+      });
+    }
+  } else {
+    watchForFileCreation(root, ".neat", () => {
+      watchForFileCreation(configDir, "config.json", () => {
+        setupFileWatcher(schemaWatchers, interfacesProvider, appManager);
+        setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager);
+      });
+    });
+  }
+}
+
+function watchForFileCreation(
+  directory: string,
+  targetFile: string,
+  callback: () => void
+) {
+  const watcher = fs.watch(directory, (event, filename) => {
+    if (filename === targetFile && event === "rename") {
+      watcher.close();
+      callback();
+    }
+  });
+}
+
 /**
  * Sets up a watcher for the configuration file to handle changes in the file, and
  * synchronises the AppState via the appManager
@@ -18,7 +64,7 @@ let originalConfig: any;
  * @param interfacesProvider - Provider for managing interfaces.
  * @param appManager - The application manager for handling state and configurations.
  */
-export function setupConfigWatcher(
+export function setupFileWatcher(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
   appManager: AppStateManager
