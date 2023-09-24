@@ -3,12 +3,7 @@
   "displayName": "Neatcoder",
   "description": "Turn your IDE into an AI Sofware engineer.",
   "version": "0.1.1-alpha",
-  "icon": "assets/neatwork-logo.png",
-  "repository": {
-    "url": "https://github.com/neatwork-ai/neatcode.git",
-    "type": "git"
-  },
-  "license": "UNLICENSED",
+  "icon": "assets/logo.png",
   "engines": {
     "vscode": ">=1.80.0"
   },
