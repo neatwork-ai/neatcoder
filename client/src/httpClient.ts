@@ -64,7 +64,7 @@ export async function makeStreamingRequest(
   cleanup();
 
   return new Promise((resolve, reject) => {
-    let responseLog: string[] = [];
+    // let responseLog: string[] = []; // TODO: Only debug
     let streamedTokens = 0;
 
     let messageBuffer = new MessageBuffer();
@@ -103,8 +103,6 @@ export async function makeStreamingRequest(
             const messages = messageBuffer.process(chunkString);
 
             for (const message of messages) {
-              console.log(message);
-
               if (message === "[DONE]") {
                 stopLoading();
                 cleanup();
@@ -140,9 +138,8 @@ export async function makeStreamingRequest(
                 continue;
               }
 
-              responseLog.push(token);
-
-              writeLogs(responseLog);
+              // responseLog.push(token); // TODO: only in debug
+              // writeLogs(responseLog); // TODO: only in debug
 
               if (isCodeBlock) {
                 if (checkIfCodeBlockMaybeEnding(token)) {
@@ -170,7 +167,6 @@ export async function makeStreamingRequest(
                 }
 
                 if (checkIfCanStream()) {
-                  console.log(`[INFO] Streaming token: ${token}`);
                   await streamCode(token, activeTextDocument);
                   streamedTokens += 1;
                 }
@@ -293,38 +289,38 @@ function checkIfCodeBlockIsStarting(token: any): boolean {
 }
 
 // TODO: Produce this only in debug mode
-function writeRawLogs(responseLogRaw: string[]) {
-  try {
-    const root = getRoot();
-    const folderPath = path.join(root, "responseLogRaw.json");
-    fs.writeFile(folderPath, JSON.stringify(responseLogRaw, null, 2), (err) => {
-      if (err) {
-        console.error("Error writing to file", err);
-      } else {
-      }
-    });
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}
+// function writeRawLogs(responseLogRaw: string[]) {
+//   try {
+//     const root = getRoot();
+//     const folderPath = path.join(root, "responseLogRaw.json");
+//     fs.writeFile(folderPath, JSON.stringify(responseLogRaw, null, 2), (err) => {
+//       if (err) {
+//         console.error("Error writing to file", err);
+//       } else {
+//       }
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     throw error;
+//   }
+// }
 
 // TODO: Produce this only in debug mode
-function writeLogs(responseLog: string[]) {
-  try {
-    const root = getRoot();
-    const folderPath = path.join(root, "responseLog.json");
-    fs.writeFile(folderPath, JSON.stringify(responseLog, null, 2), (err) => {
-      if (err) {
-        console.error("Error writing to file", err);
-      } else {
-      }
-    });
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}
+// function writeLogs(responseLog: string[]) {
+//   try {
+//     const root = getRoot();
+//     const folderPath = path.join(root, "responseLog.json");
+//     fs.writeFile(folderPath, JSON.stringify(responseLog, null, 2), (err) => {
+//       if (err) {
+//         console.error("Error writing to file", err);
+//       } else {
+//       }
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     throw error;
+//   }
+// }
 
 class MessageBuffer {
   private buffer: string;

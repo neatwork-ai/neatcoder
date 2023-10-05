@@ -81,11 +81,6 @@ pub fn stream_code(
         ),
     });
 
-    for (_, interface) in app_state.interfaces.iter() {
-        // Attaches context to the message sequence
-        interface.add_context(&mut prompts)?;
-    }
-
     prompts.push(OpenAIMsg {
         role: GptRole::User,
         content: String::from(project_description),
@@ -108,17 +103,35 @@ pub fn stream_code(
         content: project_scaffold.to_string(),
     });
 
-    let main_prompt = format!(
+    let mut main_prompt = format!(
         "
-        You are an engineer tasked with creating a in {}.
-        You are assigned to build the project defined in the previousl prompts.
+        You are a {} engineer and you're assigned to build the project
+        defined in the previous prompts.
+
         Your current task is to write the module `{}.rs`.
-        Consider the description of the module: {}
+        Consider the description of the module: {}\n
         ",
         language.name(),
         filename,
         description
     );
+
+    if !app_state.interfaces.is_empty() {
+        main_prompt.push_str(
+            "Consider the following interfaces relevant to this project:\n",
+        )
+    }
+
+    for (_, interface) in app_state.interfaces.iter() {
+        // Attaches context to the message sequence
+        interface.add_context(&mut prompts)?;
+
+        main_prompt.push_str(&format!(
+            "- Name {}; Type {}",
+            interface.name(),
+            interface.itype()
+        ));
+    }
 
     prompts.push(OpenAIMsg {
         role: GptRole::User,

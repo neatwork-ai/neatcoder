@@ -233,6 +233,33 @@ impl Interface {
     }
 
     #[wasm_bindgen(getter)]
+    pub fn itype(&self) -> String {
+        match self.interface_type {
+            InterfaceType::Database => self
+                .inner
+                .database
+                .as_ref()
+                .expect("Unable to retrieve inner Database interface")
+                .db_type
+                .to_string(),
+            InterfaceType::Storage => self
+                .inner
+                .storage
+                .as_ref()
+                .expect("Unable to retrieve inner Storage interface")
+                .storage_type
+                .to_string(),
+            InterfaceType::Api => self
+                .inner
+                .api
+                .as_ref()
+                .expect("Unable to retrieve inner Api interface")
+                .api_type
+                .to_string(),
+        }
+    }
+
+    #[wasm_bindgen(getter)]
     pub fn schemas(&self) -> Result<ISchemas, JsError> {
         let schemas = match self.interface_type {
             InterfaceType::Database => self
