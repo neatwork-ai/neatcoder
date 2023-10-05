@@ -91,6 +91,8 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
         return Err(anyhow!("Unable to parse scaffold json."));
     }
 
+    files.cleanup(language)?;
+
     Ok((scaffold_json, files))
 }
 
@@ -166,6 +168,9 @@ impl Files {
         path: &mut PathBuf,
     ) -> Result<()> {
         match json {
+            // If the value is an object, i.e. a map, then it means that it
+            // represents a folder. We therefore recursively call add_files itself
+            // to get to the leaf nodes, which represent the files
             Value::Object(map) => {
                 for (key, value) in map.iter() {
                     let mut new_path = path.join(current_key);
