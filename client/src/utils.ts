@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as pako from "pako";
 import * as wasm from "../pkg/neatcoder";
+import { ApiEntry, DbEntry, PathEntry } from "./providers/interfaces";
 
 /// ===== Read ===== ///
 
@@ -113,7 +114,11 @@ export function generateSrcRecord(): Record<string, string> {
   return structure;
 }
 
-export function getConfig(): any {
+export function getConfigIfAny(): {
+  paths: PathEntry[];
+  dbs: DbEntry[];
+  apis: ApiEntry[];
+} | null {
   const root = getRoot();
 
   const neatPath = path.join(root, ".neat");
@@ -121,26 +126,14 @@ export function getConfig(): any {
 
   let config;
   if (!fs.existsSync(configPath)) {
-    // If the .neat directory doesn't exist, create it
-    if (!fs.existsSync(neatPath)) {
-      fs.mkdirSync(neatPath);
-    }
-
-    // Create default configuration
-    config = {
-      paths: [],
-      apis: [],
-    };
-
-    // Write the default config to the file
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 4));
+    return null;
   } else {
     const configContent = fs.readFileSync(configPath, "utf-8");
     config = JSON.parse(configContent);
 
     // Ensure config is an object
     if (!config) {
-      config = {};
+      return null;
     }
 
     // Ensure paths and apis properties exist and are arrays
@@ -176,7 +169,7 @@ export function getOrCreateConfigPath(): string {
     // Write the default config to the file
     fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 4));
     vscode.window.showInformationMessage(
-      `Configuration file created at ${configPath}`
+      `Configuration file created at .neat/config.json`
     );
   }
 

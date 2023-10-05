@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import InterfaceItem from "../../providers/interfaceItem";
+import InterfaceItem from "../../models/interfaceItem";
 import { getOrCreateConfigPath, getRoot } from "../../utils";
 
 export function removeSchema(item: InterfaceItem) {

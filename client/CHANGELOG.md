@@ -4,6 +4,15 @@ All notable changes to the "neatcoder" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.1.1-alpha] - 05/10/2023
+
+### Changed
+- `.neat` folder is now lazily created
+- Fixed incorrect taskpool state rollback when tasks fail
+- Foldable task pool
+- Improved performance of scaffolding task
+- Guaranteed that only one object gets streamed per file
+
 ## [0.1.0-alpha] - 18/09/2023
 
 ### Added

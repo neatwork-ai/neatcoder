@@ -34,11 +34,17 @@ impl TaskPool {
         }
     }
 
-    pub fn add_todo(&mut self, name: &str, task_params: TaskParams) -> usize {
+    pub fn add_todo(
+        &mut self,
+        name: &str,
+        description: &str,
+        task_params: TaskParams,
+    ) -> usize {
         self.counter += 1;
         let task_id = self.counter;
 
-        self.todo.push_back(Task::new(task_id, name, task_params));
+        self.todo
+            .push_back(Task::new(task_id, name, description, task_params));
 
         task_id
     }
@@ -54,6 +60,10 @@ impl TaskPool {
 
     pub fn add_done(&mut self, task: Task) {
         self.done.push_back(task);
+    }
+
+    pub fn add_back_todo(&mut self, task: Task) {
+        self.todo.push_back(task);
     }
 
     pub fn finish_task_by_id(&mut self, task_id: usize) {

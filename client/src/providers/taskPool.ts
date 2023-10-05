@@ -6,8 +6,7 @@ import { TaskView } from "../models/task";
  * It manages a list of tasks and allows adding new tasks to the tree view.
  */
 export class TaskPoolProvider implements vscode.TreeDataProvider<TaskView> {
-  /** Array holding the tasks to be displayed in the tree view. */
-  tasks: TaskView[] = [];
+  root: TaskView = new TaskView("root");
 
   /**
    * Private property holding an event emitter instance to notify about tree data changes.
@@ -46,28 +45,10 @@ export class TaskPoolProvider implements vscode.TreeDataProvider<TaskView> {
     return element;
   }
 
-  /**
-   * Method to get the children of a tree item.
-   * If no element is provided, it returns the root tasks.
-   * Otherwise, it returns an empty array since tasks don't have child elements in this implementation.
-   *
-   * @param element - The parent tree item for which to retrieve children.
-   * @returns A promise resolving to an array of child TaskView objects (or an empty array).
-   */
   getChildren(element?: TaskView): Thenable<TaskView[]> {
-    if (!element) {
-      return Promise.resolve(this.tasks);
+    if (!element || element === this.root) {
+      return Promise.resolve(this.root.children);
     }
-    return Promise.resolve([]);
-  }
-
-  /**
-   * Method to add a new task to the task pool and refresh the tree view to include the new task.
-   *
-   * @param task - The new TaskView object to be added to the task pool.
-   */
-  addTask(task: TaskView) {
-    this.tasks.push(task);
-    this.refresh();
+    return Promise.resolve(element.children);
   }
 }

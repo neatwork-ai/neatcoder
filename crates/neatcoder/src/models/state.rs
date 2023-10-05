@@ -9,7 +9,6 @@ use crate::models::task::Task;
 use crate::models::task_pool::Pipeline;
 use crate::{
     endpoints::{
-        execution_plan::{build_execution_plan, Files},
         scaffold_project::scaffold_project,
         stream_code::{stream_code, CodeGenParams},
     },
@@ -202,16 +201,14 @@ impl AppState {
         self.task_pool.pop_todo(task_id)
     }
 
-    #[wasm_bindgen(js_name = removeTodo)]
-    pub fn remove_todo(&mut self, task_id: usize) -> Result<(), JsError> {
-        self.task_pool.pop_todo(task_id)?;
-
-        Ok(())
-    }
-
     #[wasm_bindgen(js_name = addDone)]
     pub fn add_done(&mut self, task: Task) {
         self.task_pool.add_done(task)
+    }
+
+    #[wasm_bindgen(js_name = addBackTodo)]
+    pub fn add_back_todo(&mut self, task: Task) {
+        self.task_pool.add_back_todo(task)
     }
 
     #[wasm_bindgen(js_name = setInterfaces)]
@@ -293,7 +290,7 @@ impl AppState {
             JsError::from_str("Failed to retrieve a language")
         })?;
 
-        let scaffold_json = scaffold_project(
+        let (scaffold_json, files) = scaffold_project(
             language,
             client,
             ai_params,
@@ -303,47 +300,25 @@ impl AppState {
         .await
         .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-        self.scaffold = Some(scaffold_json.to_string());
-
-        Ok(())
-    }
-
-    #[wasm_bindgen(js_name = buildExecutionPlan)]
-    pub async fn build_execution_plan(
-        &mut self,
-        client: &OpenAI,
-        ai_params: &OpenAIParams,
-        request_callback: &Function,
-    ) -> Result<(), JsError> {
-        let language = self.language.as_ref().ok_or_else(|| {
-            JsError::from_str("Failed to retrieve a language")
-        })?;
-
-        let plan = build_execution_plan(
-            language,
-            client,
-            ai_params,
-            self,
-            request_callback,
-        )
-        .await
-        .map_err(|e| JsError::from_str(&e.to_string()))?;
-
-        let files = Files::from_schedule(&plan, language)
-            .map_err(|e| JsError::from_str(&e.to_string()))?;
-
         // Add code writing jobs to the task pool
         for file in files.iter() {
-            let file_ = file.clone();
+            let filename = file.name.clone();
+            let description = file.description.clone();
 
             let task_params = TaskParams::new_(
                 TaskType::CodeGen,
-                Box::new(CodeGenParams { filename: file_ }),
+                Box::new(CodeGenParams {
+                    filename,
+                    description,
+                }),
             )
             .map_err(|e| JsError::from_str(&e.to_string()))?;
 
-            self.task_pool.add_todo(&format!("{}", file), task_params);
+            self.task_pool
+                .add_todo(&file.name, &file.description, task_params);
         }
+
+        self.scaffold = Some(scaffold_json.to_string());
 
         Ok(())
     }
@@ -557,6 +532,7 @@ pub mod tests {
         let task_1 = Task::new(
             1,
             "Task1",
+            "Description1",
             TaskParams::new_(
                 TaskType::ScaffoldProject,
                 Box::new(ScaffoldParams::new(String::from("specs"))),
@@ -566,21 +542,19 @@ pub mod tests {
         let task_2 = Task::new(
             2,
             "Task2",
-            TaskParams::new_(TaskType::BuildExecutionPlan, Box::new(0))
-                .unwrap(),
-        );
-        let task_3 = Task::new(
-            3,
-            "Task3",
+            "Description2",
             TaskParams::new_(
                 TaskType::CodeGen,
-                Box::new(CodeGenParams::new(String::from("filename.rs"))),
+                Box::new(CodeGenParams::new(
+                    String::from("filename.rs"),
+                    String::from("description"),
+                )),
             )
             .unwrap(),
         );
 
         let todo = Pipeline::new_(
-            BTreeMap::from([(3, task_3), (2, task_2)]),
+            BTreeMap::from([(2, task_2)]),
             VecDeque::from([3, 2]),
         );
 
@@ -606,7 +580,7 @@ pub mod tests {
             .unwrap();
 
         let expected = String::from(
-            r#"{"language":{"language":"Rust","custom":null},"specs":"specs","scaffold":"scaffold","interfaces":{"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","apiType":"RestfulApi","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}},"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}}},"taskPool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","taskParams":{"taskType":"BuildExecutionPlan","inner":{"scaffoldProject":null,"streamCode":null}},"status":"Todo"},"3":{"id":3,"name":"Task3","taskParams":{"taskType":"CodeGen","inner":{"scaffoldProject":null,"streamCode":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[3,2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","taskParams":{"taskType":"ScaffoldProject","inner":{"scaffoldProject":{"specs":"specs"},"streamCode":null}},"status":"Todo"}},"order":[1]}}}"#,
+            r#"{"language":{"language":"Rust","custom":null},"specs":"specs","scaffold":"scaffold","interfaces":{"MyApi":{"interfaceType":"Api","inner":{"database":null,"storage":null,"api":{"name":"MyApi","apiType":"RestfulApi","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}}}},"MyDB":{"interfaceType":"Database","inner":{"database":{"name":"MyDB","dbType":"MySql","customType":null,"port":null,"host":null,"schemas":{"MySchema":"schema"}},"storage":null,"api":null}}},"taskPool":{"counter":3,"todo":{"tasks":{"2":{"id":2,"name":"Task2","description": "Description2","taskParams":{"taskType":"CodeGen","inner":{"scaffoldProject":null,"streamCode":{"filename":"filename.rs"}}},"status":"Todo"}},"order":[2]},"done":{"tasks":{"1":{"id":1,"name":"Task1","description": "Description1", "taskParams":{"taskType":"ScaffoldProject","inner":{"scaffoldProject":{"specs":"specs"},"streamCode":null}},"status":"Todo"}},"order":[1]}}}"#,
         );
 
         assert_eq!(actual, expected);

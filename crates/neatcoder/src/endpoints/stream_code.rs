@@ -19,13 +19,17 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct CodeGenParams {
     pub(crate) filename: String,
+    pub(crate) description: String,
 }
 
 #[wasm_bindgen]
 impl CodeGenParams {
     #[wasm_bindgen(constructor)]
-    pub fn new(filename: String) -> CodeGenParams {
-        CodeGenParams { filename }
+    pub fn new(filename: String, description: String) -> CodeGenParams {
+        CodeGenParams {
+            filename,
+            description,
+        }
     }
 
     #[wasm_bindgen(getter)]
@@ -49,7 +53,10 @@ pub fn stream_code(
 
     let mut prompts = Vec::new();
 
-    let CodeGenParams { filename } = task_params;
+    let CodeGenParams {
+        filename,
+        description,
+    } = task_params;
 
     log(&format!("[INFO] Running `CodeGen` Job: {}", filename));
 
@@ -74,11 +81,6 @@ pub fn stream_code(
         ),
     });
 
-    for (_, interface) in app_state.interfaces.iter() {
-        // Attaches context to the message sequence
-        interface.add_context(&mut prompts)?;
-    }
-
     prompts.push(OpenAIMsg {
         role: GptRole::User,
         content: String::from(project_description),
@@ -101,15 +103,35 @@ pub fn stream_code(
         content: project_scaffold.to_string(),
     });
 
-    let main_prompt = format!(
+    let mut main_prompt = format!(
         "
-        You are an engineer tasked with creating a in {}.
-        You are assigned to build the API based on the project folder structure
-        Your current task is to write the module `{}.rs`
+        You are a {} engineer and you're assigned to build the project
+        defined in the previous prompts.
+
+        Your current task is to write the module `{}.rs`.
+        Consider the description of the module: {}\n
         ",
         language.name(),
-        filename
+        filename,
+        description
     );
+
+    if !app_state.interfaces.is_empty() {
+        main_prompt.push_str(
+            "Consider the following interfaces relevant to this project:\n",
+        )
+    }
+
+    for (_, interface) in app_state.interfaces.iter() {
+        // Attaches context to the message sequence
+        interface.add_context(&mut prompts)?;
+
+        main_prompt.push_str(&format!(
+            "- Name {}; Type {}",
+            interface.name(),
+            interface.itype()
+        ));
+    }
 
     prompts.push(OpenAIMsg {
         role: GptRole::User,

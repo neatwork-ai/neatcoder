@@ -21,7 +21,6 @@ pub struct TaskParams {
 #[derive(Clone, Debug, Deserialize, Serialize, Copy)]
 pub enum TaskType {
     ScaffoldProject,
-    BuildExecutionPlan,
     CodeGen,
 }
 
@@ -118,13 +117,6 @@ impl TaskParams {
                     Err(anyhow!("Failed to downcast to ScaffoldProject"))
                 }
             }
-            TaskType::BuildExecutionPlan => Ok(TaskParams {
-                task_type,
-                inner: TaskParamsInner {
-                    scaffold_project: None,
-                    stream_code: None,
-                },
-            }),
             TaskType::CodeGen => {
                 if let Some(code_gen) = inner.downcast_ref::<CodeGenParams>() {
                     Ok(TaskParams {

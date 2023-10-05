@@ -5,7 +5,7 @@ import * as path from "path";
 import { getRoot, readAppState, saveAppStateToFile } from "./utils";
 import { TaskPoolProvider } from "./providers/taskPool";
 import { TasksCompletedProvider } from "./providers/tasksCompleted";
-import { toTaskView } from "./models/task";
+import { buildTreeFromTasks } from "./models/task";
 import { makeRequest, makeStreamingRequest } from "./httpClient";
 import { scanSourceFolder, streamCode } from "./commands/streamCode";
 import { logger } from "./logger";
@@ -108,7 +108,7 @@ export class AppStateManager {
    * @param {number} taskId - The ID of the task to be removed.
    */
   public removeTask(taskId: number) {
-    this.appState.removeTodo(taskId);
+    this.appState.popTodo(taskId);
     saveAppStateToFile(this.appState);
 
     // Update providers
@@ -142,29 +142,20 @@ export class AppStateManager {
     const task = this.appState.popTodo(taskId);
     const taskType = task.taskType();
     const taskParams = task.taskParams;
-    this.appState.addDone(task);
 
     this.refresh();
-
-    if (taskType === undefined) {
-      window.showErrorMessage(`[ERROR] Task Type is undefined.`);
-    }
-
-    // The pattern matching should be offloaded to Rust
     try {
+      if (taskType === undefined) {
+        window.showErrorMessage(`[ERROR] Task Type is undefined.`);
+        throw new Error(`[ERROR] Task Type is undefined.`);
+      }
+
+      // The pattern matching should be offloaded to Rust
       if (taskType === wasm.TaskType.ScaffoldProject) {
         await this.appState.scaffoldProject(
           llmClient,
           llmParams,
           taskParams,
-          makeRequest
-        );
-      }
-
-      if (taskType === wasm.TaskType.BuildExecutionPlan) {
-        await this.appState.buildExecutionPlan(
-          llmClient,
-          llmParams,
           makeRequest
         );
       }
@@ -200,20 +191,20 @@ export class AppStateManager {
           codebase
         );
 
-        await makeStreamingRequest(requestBody, activeTextDocument).catch(
-          console.error
-        );
+        await makeStreamingRequest(requestBody, activeTextDocument);
       }
 
+      // Update Task Pool
+      this.appState.addDone(task);
+      // Persist updated state
       saveAppStateToFile(this.appState);
-      this.refresh();
     } catch (error) {
+      this.appState.addBackTodo(task);
       console.error("Error while performing Task:", error);
-      throw error;
+      window.showErrorMessage(`Error while performing Task: ${error}`);
     }
 
-    // Update providers
-    this.refresh();
+    this.refresh(); // need to refresh to reflect the state rollback
   }
 
   /**
@@ -229,7 +220,6 @@ export class AppStateManager {
     userInput: string
   ) {
     await this.scaffoldProject(llmClient, llmParams, userInput);
-    await this.buildExecutionPlan(llmClient, llmParams);
     saveAppStateToFile(this.appState);
 
     // Update providers
@@ -269,24 +259,6 @@ export class AppStateManager {
   }
 
   /**
-   * Initiates a build execution plan operation using specified OpenAI client and parameters.
-   * This method invokes the buildExecutionPlan method from the appState object.
-   *
-   * @param {wasm.OpenAI} llmClient - The OpenAI client instance to be used in this operation.
-   * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
-   */
-  async buildExecutionPlan(
-    llmClient: wasm.OpenAI,
-    llmParams: wasm.OpenAIParams
-  ) {
-    try {
-      await this.appState.buildExecutionPlan(llmClient, llmParams, makeRequest);
-    } catch (error) {
-      console.error("Error occurred:", error);
-    }
-  }
-
-  /**
    * Handles the update operation of the task pool.
    * It retrieves the list of todo tasks and updates the task pool provider with the new list.
    */
@@ -295,7 +267,7 @@ export class AppStateManager {
       const tasksTodo: wasm.Task[] = this.appState.getTodoTasks();
 
       // Update the local task list
-      this.taskPoolProvider.tasks = toTaskView(tasksTodo);
+      this.taskPoolProvider.root = buildTreeFromTasks(tasksTodo);
 
       // Refresh the view
       this.taskPoolProvider.refresh();
@@ -313,7 +285,7 @@ export class AppStateManager {
       const tasksDone: wasm.Task[] = this.appState.getDoneTasks();
 
       // Update the local task list
-      this.tasksCompletedProvider.tasks = toTaskView(tasksDone);
+      this.tasksCompletedProvider.root = buildTreeFromTasks(tasksDone);
 
       // Refresh the view
       this.tasksCompletedProvider.refresh();
