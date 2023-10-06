@@ -19,73 +19,8 @@ Install the Extension Locally: In VS Code, go to the Extensions view by clicking
 
 Reload VS Code: After installing the extension, you may need to reload the window or restart VS Code to activate it.
 
-### Run the MockServer
+## Publish extension
 
-`cd server-test/`
+To login: `vsce login NeatworkAi`
 
-// transpile
-`tsc mockServer.ts`
-
-// run server
-`node mockServer.js`
-
-// to kill the server if not correctly shutdown
-`lsof -i :1895`
-
-`kill -9 <PID>`
-
-
-// To listen in
-`sudo tcpdump -i any port 1895`
-
-### TEMP
-
-- specs (OK)
-- scaffold (TBD) --> at application start send everything
-- jobs (OK) --> at application start send everything
-- interfaces --> at application start send everything
-- codebase (TBD) --> at application start send everything..
-
-To add to Package JSON:
-
-"menus": {
-      "view/title": [
-        {
-          "command": "extension.stopJob",
-          "when": "view == taskPoolView",
-          "group": "navigation@2"
-        },
-        {
-          "command": "extension.retryJob",
-          "when": "view == taskPoolView",
-          "group": "navigation@3"
-        },
-        {
-          "command": "extension.removeTask",
-          "when": "view == taskPoolView",
-          "group": "navigation@4"
-        },
-      ],
-    }
-
-
-
-commands: [{
-        "command": "extension.stopJob",
-        "title": "Stop Job",
-        "icon": "$(primitive-square)"
-      },
-      {
-        "command": "extension.retryJob",
-        "title": "Retry Job",
-        "icon": "$(refresh)"
-      },
-      {
-        "command": "extension.removeTask",
-        "title": "Remove Job",
-        "icon": "$(trash)"
-      },]
-
-
-
-`npm install copy-webpack-plugin --save-dev`
+Create a token at: `https://dev.azure.com/neatwork-ai/_usersSettings/tokens`

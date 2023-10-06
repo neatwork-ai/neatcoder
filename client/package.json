@@ -2,7 +2,8 @@
   "name": "neatcoder",
   "displayName": "Neatcoder",
   "description": "Turn your IDE into an AI Sofware engineer.",
-  "version": "0.1.1-alpha",
+  "version": "0.1.0",
+  "publisher": "NeatworkAi",
   "repository": {
     "url": "https://github.com/neatwork-ai/neatcoder-issues.git",
     "type": "git"
