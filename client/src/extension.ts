@@ -22,6 +22,7 @@ import { removeTask } from "./commands/removeTask";
 import { removeAllTasks } from "./commands/removeAllTasks";
 import { initStatusBar } from "./statusBar";
 import { initLogger, logger } from "./logger";
+import { ChatGPTViewProvider } from "./chat/chatProvider";
 
 let configWatcher: fs.FSWatcher | undefined;
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
@@ -47,6 +48,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const jobQueueProvider = new TaskPoolProvider();
   const auditTrailProvider = new TasksCompletedProvider();
   const interfacesProvider = new InterfacesProvider();
+  const chatProvider = new ChatGPTViewProvider(context.extensionUri);
 
   // Read or Initialize Application state
 
@@ -73,6 +75,14 @@ export async function activate(context: vscode.ExtensionContext) {
   // everything in `context.subscriptions` will be disposed of automatically.
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider("taskPoolView", jobQueueProvider)
+  );
+
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider("chatGPT", chatProvider, {
+      webviewOptions: {
+        retainContextWhenHidden: true,
+      },
+    })
   );
 
   context.subscriptions.push(
