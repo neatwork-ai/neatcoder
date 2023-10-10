@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as fs from "fs";
+import * as wasm from "./../pkg/neatcoder";
 import { TaskPoolProvider } from "./providers/taskPool";
 import { InterfacesProvider } from "./providers/interfaces";
 import { TasksCompletedProvider } from "./providers/tasksCompleted";
@@ -15,15 +16,20 @@ import { removeSchema } from "./commands/schemas/removeSchema";
 import InterfaceItem from "./models/interfaceItem";
 import { TaskView } from "./models/task";
 import { addInterface } from "./commands/interfaces/addInterface";
-import * as wasm from "./../pkg/neatcoder";
 import { AppStateManager } from "./appStateManager";
 import { getOrSetApiKey } from "./utils";
 import { removeTask } from "./commands/removeTask";
 import { removeAllTasks } from "./commands/removeAllTasks";
 import { initStatusBar } from "./statusBar";
 import { initLogger, logger } from "./logger";
-import { ChatGPTViewProvider } from "./chat/chatProvider";
+import { setWebviewContent } from "./chat/chat";
+import { ChatTreeViewProvider } from "./chat/chatTree";
+import path = require("path");
 
+let panelCounter = 1;
+export const activePanels: Map<number, vscode.WebviewPanel> = new Map();
+
+// Declare activePanels at the top-level to make it accessible throughout your extension's main script.
 let configWatcher: fs.FSWatcher | undefined;
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
 
@@ -48,7 +54,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const jobQueueProvider = new TaskPoolProvider();
   const auditTrailProvider = new TasksCompletedProvider();
   const interfacesProvider = new InterfacesProvider();
-  const chatProvider = new ChatGPTViewProvider(context.extensionUri);
+  const chatProvider = new ChatTreeViewProvider();
 
   // Read or Initialize Application state
 
@@ -78,20 +84,48 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider("chatGPT", chatProvider, {
-      webviewOptions: {
-        retainContextWhenHidden: true,
-      },
-    })
-  );
-
-  context.subscriptions.push(
     vscode.window.registerTreeDataProvider("auditTrailView", auditTrailProvider)
   );
 
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider("interfacesView", interfacesProvider)
   );
+
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider("chatTreeView", chatProvider)
+  );
+
+  // Register the Chat command
+
+  vscode.commands.registerCommand("extension.createChat", () => {
+    const panel = vscode.window.createWebviewPanel(
+      "chatPanel",
+      `Chat ${panelCounter}`,
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [
+          vscode.Uri.file(
+            path.join(context.extensionPath, "..", "webview", "build")
+          ),
+        ],
+      }
+    );
+
+    setWebviewContent(panel, context); // Sample content. Replace with your chat UI.
+    activePanels.set(panelCounter, panel);
+    panelCounter++;
+
+    panel.onDidDispose(() => {
+      // Remove from active panels map when it's closed
+      for (const [key, activePanel] of activePanels.entries()) {
+        if (activePanel === panel) {
+          activePanels.delete(key);
+        }
+      }
+    });
+  });
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.initCodeBase", async () => {

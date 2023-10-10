@@ -65,6 +65,10 @@
         "command": "extension.removeAllTasks",
         "title": "Remove all Tasks",
         "icon": "$(trash)"
+      },
+      {
+        "command": "extension.createChat",
+        "title": "Chat"
       }
     ],
     "viewsContainers": {
@@ -91,10 +95,9 @@
           "name": "INTERFACES"
         },
         {
-          "id": "chatGPT",
-          "type": "webview",
-          "name": "Chat with ChatGPT"
-        }
+          "id": "chatTreeView",
+          "name": "Chats"
+      }
       ]
     },
     "menus": {

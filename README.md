@@ -47,3 +47,6 @@ To build:
 - WASM: `./bin/build_wasm.sh`
 - VSCE: `./bin/build_client.sh`
 - Full: `./bin/build.sh`
+
+
+`npm run build`
