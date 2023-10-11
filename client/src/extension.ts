@@ -96,7 +96,6 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   // Register the Chat command
-
   vscode.commands.registerCommand("extension.createChat", () => {
     const panel = vscode.window.createWebviewPanel(
       "chatPanel",
