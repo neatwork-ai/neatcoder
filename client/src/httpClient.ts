@@ -1,8 +1,6 @@
 import fetch from "node-fetch";
-import * as fs from "fs";
 import * as vscode from "vscode";
-import * as path from "path";
-import { getOrSetApiKey, getRoot } from "./utils";
+import { getOrSetApiKey } from "./utils";
 import { TextDocument } from "vscode";
 import { streamCode } from "./commands/streamCode";
 import * as https from "https";

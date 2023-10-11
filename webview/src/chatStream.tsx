@@ -22,10 +22,13 @@ const Message: React.FC<MessageProps> = ({ user, text }) => {
 
   return (
     <div className={`message ${isUser ? 'user-message' : 'llm-message'}`}>
-      {/* <img src={isUser ? imagePath : llmAvatar} alt={`${user} profile`} /> */}
-      <img src={isUser ? userAvatar : llmAvatar} alt={`${user} profile`} />
-      <span className="user-name">{isUser ? 'Username' : 'LLM'}</span>
-      <p>{text}</p>
+      <div className="image-container">
+        <img src={isUser ? userAvatar : llmAvatar} alt={`${user} profile`} />
+      </div>
+      <div className="text-container">
+        <span className="user-name">{isUser ? 'Username' : 'LLM'}</span>
+        <p>{text}</p>
+      </div>
     </div>
   );
 };

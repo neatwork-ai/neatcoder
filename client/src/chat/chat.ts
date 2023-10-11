@@ -15,8 +15,6 @@ export function setWebviewContent(
 
   let content = fs.readFileSync(entryHtml, "utf8");
 
-  console.log(`Content before: ${content}`);
-
   // Use asWebviewUri to get the correct URI for the assets
   content = content.replace(/src="\/static\/js\/(.*?)"/g, (match, filename) => {
     const scriptSrc = panel.webview.asWebviewUri(
@@ -35,10 +33,7 @@ export function setWebviewContent(
     }
   );
 
-  const publicPath = vscode.Uri.file(
-    // path.join(reactBuildPath, "default_user.jpg")
-    reactBuildPath
-  );
+  const publicPath = vscode.Uri.file(reactBuildPath);
   const webviewPath = panel.webview.asWebviewUri(publicPath);
 
   const inlineScript = `<script>window.publicPath = "${webviewPath.toString()}";</script>`;
@@ -46,8 +41,6 @@ export function setWebviewContent(
     '<script id="pathInjection"></script>',
     inlineScript
   );
-
-  console.log(`Content after: ${content}`);
 
   panel.webview.html = content;
 }
