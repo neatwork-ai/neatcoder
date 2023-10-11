@@ -8,7 +8,6 @@ import { InterfacesProvider } from "./providers/interfaces";
 import { TasksCompletedProvider } from "./providers/tasksCompleted";
 import { setupDotNeatWatcher } from "./watchers/configWatcher";
 import { addSchema } from "./commands/schemas/addSchema";
-import { setupSchemaWatchers } from "./watchers/schemaWatcher";
 import { runTask } from "./commands/runTask";
 import { initCodeBase } from "./commands/initCodeBase";
 import { removeInterface } from "./commands/interfaces/removeInterface";

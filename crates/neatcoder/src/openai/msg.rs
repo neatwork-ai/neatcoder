@@ -1,12 +1,15 @@
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use wasm_bindgen::prelude::wasm_bindgen;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OpenAIMsg {
     pub role: GptRole,
-    pub content: String,
+    pub(crate) content: String,
 }
 
+#[wasm_bindgen]
 #[derive(Debug, Clone, Copy)]
 pub enum GptRole {
     System,

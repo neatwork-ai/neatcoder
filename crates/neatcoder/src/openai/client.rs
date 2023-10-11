@@ -1,5 +1,5 @@
 use super::{msg::OpenAIMsg, output::Body, params::OpenAIParams};
-use crate::utils::log;
+use crate::{utils::log, JsError, WasmType};
 use anyhow::{anyhow, Result};
 use js_sys::{Function, Promise};
 use serde_json::{json, Value};
@@ -7,6 +7,12 @@ use serde_wasm_bindgen::from_value;
 use std::{fmt, ops::Deref};
 use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "Array<OpenAIMsg>")]
+    pub type IOpenAIMsg;
+}
 
 #[wasm_bindgen]
 pub struct OpenAI {
@@ -24,6 +30,41 @@ impl OpenAI {
 
     pub fn empty() -> Self {
         Self { api_key: None }
+    }
+
+    #[wasm_bindgen(js_name = requestBody)]
+    pub fn request_body_(
+        &self,
+        msgs: IOpenAIMsg,
+        stream: bool,
+    ) -> Result<JsValue, JsError> {
+        let msgs: Vec<OpenAIMsg> = Vec::from_extern(msgs).map_err(|e| {
+            JsValue::from_str(&format!(
+                "Failed to convert msgs to native Wasm type: {:?}",
+                e
+            ))
+        })?;
+
+        let job = OpenAIParams::default();
+
+        let mut data = json!({
+            "model": job.model.as_string(),
+            "messages": msgs,
+            // "stop": self.stop,
+        });
+
+        if stream {
+            data["stream"] = serde_json::Value::Bool(true);
+        }
+
+        let data = serde_wasm_bindgen::to_value(&data).map_err(|e| {
+            JsValue::from_str(&format!(
+                "Failed to convert payload Value to JsValue: {:?}",
+                e
+            ))
+        })?;
+
+        Ok(data)
     }
 }
 
@@ -117,42 +158,6 @@ impl OpenAI {
 
         Ok(body_json)
     }
-
-    // TODO:
-    // pub async fn chat_stream(
-    //     &self,
-    //     request_callback: &Function,
-    //     ai_params: impl Deref<Target = OpenAIParams>,
-    //     msgs: &[&OpenAIMsg],
-    //     funcs: &[&String],
-    //     stop_seq: &[String],
-    // ) -> Result<()> {
-    //     // ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
-    //     let req_body =
-    //         self.request_body(ai_params, msgs, funcs, stop_seq, false)?;
-
-    //     let body_json = serde_json::to_string(&req_body)?;
-
-    //     // let response = client
-    //     //     .post("https://api.openai.com/v1/chat/completions")
-    //     //     .header(
-    //     //         "Authorization",
-    //     //         format!(
-    //     //             "Bearer {}",
-    //     //             self.api_key.as_ref().expect("No API Keys provided")
-    //     //         ),
-    //     //     )
-    //     //     .header("Content-Type", "application/json")
-    //     //     .json(&req_body)
-    //     //     .send()
-    //     //     .await?;
-
-    //     // let stream = response.bytes_stream();
-
-    //     todo!();
-
-    //     // return Ok(stream);
-    // }
 
     pub fn request_body(
         &self,

@@ -7,12 +7,30 @@ import * as https from "https";
 import * as url from "url";
 import { logger } from "./logger";
 import { startLoading, stopLoading } from "./statusBar";
+import * as wasm from "./../pkg/neatcoder";
 
 let isProcessing = false;
 let isCodeBlock = false;
 let isCodeBlockMaybeEnding = false;
 let waitingForNewline = false;
 let isCodeBlockEnded = false;
+
+export function buildRequest(
+  msgs: Array<wasm.OpenAIMsg>,
+  stream: boolean
+): any {
+  const apiKey = getOrSetApiKey();
+
+  const client = new wasm.OpenAI(apiKey);
+
+  try {
+    const body = client.requestBody(msgs, stream);
+    return body;
+  } catch (error) {
+    console.error("An error occurred:", error);
+    throw new Error((error as Error).message);
+  }
+}
 
 /**
  * This function makes an HTTP POST request to the OpenAI API

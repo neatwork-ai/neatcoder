@@ -20,8 +20,14 @@ pub enum OpenAIModels {
     Gpt35Turbo16k,
 }
 
+impl Default for OpenAIModels {
+    fn default() -> Self {
+        OpenAIModels::Gpt35Turbo16k
+    }
+}
+
 #[wasm_bindgen]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct OpenAIParams {
     pub model: OpenAIModels,
     // TODO: THIS SHOULD BE Scale02
