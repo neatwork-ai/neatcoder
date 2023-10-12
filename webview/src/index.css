@@ -69,7 +69,7 @@ code {
   flex: 1;
   border: none;
   outline: none;
-  min-height: 20px;
+  height: 20px;
   background-color: transparent;
   color: var(--vscode-editor-foreground);
 }
@@ -81,4 +81,21 @@ code {
   box-sizing: border-box;
   cursor: pointer;
   transition: background-color 0.3s;
+}
+
+.textBox textarea {
+  flex: 1;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: var(--vscode-editor-foreground);
+  overflow: auto; /* allows scrolling when content overflows */
+  white-space: pre-wrap; /* allows for line breaks and white space */
+  word-wrap: break-word; /* allows long words to be broken and wrapped onto the next line */
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  height: 20px; /* or whatever matches your original design */
+  resize: none;
 }
