@@ -36,6 +36,7 @@ export function setWebviewContent(
   const publicPath = vscode.Uri.file(reactBuildPath);
   const webviewPath = panel.webview.asWebviewUri(publicPath);
 
+  // Injecting the public path
   const inlineScript = `<script>window.publicPath = "${webviewPath.toString()}";</script>`;
   content = content.replace(
     '<script id="pathInjection"></script>',

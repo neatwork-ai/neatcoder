@@ -115,7 +115,7 @@ export async function activate(context: vscode.ExtensionContext) {
       path.join(context.extensionPath, "assets", "robot-32-30.png")
     );
 
-    setWebviewContent(panel, context); // Sample content. Replace with your chat UI.
+    setWebviewContent(panel, context);
     activePanels.set(panelCounter, panel);
     panelCounter++;
 

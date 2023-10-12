@@ -55,3 +55,30 @@ code {
 .llm-message .user-name {
   color: #FF4500; /* Optional: Color for the LLM's name */
 }
+
+.textBox {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  background-color: var(--vscode-input-background);
+  border-radius: 10px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.textBox input {
+  flex: 1;
+  border: none;
+  outline: none;
+  min-height: 20px;
+  background-color: transparent;
+  color: var(--vscode-editor-foreground);
+}
+
+.textBox .SVGButton {
+  margin: 0;
+  padding: 0;
+  height: auto; /* or a specific height that matches the input */
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}

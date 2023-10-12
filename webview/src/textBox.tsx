@@ -1,6 +1,5 @@
-// TextBox.tsx
-
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import SVGButton from './sendButton';
 
 const TextBox: React.FC<{ onSendMessage: (text: string) => void }> = ({ onSendMessage }) => {
   const [text, setText] = useState('');
@@ -17,9 +16,9 @@ const TextBox: React.FC<{ onSendMessage: (text: string) => void }> = ({ onSendMe
       <input
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Type a message..."
+        placeholder="Send a message"
       />
-      <button onClick={handleSend}>Send</button>
+      <SVGButton onClick={handleSend} />
     </div>
   );
 };
