@@ -80,11 +80,11 @@ code {
 }
 
 .user-message .user-name {
-  color: #007AFF; /* Optional: Color for the user's name */
+  color: var(--vscode-activityBarBadge-background); /* Optional: Color for the user's name */
 }
 
 .llm-message .user-name {
-  color: #FF4500; /* Optional: Color for the LLM's name */
+  color: var(--vscode-activityBarBadge-background); /* Optional: Color for the LLM's name */
 }
 
 .textBox {
