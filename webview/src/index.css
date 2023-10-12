@@ -1,5 +1,9 @@
 body {
   margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* To prevent double scroll bars */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -10,6 +14,26 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  justify-content: space-between;
+}
+
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: transparent;
+  overflow: hidden;
+}
+
+.chatStream {
+    flex-grow: 1;
+    overflow-y: auto;  /* to allow scrolling if the messages exceed the container's height */
 }
 
 .message {
@@ -63,6 +87,7 @@ code {
   background-color: var(--vscode-input-background);
   border-radius: 10px;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  margin: 10px;
 }
 
 .textBox input {

@@ -5,8 +5,13 @@ interface MessageProps {
   text: string;
 }
 
-const ChatStream: React.FC<{ messages: MessageProps[] }> = ({ messages }) => (
-  <div className="chatStream">
+interface ChatStreamProps {
+  messages: MessageProps[];
+  className?: string;
+}
+
+const ChatStream: React.FC<ChatStreamProps> = ({ messages, className }) => (
+  <div className={className}>
     {messages.map((message, index) => (
       <Message key={index} {...message} />
     ))}

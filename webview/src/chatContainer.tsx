@@ -25,7 +25,7 @@ const ChatContainer: React.FC = () => {
 
   return (
     <div className="chatContainer">
-      <ChatStream messages={messages} />
+      <ChatStream className="chatStream" messages={messages} />
       <TextBox onSendMessage={handleSendMessage} />
     </div>
   );
