@@ -1,4 +1,5 @@
 import React from 'react';
+import { LlmSvgIcon } from './llmAvatar';
 
 interface MessageProps {
   user: 'bot' | 'user';
@@ -23,15 +24,18 @@ const Message: React.FC<MessageProps> = ({ user, text }) => {
   const publicPath = (window as any).publicPath;
 
   const userAvatar = `${publicPath}/default_user.jpg`;
-  const llmAvatar = `${publicPath}/cyborg.jpg`;
 
   return (
     <div className={`message ${isUser ? 'user-message' : 'llm-message'}`}>
       <div className="image-container">
-        <img src={isUser ? userAvatar : llmAvatar} alt={`${user} profile`} />
+      {isUser ? (
+          <img src={userAvatar} alt="user profile" />
+        ) : (
+          <LlmSvgIcon />
+        )}
       </div>
       <div className="text-container">
-        <span className="user-name">{isUser ? 'Username' : 'LLM'}</span>
+        <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
         <p>{text}</p>
       </div>
     </div>
