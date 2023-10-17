@@ -7,7 +7,7 @@ function App() {
     <div className="App">
       <header>
       </header>
-        <h1>Chat with OpenAI</h1>
+        <h1>Chat with Neatcoder</h1>
         <ChatContainer />
     </div>
   );

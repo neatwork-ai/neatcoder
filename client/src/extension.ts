@@ -119,6 +119,25 @@ export async function activate(context: vscode.ExtensionContext) {
     activePanels.set(panelCounter, panel);
     panelCounter++;
 
+    // Listen for messages from this webview - TODO
+    // panel.webview.onDidReceiveMessage(
+    //   async (message) => {
+    //     switch (message.command) {
+    //       case "buildOpenAIRequest":
+    //         const responseText = await handleOpenAIRequest(message.text);
+    //         panel.webview.postMessage({
+    //           command: "buildOpenAIRequest",
+    //           text: responseText,
+    //         });
+    //         break;
+
+    //       // ... handle other commands as needed
+    //     }
+    //   },
+    //   undefined,
+    //   context.subscriptions
+    // );
+
     panel.onDidDispose(() => {
       // Remove from active panels map when it's closed
       for (const [key, activePanel] of activePanels.entries()) {
