@@ -24,13 +24,15 @@ import { initLogger, logger } from "./logger";
 import { setWebviewContent } from "./chat/chat";
 import { ChatTreeViewProvider } from "./chat/chatTree";
 import path = require("path");
+import { setupChatWatcher } from "./watchers/chatWatcher";
 
 let panelCounter = 1;
 export const activePanels: Map<number, vscode.WebviewPanel> = new Map();
 
 // Declare activePanels at the top-level to make it accessible throughout your extension's main script.
-let configWatcher: fs.FSWatcher | undefined;
+let configWatcher: fs.FSWatcher | undefined; // TODO: remove, not being used.
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
+let chatWatcher: vscode.FileSystemWatcher | undefined;
 
 // This method is called when your extension is activated
 export async function activate(context: vscode.ExtensionContext) {
@@ -53,7 +55,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const jobQueueProvider = new TaskPoolProvider();
   const auditTrailProvider = new TasksCompletedProvider();
   const interfacesProvider = new InterfacesProvider();
-  const chatProvider = new ChatTreeViewProvider();
+  const chatTreeProvider = new ChatTreeViewProvider();
 
   // Read or Initialize Application state
 
@@ -66,6 +68,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Setup File Watcher which checks for changes in the `.neat` and
   // communicates them to the server if relevant
   setupDotNeatWatcher(schemaWatchers, interfacesProvider, appManager);
+  chatWatcher = setupChatWatcher(chatTreeProvider);
 
   // === Registration & Garbage Collection ===
 
@@ -91,7 +94,7 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("chatTreeView", chatProvider)
+    vscode.window.registerTreeDataProvider("chatTreeView", chatTreeProvider)
   );
 
   // Register the Chat command
@@ -217,6 +220,10 @@ export async function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   if (configWatcher) {
     configWatcher.close();
+  }
+
+  if (chatWatcher) {
+    chatWatcher.dispose();
   }
 
   Object.values(schemaWatchers).forEach((watcher) => watcher.close());
