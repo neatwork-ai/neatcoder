@@ -29,6 +29,10 @@ export function setupChatWatcher(
       chats.insertChat(chat);
       chatTreeViewProvider.refresh();
     } catch (error) {
+      vscode.window.showErrorMessage(
+        `[ERROR] Failed to read chat file ${uri}. Error: ${error}`
+      );
+
       console.error("Failed to update chat state:", error);
       throw new Error(`Failed to update chat state ${uri.path}: ${error}`);
     }
@@ -46,7 +50,10 @@ export function setupChatWatcher(
       chats.insertChat(chat);
       chatTreeViewProvider.refresh();
     } catch (error) {
-      console.error("Failed to create chat state:", error);
+      vscode.window.showErrorMessage(
+        `[ERROR] Failed to read new chat file ${uri}. Error: ${error}`
+      );
+
       throw new Error(`Failed to create chat state from ${uri.path}: ${error}`);
     }
   });

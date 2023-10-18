@@ -18,6 +18,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Call the Python script
+python3 ../../bin/create_interface.py
+
+# Move the generated interface file to the desired directory
+mv neatcoderInterface.d.ts ../../webview/wasm/
+
 # Move the pkg directory to ../client
 mv pkg ../../client/
 
