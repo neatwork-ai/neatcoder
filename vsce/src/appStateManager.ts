@@ -1,4 +1,4 @@
-import * as wasm from "./../pkg/neatcoder";
+import * as wasm from "../pkg/neatcoder";
 import { window, workspace } from "vscode";
 import * as fs from "fs";
 import * as path from "path";

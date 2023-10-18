@@ -1,9 +1,9 @@
-declare module "vscode" {
-  interface VsCodeApi {
-    postMessage(message: any): void;
-  }
+// declare module "vscode" {
+//   interface VsCodeApi {
+//     postMessage(message: any): void;
+//   }
 
-  interface Window {
-    vscode: VsCodeApi;
-  }
-}
+//   interface Window {
+//     vscode: VsCodeApi;
+//   }
+// }

@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as fs from "fs";
-import * as wasm from "./../pkg/neatcoder";
+import * as wasm from "../pkg/neatcoder";
 import { TaskPoolProvider } from "./providers/taskPool";
 import { InterfacesProvider } from "./providers/interfaces";
 import { TasksCompletedProvider } from "./providers/tasksCompleted";

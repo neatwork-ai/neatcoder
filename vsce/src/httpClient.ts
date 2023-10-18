@@ -7,7 +7,7 @@ import * as https from "https";
 import * as url from "url";
 import { logger } from "./logger";
 import { startLoading, stopLoading } from "./statusBar";
-import * as wasm from "./../pkg/neatcoder";
+import * as wasm from "../pkg/neatcoder";
 
 let isProcessing = false;
 let isCodeBlock = false;
