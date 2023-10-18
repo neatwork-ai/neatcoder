@@ -91,6 +91,14 @@ impl Chat {
 
         Ok(chat)
     }
+
+    #[wasm_bindgen(js_name = castToString)]
+    pub fn cast_to_string(&self) -> Result<JsString, JsError> {
+        let json = serde_json::to_string(self)
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
+
+        Ok(json.into())
+    }
 }
 
 #[wasm_bindgen]

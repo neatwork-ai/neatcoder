@@ -258,3 +258,28 @@ export async function getChat(uri: vscode.Uri): Promise<wasm.Chat> {
     throw new Error(`Failed to get chat from ${uri.path}: ${error}`);
   }
 }
+
+export async function storeChat(name: string, chat: wasm.Chat): Promise<void> {
+  try {
+    // Convert the chat instance to a JSON string
+    const jsonString = chat.castToString();
+
+    // Build the file path
+    const folderPath = path.join(
+      vscode.workspace.rootPath || "",
+      ".neat",
+      "chats"
+    );
+    const filePath = path.join(folderPath, `${name}.json`);
+
+    // Ensure the directory exists
+    await vscode.workspace.fs.createDirectory(vscode.Uri.file(folderPath));
+
+    // Write the JSON string to the file
+    const data = Buffer.from(jsonString, "utf8");
+    await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), data);
+  } catch (error) {
+    console.error("Failed to store chat:", error);
+    throw new Error(`Failed to store chat to ${name}.json: ${error}`);
+  }
+}

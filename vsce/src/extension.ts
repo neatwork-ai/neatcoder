@@ -16,7 +16,7 @@ import InterfaceItem from "./models/interfaceItem";
 import { TaskView } from "./models/task";
 import { addInterface } from "./commands/interfaces/addInterface";
 import { AppStateManager } from "./appStateManager";
-import { getOrSetApiKey } from "./utils";
+import { getOrSetApiKey, storeChat } from "./utils";
 import { removeTask } from "./commands/removeTask";
 import { removeAllTasks } from "./commands/removeAllTasks";
 import { initStatusBar } from "./statusBar";
@@ -28,7 +28,7 @@ import { setupChatWatcher } from "./watchers/chatWatcher";
 
 let panelCounter = 1;
 export const activePanels: Map<number, vscode.WebviewPanel> = new Map();
-export let chats: wasm.Chats;
+export const chats = new wasm.Chats();
 
 // Declare activePanels at the top-level to make it accessible throughout your extension's main script.
 let configWatcher: fs.FSWatcher | undefined; // TODO: remove, not being used.
@@ -119,6 +119,10 @@ export async function activate(context: vscode.ExtensionContext) {
       path.join(context.extensionPath, "assets", "robot-32-30.png")
     );
 
+    const newChat = new wasm.Chat();
+    storeChat("TODO", newChat);
+    chats.insertChat(newChat);
+
     setWebviewContent(panel, context);
     activePanels.set(panelCounter, panel);
     panelCounter++;
@@ -147,6 +151,7 @@ export async function activate(context: vscode.ExtensionContext) {
       for (const [key, activePanel] of activePanels.entries()) {
         if (activePanel === panel) {
           activePanels.delete(key);
+          chats.removeChat("TODO");
         }
       }
     });
