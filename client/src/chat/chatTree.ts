@@ -1,8 +1,9 @@
 import * as vscode from "vscode";
+import * as path from "path";
 import { activePanels } from "../extension";
 
 class ChatTreeItem extends vscode.TreeItem {
-  constructor(public readonly chatId: number, public readonly label: string) {
+  constructor(public readonly chatId: string, public readonly label: string) {
     super(label, vscode.TreeItemCollapsibleState.None);
   }
 }
@@ -23,12 +24,41 @@ export class ChatTreeViewProvider
     return Promise.resolve(this.getChatTreeItems());
   }
 
-  private getChatTreeItems(): ChatTreeItem[] {
-    const chats = [];
-    for (const [key] of activePanels.entries()) {
-      chats.push(new ChatTreeItem(key, `Chat ${key}`));
+  // private getChatTreeItems(): ChatTreeItem[] {
+  //   const chats = [];
+  //   for (const [key] of activePanels.entries()) {
+  //     chats.push(new ChatTreeItem(key, `Chat ${key}`));
+  //   }
+  //   console.log("ChatTreeItems: ", chats);
+  //   return chats;
+  // }
+
+  private async getChatTreeItems(): Promise<ChatTreeItem[]> {
+    const chats: ChatTreeItem[] = [];
+    const chatsDir = vscode.Uri.file(
+      vscode.workspace.rootPath + "/.neat/chats"
+    );
+
+    let directoryExists = true;
+    try {
+      await vscode.workspace.fs.stat(chatsDir);
+    } catch {
+      directoryExists = false;
     }
-    console.log("ChatTreeItems: ", chats);
+
+    if (directoryExists) {
+      const chatFiles = await vscode.workspace.fs.readDirectory(chatsDir);
+
+      chatFiles.forEach(([file, type]) => {
+        if (type === vscode.FileType.File) {
+          const chatName = path.basename(file, ".json"); // Extract name without extension
+          chats.push(new ChatTreeItem(chatName, `${chatName}`));
+        }
+      });
+
+      console.log("ChatTreeItems: ", chats);
+    }
+
     return chats;
   }
 

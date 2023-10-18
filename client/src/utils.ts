@@ -247,3 +247,14 @@ export function getOrSetApiKey(): any {
 
   return apiKey;
 }
+
+export async function getChat(uri: vscode.Uri): Promise<wasm.Chat> {
+  try {
+    const data = await vscode.workspace.fs.readFile(uri);
+    const content = Buffer.from(data).toString("utf8");
+    return wasm.Chat.castFromString(content);
+  } catch (error) {
+    console.error("Failed to get chat:", error);
+    throw new Error(`Failed to get chat from ${uri.path}: ${error}`);
+  }
+}

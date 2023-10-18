@@ -28,6 +28,7 @@ import { setupChatWatcher } from "./watchers/chatWatcher";
 
 let panelCounter = 1;
 export const activePanels: Map<number, vscode.WebviewPanel> = new Map();
+export let chats: wasm.Chats;
 
 // Declare activePanels at the top-level to make it accessible throughout your extension's main script.
 let configWatcher: fs.FSWatcher | undefined; // TODO: remove, not being used.
