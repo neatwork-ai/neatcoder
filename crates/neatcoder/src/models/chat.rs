@@ -7,7 +7,7 @@ use std::{
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
-use crate::JsError;
+use crate::{openai::msg::OpenAIMsg, JsError, WasmType};
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -53,6 +53,15 @@ impl DerefMut for Chats {
 }
 
 #[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "Record<string, Model>")]
+    pub type IModels;
+
+    #[wasm_bindgen(typescript_type = "Array<Message>")]
+    pub type IMessages;
+}
+
+#[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Chat {
@@ -82,6 +91,16 @@ impl Chat {
     #[wasm_bindgen(getter)]
     pub fn title(&self) -> JsString {
         self.title.clone().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn models(&self) -> Result<IModels, JsError> {
+        HashMap::to_extern(self.models.clone())
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn messages(&self) -> Result<IMessages, JsError> {
+        Vec::to_extern(self.messages.clone())
     }
 
     #[wasm_bindgen(js_name = castFromString)]
@@ -122,6 +141,26 @@ impl Model {
             interface: String::from("TODO"),
         })
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn id(&self) -> JsString {
+        self.id.clone().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn model(&self) -> JsString {
+        self.model.clone().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn uri(&self) -> JsString {
+        self.uri.clone().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn interface(&self) -> JsString {
+        self.interface.clone().into()
+    }
 }
 
 #[wasm_bindgen]
@@ -130,7 +169,7 @@ impl Model {
 pub struct Message {
     pub(crate) user: String,
     pub(crate) ts: String,
-    pub(crate) text: String,
+    pub(crate) payload: OpenAIMsg,
 }
 
 #[wasm_bindgen]
@@ -140,7 +179,22 @@ impl Message {
         Ok(Self {
             user: String::from("TODO"),
             ts: String::from("TODO"),
-            text: String::from("TODO"),
+            payload: OpenAIMsg::user("TODO"),
         })
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn user(&self) -> JsString {
+        self.user.clone().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn ts(&self) -> JsString {
+        self.ts.clone().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn payload(&self) -> OpenAIMsg {
+        self.payload.clone()
     }
 }

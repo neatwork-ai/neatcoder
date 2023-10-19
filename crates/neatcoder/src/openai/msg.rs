@@ -1,11 +1,12 @@
 use anyhow::{anyhow, Result};
+use js_sys::JsString;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OpenAIMsg {
-    pub role: GptRole,
+    pub(crate) role: GptRole,
     pub(crate) content: String,
 }
 
@@ -37,6 +38,19 @@ impl OpenAIMsg {
             role: GptRole::Assistant,
             content: String::from(content),
         }
+    }
+}
+
+#[wasm_bindgen]
+impl OpenAIMsg {
+    #[wasm_bindgen(getter)]
+    pub fn role(&self) -> JsString {
+        self.role.as_str().to_string().into()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn content(&self) -> JsString {
+        self.content.clone().into()
     }
 }
 
