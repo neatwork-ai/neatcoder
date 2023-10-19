@@ -3,26 +3,25 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as wasm from "../pkg/neatcoder";
-import { InterfacesProvider } from "./foreignInterfaces/providers";
-import { addSchema } from "./foreignInterfaces/commands/addSchema";
-import { runTask } from "./taskPool/commands/runTask";
-import { initCodeBase } from "./core/workflows/initCodeBase";
-import { removeInterface } from "./foreignInterfaces/commands/removeInterface";
-import { removeSchema } from "./foreignInterfaces/commands/removeSchema";
-import InterfaceItem from "./foreignInterfaces/models";
-import { TaskView } from "./taskPool/models";
-import { addInterface } from "./foreignInterfaces/commands/addInterface";
-import { appDataManager } from "./core/appData";
-import { getOrSetApiKey, storeChat } from "./utils/utils";
-import { removeTask } from "./taskPool/commands/removeTask";
-import { removeAllTasks } from "./taskPool/commands/removeAllTasks";
-import { initStatusBar } from "./utils/statusBar";
-import { initLogger, logger } from "./utils/logger";
-import { ChatTreeViewProvider } from "./chat/providers";
-import { initChat } from "./chat/commands";
-import { TaskPoolProvider, TasksCompletedProvider } from "./taskPool/providers";
-import { setupDotNeatWatcher } from "./core/watchers";
-import { setupChatWatcher } from "./chat/watchers";
+import {
+  InterfacesProvider,
+  addSchema,
+  removeInterface,
+  removeSchema,
+  addInterface,
+  InterfaceItem,
+} from "./foreignInterfaces";
+import {
+  runTask,
+  removeTask,
+  removeAllTasks,
+  TaskView,
+  TaskPoolProvider,
+  TasksCompletedProvider,
+} from "./taskPool";
+import { initCodeBase, appDataManager, setupDotNeatWatcher } from "./core";
+import { getOrSetApiKey, initStatusBar, initLogger, logger } from "./utils";
+import { ChatTreeViewProvider, initChat, setupChatWatcher } from "./chat";
 
 export const activePanels: Map<number, vscode.WebviewPanel> = new Map();
 export const chats = new wasm.Chats();
