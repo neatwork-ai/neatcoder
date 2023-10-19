@@ -21,10 +21,8 @@ export function buildRequest(
 ): any {
   const apiKey = getOrSetApiKey();
 
-  const client = new wasm.OpenAI(apiKey);
-
   try {
-    const body = client.requestBody(msgs, stream);
+    const body = wasm.requestBody(msgs, stream);
     return body;
   } catch (error) {
     console.error("An error occurred:", error);

@@ -130,13 +130,11 @@ export class AppStateManager {
    * Initiates a task based on the task ID and the associated task parameters.
    *
    * @param {number} taskId - The ID of the task to start.
-   * @param {wasm.OpenAI} llmClient - The OpenAI client instance.
    * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
    * @returns {Promise<void>} - A promise indicating the completion of the task.
    */
   public async runTask(
     taskId: number,
-    llmClient: wasm.OpenAI,
     llmParams: wasm.OpenAIParams
   ): Promise<void> {
     const task = this.appState.popTodo(taskId);
@@ -152,12 +150,7 @@ export class AppStateManager {
 
       // The pattern matching should be offloaded to Rust
       if (taskType === wasm.TaskType.ScaffoldProject) {
-        await this.appState.scaffoldProject(
-          llmClient,
-          llmParams,
-          taskParams,
-          makeRequest
-        );
+        await this.appState.scaffoldProject(llmParams, taskParams, makeRequest);
       }
 
       if (taskType === wasm.TaskType.CodeGen) {
@@ -185,7 +178,6 @@ export class AppStateManager {
         startLoading("Awaiting Code Stream");
 
         let requestBody = this.appState.streamCode(
-          llmClient,
           llmParams,
           taskParams,
           codebase
@@ -210,16 +202,11 @@ export class AppStateManager {
   /**
    * Starts a prompt with the given OpenAI client, parameters, and user input.
    *
-   * @param {wasm.OpenAI} llmClient - The OpenAI client instance.
    * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
    * @param {string} userInput - The user input to start the prompt with.
    */
-  public async initCodeBase(
-    llmClient: wasm.OpenAI,
-    llmParams: wasm.OpenAIParams,
-    userInput: string
-  ) {
-    await this.scaffoldProject(llmClient, llmParams, userInput);
+  public async initCodeBase(llmParams: wasm.OpenAIParams, userInput: string) {
+    await this.scaffoldProject(llmParams, userInput);
     saveAppStateToFile(this.appState);
 
     // Update providers
@@ -230,15 +217,10 @@ export class AppStateManager {
    * Initiates a scaffold project operation using specified OpenAI client, parameters, and user input.
    * This method creates necessary task parameters and invokes the scaffold project method from the appState object.
    *
-   * @param {wasm.OpenAI} llmClient - The OpenAI client instance to be used in this operation.
    * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
    * @param {string} userInput - The user input string.
    */
-  async scaffoldProject(
-    llmClient: wasm.OpenAI,
-    llmParams: wasm.OpenAIParams,
-    userInput: string
-  ) {
+  async scaffoldProject(llmParams: wasm.OpenAIParams, userInput: string) {
     const taskType = wasm.TaskType.ScaffoldProject;
 
     const taskPayload = new wasm.TaskParamsInner(
@@ -247,12 +229,7 @@ export class AppStateManager {
     const taskParams = new wasm.TaskParams(taskType, taskPayload);
 
     try {
-      await this.appState.scaffoldProject(
-        llmClient,
-        llmParams,
-        taskParams,
-        makeRequest
-      );
+      await this.appState.scaffoldProject(llmParams, taskParams, makeRequest);
     } catch (error) {
       console.error("Error occurred:", error);
     }

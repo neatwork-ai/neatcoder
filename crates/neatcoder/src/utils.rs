@@ -1,4 +1,5 @@
-use crate::openai::{client::OpenAI, msg::OpenAIMsg, params::OpenAIParams};
+use crate::openai::request::chat_raw;
+use crate::openai::{msg::OpenAIMsg, params::OpenAIParams};
 use crate::JsError;
 use anyhow::{anyhow, Result};
 use js_sys::Function;
@@ -11,7 +12,6 @@ use wasm_bindgen::JsValue;
 use web_sys::console;
 
 pub async fn write_json(
-    client: &OpenAI,
     ai_params: &OpenAIParams,
     prompts: &Vec<&OpenAIMsg>,
     request_callback: &Function,
@@ -21,9 +21,8 @@ pub async fn write_json(
     loop {
         log("[INFO] Prompting the LLM...");
 
-        let chat = client
-            .chat_raw(request_callback, ai_params, prompts, &[], &[])
-            .await?;
+        let chat =
+            chat_raw(request_callback, ai_params, prompts, &[], &[]).await?;
 
         let answer = chat
             .choices

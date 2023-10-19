@@ -4,12 +4,12 @@ use super::msg::OpenAIMsg;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ApiResponse {
-    pub headers: Headers,
-    pub body: Body,
+    pub headers: ResponseHeaders,
+    pub body: ResponseBody,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Headers {
+pub struct ResponseHeaders {
     pub date: String,
     pub content_type: String,
     pub content_length: String,
@@ -35,7 +35,7 @@ pub struct Headers {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Body {
+pub struct ResponseBody {
     pub id: String,
     pub object: String,
     pub created: i64,

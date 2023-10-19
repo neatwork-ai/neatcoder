@@ -11,13 +11,11 @@ import { startLoading, stopLoading } from "../statusBar";
  * 2. Prompts the user to input their project description.
  * 3. If user input is received, it starts a loading indicator, triggers the start of a prompt process through the AppStateManager, and stops the loading indicator once completed.
  *
- * @param llmClient - An instance of the OpenAI client used to facilitate the task processing.
  * @param llmParams - Parameters configuring the OpenAI client for task processing.
  * @param appManager - The AppStateManager instance responsible for managing the application state, including starting prompts.
  * @returns Promise<void> - A promise that resolves once the prompt process has initiated and the user has been notified.
  */
 export async function initCodeBase(
-  llmClient: wasm.OpenAI,
   llmParams: wasm.OpenAIParams,
   appManager: AppStateManager
 ): Promise<void> {
@@ -37,7 +35,7 @@ export async function initCodeBase(
 
     if (userInput !== undefined) {
       startLoading("Prompting the LLM..");
-      await appManager.initCodeBase(llmClient, llmParams, userInput);
+      await appManager.initCodeBase(llmParams, userInput);
       stopLoading();
 
       vscode.window.showInformationMessage(

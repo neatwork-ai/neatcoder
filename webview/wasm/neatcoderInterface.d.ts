@@ -37,8 +37,6 @@ export interface Message {
 }
 export interface Model {
 }
-export interface OpenAI {
-}
 export interface OpenAIMsg {
 }
 export interface OpenAIParams {

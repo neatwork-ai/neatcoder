@@ -61,7 +61,6 @@ export async function activate(context: vscode.ExtensionContext) {
   // Read or Initialize Application state
 
   let appManager = new AppStateManager(jobQueueProvider, auditTrailProvider);
-  let llmClient = new wasm.OpenAI("TODO");
   let llmParams = wasm.OpenAIParams.empty(wasm.OpenAIModels.Gpt35Turbo16k);
 
   // === Setup File Watchers ===
@@ -159,7 +158,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.initCodeBase", async () => {
-      initCodeBase(llmClient, llmParams, appManager);
+      initCodeBase(llmParams, appManager);
     })
   );
 
@@ -201,7 +200,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.runTask",
       async (taskView: TaskView) => {
-        await runTask(taskView, llmClient, llmParams, appManager);
+        await runTask(taskView, llmParams, appManager);
       }
     )
   );

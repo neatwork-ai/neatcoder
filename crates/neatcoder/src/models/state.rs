@@ -13,7 +13,7 @@ use crate::{
         stream_code::{stream_code, CodeGenParams},
     },
     models::task_params::{TaskParams, TaskType},
-    openai::{client::OpenAI, params::OpenAIParams},
+    openai::params::OpenAIParams,
     JsError, WasmType,
 };
 
@@ -274,7 +274,6 @@ impl AppState {
     #[wasm_bindgen(js_name = scaffoldProject)]
     pub async fn scaffold_project(
         &mut self,
-        client: &OpenAI,
         ai_params: &OpenAIParams,
         task_params: TaskParams,
         request_callback: &Function,
@@ -292,7 +291,6 @@ impl AppState {
 
         let (scaffold_json, files) = scaffold_project(
             language,
-            client,
             ai_params,
             task_params,
             request_callback,
@@ -326,7 +324,6 @@ impl AppState {
     #[wasm_bindgen(js_name = streamCode)]
     pub fn stream_code(
         &mut self,
-        client: &OpenAI,
         ai_params: &OpenAIParams,
         task_params: TaskParams,
         codebase: ICodebase,
@@ -338,9 +335,8 @@ impl AppState {
 
         let codebase = BTreeMap::from_extern(codebase)?;
 
-        let req_body =
-            stream_code(self, client, ai_params, task_params, codebase)
-                .map_err(|e| JsError::from_str(&e.to_string()))?;
+        let req_body = stream_code(self, ai_params, task_params, codebase)
+            .map_err(|e| JsError::from_str(&e.to_string()))?;
 
         Ok(req_body)
     }
