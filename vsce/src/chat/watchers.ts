@@ -2,8 +2,8 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import { ChatTreeViewProvider } from "../chat/providers";
-import { chats } from "../extension";
 import { getChat } from "../utils/utils";
+import { chats } from ".";
 
 type ChatInfo = {
   chatId: string;

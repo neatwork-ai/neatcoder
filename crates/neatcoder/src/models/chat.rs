@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use js_sys::JsString;
 use serde::{Deserialize, Serialize};
 use std::{

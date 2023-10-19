@@ -39,7 +39,8 @@ export async function initChat(
     (message) => {
       switch (message.command) {
         case "buildOpenAIRequest":
-          // Now, when we call buildOpenAIRequest, we pass along the panel so it knows which panel sent the message
+          // Now, when we call buildOpenAIRequest, we pass along the
+          // panel so it knows which panel sent the message
           buildOpenAIRequest(panel, message);
           break;
       }

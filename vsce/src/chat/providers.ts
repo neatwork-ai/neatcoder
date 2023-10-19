@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import { activePanels } from "../extension";
 
 class ChatTreeItem extends vscode.TreeItem {
   constructor(public readonly chatId: string, public readonly label: string) {
