@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-    models::{interfaces::AsContext, state::AppState},
+    models::app_data::{interfaces::AsContext, AppState},
     openai::{
         msg::{GptRole, OpenAIMsg},
         params::OpenAIParams,

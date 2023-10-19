@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     consts::{CONFIG_EXTENSIONS, CONFIG_FILES},
-    models::language::Language,
+    models::app_data::language::Language,
     openai::{
         msg::{GptRole, OpenAIMsg},
         params::OpenAIParams,
