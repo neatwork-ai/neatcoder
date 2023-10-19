@@ -15,21 +15,6 @@ let isCodeBlockMaybeEnding = false;
 let waitingForNewline = false;
 let isCodeBlockEnded = false;
 
-export function buildRequest(
-  msgs: Array<wasm.OpenAIMsg>,
-  stream: boolean
-): [any, any] {
-  const apiKey = getOrSetApiKey();
-
-  try {
-    const body = wasm.requestBody(msgs, stream);
-    return [apiKey, body];
-  } catch (error) {
-    console.error("An error occurred:", error);
-    throw new Error((error as Error).message);
-  }
-}
-
 /**
  * This function makes an HTTP POST request to the OpenAI API
  * to get the completion suggestions based on the input body.

@@ -1,9 +1,10 @@
 import * as wasm from "../../pkg/neatcoder";
 import * as vscode from "vscode";
 import * as path from "path";
-import { activePanels, chats } from "../extension";
 import { storeChat } from "../utils/utils";
 import { setWebviewContent } from "./webview";
+import { buildOpenAIRequest } from "./handlers";
+import { activePanels, chats } from ".";
 
 export let panelCounter = 1;
 
@@ -33,28 +34,23 @@ export async function initChat(
   storeChat("TODO", newChat);
   chats.insertChat(newChat);
 
+  // Setup event listeners and corresponding handlers
+  panel.webview.onDidReceiveMessage(
+    (message) => {
+      switch (message.command) {
+        case "buildOpenAIRequest":
+          // Now, when we call buildOpenAIRequest, we pass along the panel so it knows which panel sent the message
+          buildOpenAIRequest(panel, message);
+          break;
+      }
+    },
+    undefined,
+    context.subscriptions
+  );
+
   setWebviewContent(panel, context);
   activePanels.set(panelCounter, panel);
   panelCounter++;
-
-  // Listen for messages from this webview - TODO
-  // panel.webview.onDidReceiveMessage(
-  //   async (message) => {
-  //     switch (message.command) {
-  //       case "buildOpenAIRequest":
-  //         const responseText = await handleOpenAIRequest(message.text);
-  //         panel.webview.postMessage({
-  //           command: "buildOpenAIRequest",
-  //           text: responseText,
-  //         });
-  //         break;
-
-  //       // ... handle other commands as needed
-  //     }
-  //   },
-  //   undefined,
-  //   context.subscriptions
-  // );
 
   panel.onDidDispose(() => {
     // Remove from active panels map when it's closed

@@ -23,9 +23,6 @@ import { initCodeBase, appDataManager, setupDotNeatWatcher } from "./core";
 import { getOrSetApiKey, initStatusBar, initLogger, logger } from "./utils";
 import { ChatTreeViewProvider, initChat, setupChatWatcher } from "./chat";
 
-export const activePanels: Map<number, vscode.WebviewPanel> = new Map();
-export const chats = new wasm.Chats();
-
 // Declare activePanels at the top-level to make it accessible throughout your extension's main script.
 let configWatcher: fs.FSWatcher | undefined; // TODO: remove, not being used.
 const schemaWatchers: { [key: string]: fs.FSWatcher } = {};
