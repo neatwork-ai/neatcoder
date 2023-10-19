@@ -21,12 +21,10 @@ import { removeTask } from "./commands/removeTask";
 import { removeAllTasks } from "./commands/removeAllTasks";
 import { initStatusBar } from "./statusBar";
 import { initLogger, logger } from "./logger";
-import { setWebviewContent } from "./chat/chat";
-import { ChatTreeViewProvider } from "./chat/chatTree";
-import path = require("path");
+import { ChatTreeViewProvider } from "./providers/chatTree";
 import { setupChatWatcher } from "./watchers/chatWatcher";
+import { initChat } from "./commands/initChat";
 
-let panelCounter = 1;
 export const activePanels: Map<number, vscode.WebviewPanel> = new Map();
 export const chats = new wasm.Chats();
 
@@ -99,61 +97,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Register the Chat command
   vscode.commands.registerCommand("extension.createChat", () => {
-    const panel = vscode.window.createWebviewPanel(
-      "chatPanel",
-      `Chat ${panelCounter}`,
-      vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [
-          vscode.Uri.file(
-            path.join(context.extensionPath, "..", "webview", "build")
-          ),
-        ],
-      }
-    );
-
-    panel.iconPath = vscode.Uri.file(
-      path.join(context.extensionPath, "assets", "robot-32-30.png")
-    );
-
-    const newChat = new wasm.Chat();
-    storeChat("TODO", newChat);
-    chats.insertChat(newChat);
-
-    setWebviewContent(panel, context);
-    activePanels.set(panelCounter, panel);
-    panelCounter++;
-
-    // Listen for messages from this webview - TODO
-    // panel.webview.onDidReceiveMessage(
-    //   async (message) => {
-    //     switch (message.command) {
-    //       case "buildOpenAIRequest":
-    //         const responseText = await handleOpenAIRequest(message.text);
-    //         panel.webview.postMessage({
-    //           command: "buildOpenAIRequest",
-    //           text: responseText,
-    //         });
-    //         break;
-
-    //       // ... handle other commands as needed
-    //     }
-    //   },
-    //   undefined,
-    //   context.subscriptions
-    // );
-
-    panel.onDidDispose(() => {
-      // Remove from active panels map when it's closed
-      for (const [key, activePanel] of activePanels.entries()) {
-        if (activePanel === panel) {
-          activePanels.delete(key);
-          chats.removeChat("TODO");
-        }
-      }
-    });
+    initChat(context);
   });
 
   context.subscriptions.push(

@@ -18,12 +18,12 @@ let isCodeBlockEnded = false;
 export function buildRequest(
   msgs: Array<wasm.OpenAIMsg>,
   stream: boolean
-): any {
+): [any, any] {
   const apiKey = getOrSetApiKey();
 
   try {
     const body = wasm.requestBody(msgs, stream);
-    return body;
+    return [apiKey, body];
   } catch (error) {
     console.error("An error occurred:", error);
     throw new Error((error as Error).message);

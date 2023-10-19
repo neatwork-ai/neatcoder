@@ -1,25 +1,21 @@
 import React from 'react';
 import { LlmSvgIcon } from './llmAvatar';
-
-interface MessageProps {
-  user: 'bot' | 'user';
-  text: string;
-}
+import { Message } from '../wasm/neatcoderInterface';
 
 interface ChatStreamProps {
-  messages: MessageProps[];
+  messages: Message[];
   className?: string;
 }
 
 const ChatStream: React.FC<ChatStreamProps> = ({ messages, className }) => (
   <div className={className}>
     {messages.map((message, index) => (
-      <Message key={index} {...message} />
+      <MessageUi key={index} {...message} />
     ))}
   </div>
 );
 
-const Message: React.FC<MessageProps> = ({ user, text }) => {
+const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   const isUser = user === 'user';
   const publicPath = (window as any).publicPath;
 
@@ -36,7 +32,7 @@ const Message: React.FC<MessageProps> = ({ user, text }) => {
       </div>
       <div className="text-container">
         <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
-        <p>{text}</p>
+        <p>{payload.content}</p>
       </div>
     </div>
   );
