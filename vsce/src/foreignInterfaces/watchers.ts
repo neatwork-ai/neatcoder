@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { getFilename, getOrCreateConfigPath } from "../utils/utils";
 import { InterfacesProvider } from "../foreignInterfaces/providers";
-import { AppStateManager } from "../core/appData";
+import { appDataManager } from "../core/appData";
 import { logger } from "../utils/logger";
 
 /**
@@ -11,13 +11,13 @@ import { logger } from "../utils/logger";
  *
  * @param schemaWatchers - An object holding fs.FSWatcher instances associated with different paths.
  * @param interfacesProvider - Instance of InterfacesProvider to refresh interface views.
- * @param appManager - Instance of AppStateManager to manage the app's state.
+ * @param appManager - Instance of appDataManager to manage the app's state.
  * @returns An array of fs.FSWatcher instances created during the setup process (if any).
  */
 export function setupSchemaWatchers(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
-  appManager: AppStateManager
+  appManager: appDataManager
 ) {
   if (!vscode.workspace.workspaceFolders) {
     return [];
@@ -61,14 +61,14 @@ export function setupSchemaWatchers(
  * @param name - Name of the interface.
  * @param absolutePath - Absolute path to the interface schema.
  * @param interfacesProvider - Instance of InterfacesProvider to refresh interface views.
- * @param appManager - Instance of AppStateManager to manage the app's state.
+ * @param appManager - Instance of appDataManager to manage the app's state.
  * @returns The fs.FSWatcher instance created for the specified interface.
  */
 function setupWatcherForInterface(
   name: string,
   absolutePath: string,
   interfacesProvider: InterfacesProvider,
-  appManager: AppStateManager
+  appManager: appDataManager
 ): fs.FSWatcher {
   logger.appendLine("[INFO] Setting up schema watcher for " + name);
   // Your existing watcher setup logic here, but return the watcher
@@ -112,12 +112,12 @@ function setupWatcherForInterface(
  *
  * @param interfaceName - Name of the interface associated with the new file.
  * @param filePath - Path to the new file.
- * @param appManager - Instance of AppStateManager to manage the app's state.
+ * @param appManager - Instance of appDataManager to manage the app's state.
  */
 function handleNewFile(
   interfaceName: string,
   filePath: string,
-  appManager: AppStateManager
+  appManager: appDataManager
 ) {
   const schema = fs.readFileSync(filePath, "utf8");
   const schemaName = getFilename(filePath);
@@ -131,12 +131,12 @@ function handleNewFile(
  *
  * @param interfaceName - Name of the interface associated with the modified file.
  * @param filePath - Path to the modified file.
- * @param appManager - Instance of AppStateManager to manage the app's state.
+ * @param appManager - Instance of appDataManager to manage the app's state.
  */
 function handleFileEdit(
   interfaceName: string,
   filePath: string,
-  appManager: AppStateManager
+  appManager: appDataManager
 ) {
   const schema = fs.readFileSync(filePath, "utf8");
   const schemaName = getFilename(filePath);
@@ -151,12 +151,12 @@ function handleFileEdit(
  *
  * @param interfaceName - Name of the interface associated with the deleted file.
  * @param filename - Name of the deleted file.
- * @param appManager - Instance of AppStateManager to manage the app's state.
+ * @param appManager - Instance of appDataManager to manage the app's state.
  */
 function handleFileDelete(
   interfaceName: string,
   filename: string,
-  appManager: AppStateManager
+  appManager: appDataManager
 ) {
   const schemaName = getFilename(filename);
 

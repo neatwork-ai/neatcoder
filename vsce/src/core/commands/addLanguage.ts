@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { AppStateManager } from "../appData";
+import { appDataManager } from "../appData";
 import { logger } from "../../utils/logger";
 import { langList } from "../../utils/consts";
 import * as wasm from "../../../pkg/neatcoder";
@@ -12,7 +12,7 @@ import * as wasm from "../../../pkg/neatcoder";
  * @param appManager - The application state manager instance where the selected or entered language will be added.
  * @return Promise<void> - A promise that resolves when a language is selected or entered, and rejects if the selection interface is closed without making a selection.
  */
-export function addLanguage(appManager: AppStateManager): Promise<void> {
+export function addLanguage(appManager: appDataManager): Promise<void> {
   {
     return new Promise((resolve, reject) => {
       const list = langList;
@@ -93,7 +93,7 @@ export function addLanguage(appManager: AppStateManager): Promise<void> {
  * @param selectedType - The label of the selected item or the entered text from the QuickPick interface, representing a programming language.
  */
 function handleSelection(
-  appManager: AppStateManager,
+  appManager: appDataManager,
   selectedType: string
 ): void {
   try {

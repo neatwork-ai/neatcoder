@@ -6,7 +6,7 @@ export interface Api {
     schemas: Record<string, string>;
 }
 
-export interface AppState {
+export interface AppData {
     interfaces: Record<string, Interface>;
     scaffold: string | undefined;
     specs: string | undefined;

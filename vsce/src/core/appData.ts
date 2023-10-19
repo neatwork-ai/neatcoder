@@ -2,7 +2,7 @@ import * as wasm from "../../pkg/neatcoder";
 import { window, workspace } from "vscode";
 import * as fs from "fs";
 import * as path from "path";
-import { getRoot, readAppState, saveAppStateToFile } from "../utils/utils";
+import { getRoot, readappData, saveappDataToFile } from "../utils/utils";
 import { buildTreeFromTasks } from "../taskPool/models";
 import { makeRequest, makeStreamingRequest } from "../utils/httpClient";
 import { scanSourceFolder, streamCode } from "./workflows/streamCode";
@@ -17,15 +17,15 @@ import {
  * A class to manage the application state, including functionalities such as
  * handling tasks, schemas, interfaces, and initiating various tasks. This manager
  * is responsible for managing the state as well as calling methods on the
- * WASM AppState struct
+ * WASM AppData struct
  */
-export class AppStateManager {
-  private appState: wasm.AppState;
+export class appDataManager {
+  private appData: wasm.AppData;
   private taskPoolProvider: TaskPoolProvider;
   private tasksCompletedProvider: TasksCompletedProvider;
 
   /**
-   * Constructor to initialize the AppStateManager with given providers and a state read from a file.
+   * Constructor to initialize the appDataManager with given providers and a state read from a file.
    *
    * @param {TaskPoolProvider} taskPoolProvider - The task pool provider instance.
    * @param {TasksCompletedProvider} tasksCompletedProvider - The tasks completed provider instance.
@@ -34,7 +34,7 @@ export class AppStateManager {
     taskPoolProvider: TaskPoolProvider,
     tasksCompletedProvider: TasksCompletedProvider
   ) {
-    this.appState = readAppState();
+    this.appData = readappData();
     this.taskPoolProvider = taskPoolProvider;
     this.tasksCompletedProvider = tasksCompletedProvider;
 
@@ -45,10 +45,10 @@ export class AppStateManager {
   /**
    * Gets the read-only application state.
    *
-   * @returns {wasm.AppState} - The application state.
+   * @returns {wasm.AppData} - The application state.
    */
-  public getReadOnlyState(): wasm.AppState {
-    return this.appState;
+  public getReadOnlyState(): wasm.AppData {
+    return this.appData;
   }
 
   /**
@@ -57,8 +57,8 @@ export class AppStateManager {
    * @param {wasm.Language} language - The new language to be added.
    */
   public addLanguage(language: wasm.Language) {
-    this.appState.setLanguage(language);
-    saveAppStateToFile(this.appState);
+    this.appData.setLanguage(language);
+    saveappDataToFile(this.appData);
   }
 
   /**
@@ -69,8 +69,8 @@ export class AppStateManager {
    * @param {string} schema - The schema definition.
    */
   public addSchema(interfaceName: string, schemaName: string, schema: string) {
-    this.appState.addSchema(interfaceName, schemaName, schema);
-    saveAppStateToFile(this.appState);
+    this.appData.addSchema(interfaceName, schemaName, schema);
+    saveappDataToFile(this.appData);
   }
 
   /**
@@ -80,8 +80,8 @@ export class AppStateManager {
    * @param {string} schemaName - The name of the schema to be removed.
    */
   public removeSchema(interfaceName: string, schemaName: string) {
-    this.appState.removeSchema(interfaceName, schemaName);
-    saveAppStateToFile(this.appState);
+    this.appData.removeSchema(interfaceName, schemaName);
+    saveappDataToFile(this.appData);
   }
 
   /**
@@ -90,8 +90,8 @@ export class AppStateManager {
    * @param {wasm.Interface} newInterface - The new interface to be added.
    */
   public addInterface(newInterface: wasm.Interface) {
-    this.appState.addInterface(newInterface);
-    saveAppStateToFile(this.appState);
+    this.appData.addInterface(newInterface);
+    saveappDataToFile(this.appData);
   }
 
   /**
@@ -100,8 +100,8 @@ export class AppStateManager {
    * @param {string} interfaceName - The name of the interface to be removed.
    */
   public removeInterface(interfaceName: string) {
-    this.appState.removeInterface(interfaceName);
-    saveAppStateToFile(this.appState);
+    this.appData.removeInterface(interfaceName);
+    saveappDataToFile(this.appData);
   }
 
   /**
@@ -110,8 +110,8 @@ export class AppStateManager {
    * @param {number} taskId - The ID of the task to be removed.
    */
   public removeTask(taskId: number) {
-    this.appState.popTodo(taskId);
-    saveAppStateToFile(this.appState);
+    this.appData.popTodo(taskId);
+    saveappDataToFile(this.appData);
 
     // Update providers
     this.refresh();
@@ -121,8 +121,8 @@ export class AppStateManager {
    * Removes all tasks from the task pool in the application state.
    */
   public removeAllTasks() {
-    this.appState.removeAllTodos();
-    saveAppStateToFile(this.appState);
+    this.appData.removeAllTodos();
+    saveappDataToFile(this.appData);
 
     // Update providers
     this.refresh();
@@ -139,7 +139,7 @@ export class AppStateManager {
     taskId: number,
     llmParams: wasm.OpenAIParams
   ): Promise<void> {
-    const task = this.appState.popTodo(taskId);
+    const task = this.appData.popTodo(taskId);
     const taskType = task.taskType();
     const taskParams = task.taskParams;
 
@@ -152,7 +152,7 @@ export class AppStateManager {
 
       // The pattern matching should be offloaded to Rust
       if (taskType === wasm.TaskType.ScaffoldProject) {
-        await this.appState.scaffoldProject(llmParams, taskParams, makeRequest);
+        await this.appData.scaffoldProject(llmParams, taskParams, makeRequest);
       }
 
       if (taskType === wasm.TaskType.CodeGen) {
@@ -179,7 +179,7 @@ export class AppStateManager {
         logger.appendLine(`[INFO] Making StreamCode call to WASM Module.`);
         startLoading("Awaiting Code Stream");
 
-        let requestBody = this.appState.streamCode(
+        let requestBody = this.appData.streamCode(
           llmParams,
           taskParams,
           codebase
@@ -189,11 +189,11 @@ export class AppStateManager {
       }
 
       // Update Task Pool
-      this.appState.addDone(task);
+      this.appData.addDone(task);
       // Persist updated state
-      saveAppStateToFile(this.appState);
+      saveappDataToFile(this.appData);
     } catch (error) {
-      this.appState.addBackTodo(task);
+      this.appData.addBackTodo(task);
       console.error("Error while performing Task:", error);
       window.showErrorMessage(`Error while performing Task: ${error}`);
     }
@@ -209,7 +209,7 @@ export class AppStateManager {
    */
   public async initCodeBase(llmParams: wasm.OpenAIParams, userInput: string) {
     await this.scaffoldProject(llmParams, userInput);
-    saveAppStateToFile(this.appState);
+    saveappDataToFile(this.appData);
 
     // Update providers
     this.refresh();
@@ -217,7 +217,7 @@ export class AppStateManager {
 
   /**
    * Initiates a scaffold project operation using specified OpenAI client, parameters, and user input.
-   * This method creates necessary task parameters and invokes the scaffold project method from the appState object.
+   * This method creates necessary task parameters and invokes the scaffold project method from the appData object.
    *
    * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
    * @param {string} userInput - The user input string.
@@ -231,7 +231,7 @@ export class AppStateManager {
     const taskParams = new wasm.TaskParams(taskType, taskPayload);
 
     try {
-      await this.appState.scaffoldProject(llmParams, taskParams, makeRequest);
+      await this.appData.scaffoldProject(llmParams, taskParams, makeRequest);
     } catch (error) {
       console.error("Error occurred:", error);
     }
@@ -243,7 +243,7 @@ export class AppStateManager {
    */
   private handleUpdateTaskPool(): void {
     try {
-      const tasksTodo: wasm.Task[] = this.appState.getTodoTasks();
+      const tasksTodo: wasm.Task[] = this.appData.getTodoTasks();
 
       // Update the local task list
       this.taskPoolProvider.root = buildTreeFromTasks(tasksTodo);
@@ -261,7 +261,7 @@ export class AppStateManager {
    */
   private handleUpdateTasksCompleted(): void {
     try {
-      const tasksDone: wasm.Task[] = this.appState.getDoneTasks();
+      const tasksDone: wasm.Task[] = this.appData.getDoneTasks();
 
       // Update the local task list
       this.tasksCompletedProvider.root = buildTreeFromTasks(tasksDone);

@@ -7,13 +7,13 @@ import { ApiEntry, DbEntry, PathEntry } from "../foreignInterfaces/providers";
 
 /// ===== Read ===== ///
 
-export function readAppState(): wasm.AppState {
+export function readappData(): wasm.AppData {
   const root = getRoot();
   const filePath = path.join(root, ".neat/cache", "state");
 
   // Check if the file exists
   if (!fs.existsSync(filePath)) {
-    return wasm.AppState.empty();
+    return wasm.AppData.empty();
   }
 
   try {
@@ -21,9 +21,9 @@ export function readAppState(): wasm.AppState {
     const binaryData = fs.readFileSync(filePath);
 
     // Deserialize the data
-    const appState = deserializeAppState(binaryData);
+    const appData = deserializeappData(binaryData);
 
-    return appState;
+    return appData;
   } catch (e) {
     vscode.window.showErrorMessage(`Failed to Retrieve cached data: ${e}`);
     throw e;
@@ -50,13 +50,13 @@ function readDirectoryStructure(
 
 /// ===== Write ===== ///
 
-export function saveAppStateToFile(appState: wasm.AppState): void {
-  const payload = serializeAppState(appState);
+export function saveappDataToFile(appData: wasm.AppData): void {
+  const payload = serializeappData(appData);
   saveFile(payload, ".neat/cache", "state");
 }
 
-export function saveCump(appState: wasm.AppState): void {
-  const payload = serializeAppState(appState);
+export function saveCump(appData: wasm.AppData): void {
+  const payload = serializeappData(appData);
   saveFile(payload, ".neat/cache", "state");
 }
 
@@ -80,9 +80,9 @@ function saveFile(
 
 /// ===== Serialize / Deserialize ===== ///
 
-export function serializeAppState(appState: wasm.AppState): ArrayBuffer {
+export function serializeappData(appData: wasm.AppData): ArrayBuffer {
   try {
-    const jsonString = appState.castToString();
+    const jsonString = appData.castToString();
     const compressedData = pako.gzip(jsonString);
     return compressedData.buffer as ArrayBuffer;
   } catch (e) {
@@ -91,12 +91,12 @@ export function serializeAppState(appState: wasm.AppState): ArrayBuffer {
   }
 }
 
-function deserializeAppState(buffer: ArrayBuffer): wasm.AppState {
+function deserializeappData(buffer: ArrayBuffer): wasm.AppData {
   try {
     const decompressedData = pako.ungzip(new Uint8Array(buffer));
     const jsonString = new TextDecoder().decode(decompressedData);
-    const appState = wasm.AppState.castFromString(jsonString);
-    return appState;
+    const appData = wasm.AppData.castFromString(jsonString);
+    return appData;
   } catch (e) {
     vscode.window.showErrorMessage(`Deserialization failed:, ${e}`);
     throw e;

@@ -1,7 +1,7 @@
-import { AppStateManager } from "../../core/appData";
+import { appDataManager } from "../../core/appData";
 
 export async function removeAllTasks(
-  appManager: AppStateManager
+  appManager: appDataManager
 ): Promise<void> {
   appManager.removeAllTasks();
 }

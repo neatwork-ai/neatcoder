@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-    models::app_data::{interfaces::AsContext, AppState},
+    models::app_data::{interfaces::AsContext, AppData},
     openai::{
         msg::{GptRole, OpenAIMsg},
         params::OpenAIParams,
@@ -39,7 +39,7 @@ impl CodeGenParams {
 }
 
 pub fn stream_code(
-    app_state: &AppState,
+    app_state: &AppData,
     ai_params: &OpenAIParams,
     task_params: &CodeGenParams,
     codebase: BTreeMap<String, String>,

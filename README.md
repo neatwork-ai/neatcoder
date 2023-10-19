@@ -13,7 +13,7 @@ The client is written in Typescript and utilizes directly the VSCode API, wherea
 
 ### WASM Library
 
-The WASM library contains the core types and primitives that manage the state of the application. This state management is mostly done via the struct `AppState`, which serves as a central data structure to maintain the state of the application.
+The WASM library contains the core types and primitives that manage the state of the application. This state management is mostly done via the struct `AppData`, which serves as a central data structure to maintain the state of the application.
 
 It holds information about the project language, initial specifications (from a prompt), project scaffold structure (as a JSON string), interfaces, and a task pool to manage various tasks or jobs in the application.
 

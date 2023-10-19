@@ -1,15 +1,15 @@
 import { TaskView } from "../models";
-import { AppStateManager } from "../../core/appData";
+import { appDataManager } from "../../core/appData";
 
 /**
  * Asynchronously removes all tasks from the application state manager.
  *
- * @param appManager - The instance of AppStateManager from which all tasks will be removed.
+ * @param appManager - The instance of appDataManager from which all tasks will be removed.
  * @return Promise<void> - A promise that resolves once all tasks are removed.
  */
 export async function removeTask(
   taskView: TaskView,
-  appManager: AppStateManager
+  appManager: appDataManager
 ): Promise<void> {
   const taskId = taskView.task!.id;
   appManager.removeTask(taskId);

@@ -12,7 +12,7 @@ import { removeSchema } from "./foreignInterfaces/commands/removeSchema";
 import InterfaceItem from "./foreignInterfaces/models";
 import { TaskView } from "./taskPool/models";
 import { addInterface } from "./foreignInterfaces/commands/addInterface";
-import { AppStateManager } from "./core/appData";
+import { appDataManager } from "./core/appData";
 import { getOrSetApiKey, storeChat } from "./utils/utils";
 import { removeTask } from "./taskPool/commands/removeTask";
 import { removeAllTasks } from "./taskPool/commands/removeAllTasks";
@@ -57,7 +57,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Read or Initialize Application state
 
-  let appManager = new AppStateManager(jobQueueProvider, auditTrailProvider);
+  let appManager = new appDataManager(jobQueueProvider, auditTrailProvider);
   let llmParams = wasm.OpenAIParams.empty(wasm.OpenAIModels.Gpt35Turbo16k);
 
   // === Setup File Watchers ===

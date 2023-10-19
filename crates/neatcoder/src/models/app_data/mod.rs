@@ -47,7 +47,7 @@ use self::{
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct AppState {
+pub struct AppData {
     pub(crate) language: Option<Language>,
     /// Initial prompt containing the specifications of the project
     pub(crate) specs: Option<String>,
@@ -96,7 +96,7 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-impl AppState {
+impl AppData {
     #[wasm_bindgen(constructor)]
     pub fn new(
         language: Option<Language>,
@@ -104,7 +104,7 @@ impl AppState {
         scaffold: Option<String>,
         interfaces: IInterfaces,
         task_pool: TaskPool,
-    ) -> Result<AppState, JsValue> {
+    ) -> Result<AppData, JsValue> {
         let interfaces = BTreeMap::from_extern(interfaces)?;
         Ok(Self {
             language,
@@ -124,7 +124,7 @@ impl AppState {
     }
 
     #[wasm_bindgen(js_name = castFromString)]
-    pub fn cast_from_string(json: String) -> Result<AppState, JsError> {
+    pub fn cast_from_string(json: String) -> Result<AppData, JsError> {
         let app_state = serde_json::from_str(&json)
             .map_err(|e| JsError::from_str(&e.to_string()))?;
 
@@ -346,7 +346,7 @@ impl AppState {
     }
 }
 
-impl AppState {
+impl AppData {
     pub fn new_(
         language: Option<Language>,
         specs: Option<String>,
@@ -490,10 +490,10 @@ pub mod tests {
             }
         }"#;
 
-        let app_state = AppState::cast_from_string(json.to_string());
+        let app_state = AppData::cast_from_string(json.to_string());
 
         if let Err(e) = app_state {
-            panic!("Failed to create AppState: {:?}", e);
+            panic!("Failed to create AppData: {:?}", e);
         }
     }
 
@@ -561,7 +561,7 @@ pub mod tests {
             todo, done,
         );
 
-        let app_state = AppState::new_(
+        let app_state = AppData::new_(
             Some(Language::new(LanguageType::Rust)),
             Some(String::from("specs")),
             Some(String::from("scaffold")),
@@ -569,7 +569,7 @@ pub mod tests {
             task_pool,
         );
 
-        let actual = AppState::cast_to_string(&app_state)
+        let actual = AppData::cast_to_string(&app_state)
             .unwrap()
             .as_string()
             .unwrap();
@@ -580,10 +580,10 @@ pub mod tests {
 
         assert_eq!(actual, expected);
 
-        let app_state = AppState::cast_from_string(actual);
+        let app_state = AppData::cast_from_string(actual);
 
         if let Err(e) = app_state {
-            panic!("Failed to create AppState: {:?}", e);
+            panic!("Failed to create AppData: {:?}", e);
         }
     }
 
@@ -607,7 +607,7 @@ pub mod tests {
             todo, done,
         );
 
-        let app_state = AppState::new_(
+        let app_state = AppData::new_(
             Some(Language::new(LanguageType::Rust)),
             None,
             None,
@@ -615,7 +615,7 @@ pub mod tests {
             task_pool,
         );
 
-        let actual = AppState::cast_to_string(&app_state)
+        let actual = AppData::cast_to_string(&app_state)
             .unwrap()
             .as_string()
             .unwrap();
@@ -626,16 +626,16 @@ pub mod tests {
 
         assert_eq!(actual, expected);
 
-        let app_state = AppState::cast_from_string(expected);
+        let app_state = AppData::cast_from_string(expected);
 
         if let Err(e) = app_state {
-            panic!("Failed to create AppState: {:?}", e);
+            panic!("Failed to create AppData: {:?}", e);
         }
     }
 
     #[wasm_bindgen_test]
     pub fn app_state_deserialize_empty() {
-        let app_state_x = AppState::empty();
+        let app_state_x = AppData::empty();
 
         // Deserialized
         let actual =

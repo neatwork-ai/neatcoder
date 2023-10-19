@@ -31,7 +31,7 @@ suite("Extension Test Suite", () => {
       },
     };
     const json = JSON.stringify(stateData, null, 4);
-    const appState = wasm.AppState.castFromString(json);
-    console.log(appState);
+    const appData = wasm.AppData.castFromString(json);
+    console.log(appData);
   });
 });

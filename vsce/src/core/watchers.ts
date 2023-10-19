@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { getOrCreateConfigPath, getRoot } from "../utils/utils";
 import * as wasm from "../../pkg/neatcoder";
-import { AppStateManager } from "../core/appData";
+import { appDataManager } from "../core/appData";
 import { logger } from "../utils/logger";
 import { InterfacesProvider } from "../foreignInterfaces/providers";
 import { setupSchemaWatchers } from "../foreignInterfaces/watchers";
@@ -13,7 +13,7 @@ let originalConfig: any;
 export function setupDotNeatWatcher(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
-  appManager: AppStateManager
+  appManager: appDataManager
 ) {
   if (!vscode.workspace.workspaceFolders) {
     return;
@@ -58,7 +58,7 @@ function watchForFileCreation(
 
 /**
  * Sets up a watcher for the configuration file to handle changes in the file, and
- * synchronises the AppState via the appManager
+ * synchronises the AppData via the appManager
  *
  * @param schemaWatchers - The watchers for schema changes.
  * @param interfacesProvider - Provider for managing interfaces.
@@ -67,7 +67,7 @@ function watchForFileCreation(
 export function setupFileWatcher(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
-  appManager: AppStateManager
+  appManager: appDataManager
 ) {
   if (!vscode.workspace.workspaceFolders) {
     return;
@@ -166,7 +166,7 @@ export function setupFileWatcher(
 function handleAdditions(
   original: any[],
   updated: any[],
-  appManager: AppStateManager,
+  appManager: appDataManager,
   callback: (newItem: any) => any
 ): Boolean {
   const newItems = updated.filter(
@@ -192,7 +192,7 @@ function handleAdditions(
 function handleRemovals(
   original: any[],
   updated: any[],
-  appManager: AppStateManager
+  appManager: appDataManager
 ): Boolean {
   const removedItems = original.filter(
     (item) => !updated.some((updatedItem) => updatedItem.name === item.name)

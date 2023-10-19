@@ -1,6 +1,6 @@
 import * as wasm from "../../../pkg/neatcoder";
 import { TaskView } from "../models";
-import { AppStateManager } from "../../core/appData";
+import { appDataManager } from "../../core/appData";
 
 /**
  * Asynchronously starts a job using specified parameters and manages it through the application state manager.
@@ -13,7 +13,7 @@ import { AppStateManager } from "../../core/appData";
 export async function runTask(
   taskView: TaskView,
   llmParams: wasm.OpenAIParams,
-  appManager: AppStateManager
+  appManager: appDataManager
 ): Promise<void> {
   const taskId = taskView.task!.id;
 

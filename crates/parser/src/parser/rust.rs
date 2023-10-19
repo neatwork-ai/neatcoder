@@ -85,7 +85,7 @@ async fn main() -> std::io::Result<()> {
     let pool = db::create_pool(&database_url);
 
     // Create an instance of the application state
-    let app_state = web::Data::new(config::AppState {
+    let app_state = web::Data::new(config::AppData {
         db_pool: pool.clone(),
     });
 
