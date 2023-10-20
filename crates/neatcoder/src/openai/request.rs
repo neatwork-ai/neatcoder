@@ -26,6 +26,8 @@ pub fn request_body_(
         ))
     })?;
 
+    log(&format!("Converted messages are: {:?}", msgs));
+
     let job = OpenAIParams::default();
 
     let mut data = json!({
@@ -38,14 +40,22 @@ pub fn request_body_(
         data["stream"] = serde_json::Value::Bool(true);
     }
 
-    let data = serde_wasm_bindgen::to_value(&data).map_err(|e| {
-        JsValue::from_str(&format!(
-            "Failed to convert payload Value to JsValue: {:?}",
-            e
-        ))
+    log(&format!("Payload is: {:?}", data));
+
+    // let data = serde_wasm_bindgen::to_value(&data).map_err(|e| {
+    //     JsValue::from_str(&format!(
+    //         "Failed to convert payload Value to JsValue: {:?}",
+    //         e
+    //     ))
+    // })?;
+
+    // Ok(data)
+
+    let serialized_str = serde_json::to_string(&data).map_err(|e| {
+        JsValue::from_str(&format!("Failed to serialize to string: {:?}", e))
     })?;
 
-    Ok(data)
+    Ok(JsValue::from_str(&serialized_str))
 }
 
 pub async fn chat(

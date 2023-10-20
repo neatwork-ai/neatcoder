@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import { storeChat } from "../utils/utils";
 import { setWebviewContent } from "./webview";
-import { buildOpenAIRequest } from "./handlers";
+import { promptLLM } from "./handlers";
 import { activePanels, chats } from ".";
 
 export let panelCounter = 1;
@@ -38,10 +38,10 @@ export async function initChat(
   panel.webview.onDidReceiveMessage(
     (message) => {
       switch (message.command) {
-        case "buildOpenAIRequest":
+        case "promptLLM":
           // Now, when we call buildOpenAIRequest, we pass along the
           // panel so it knows which panel sent the message
-          buildOpenAIRequest(panel, message);
+          promptLLM(panel, message);
           break;
       }
     },

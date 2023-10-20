@@ -2,32 +2,59 @@
 
 import { Message } from "../wasm/neatcoderInterface";
 
-export function buildOpenAIRequest(msgs: Array<Message>, stream: boolean): Promise<{ apiKey: any, body: any}> {
-  return new Promise((resolve) => {
-    const vscode = acquireVsCodeApi();
+export function promptLLM(msgs: Array<Message>, stream: boolean): ReadableStream {
+  const { readable, writable } = new TransformStream();
 
-    // Post the message to the VS Code extension
-    vscode.postMessage({
-      command: 'buildOpenAIRequest',
-      msgs: msgs,
-      stream: stream
-    });
+  const writer = writable.getWriter();
 
-    console.log("Message successfully posted...")
+  const vscode = acquireVsCodeApi();
 
-    function handleVscodeMessage(event: any) {
-      const message = event.data;
-
-      if (message.command === 'buildOpenAIRequest') {
-        window.removeEventListener('message', handleVscodeMessage);
-        console.log("Received message..")
-        resolve({ apiKey: message.apiKey, body: message.body });
-      }
-    }
-
-    window.addEventListener('message', handleVscodeMessage);
+  vscode.postMessage({
+    command: 'promptLLM',
+    msgs: msgs,
+    stream: stream
   });
+
+  window.addEventListener('message', (event) => {
+    const message = event.data;
+
+    if (message.command === 'dataChunk') {
+      writer.write(message.chunk);
+    } else if (message.command === 'endOfStream') {
+      writer.close();
+    }
+  });
+
+  return readable;
 }
+
+
+// export function buildOpenAIRequest(msgs: Array<Message>, stream: boolean): Promise<{ apiKey: any, body: any}> {
+//   return new Promise((resolve) => {
+//     const vscode = acquireVsCodeApi();
+
+//     // Post the message to the VS Code extension
+//     vscode.postMessage({
+//       command: 'buildOpenAIRequest',
+//       msgs: msgs,
+//       stream: stream
+//     });
+
+//     console.log("Message successfully posted...")
+
+//     function handleVscodeMessage(event: any) {
+//       const message = event.data;
+
+//       if (message.command === 'buildOpenAIRequest') {
+//         window.removeEventListener('message', handleVscodeMessage);
+//         console.log("Received message..")
+//         resolve({ apiKey: message.apiKey, body: message.body });
+//       }
+//     }
+
+//     window.addEventListener('message', handleVscodeMessage);
+//   });
+// }
 
 export async function streamOpenAIResponse(apiKey: any, body: any) {
   const headers = {

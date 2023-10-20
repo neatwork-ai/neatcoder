@@ -321,7 +321,7 @@ function checkIfCodeBlockIsStarting(token: any): boolean {
 //   }
 // }
 
-class MessageBuffer {
+export class MessageBuffer {
   private buffer: string;
 
   constructor() {
