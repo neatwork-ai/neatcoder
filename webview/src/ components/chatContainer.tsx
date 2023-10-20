@@ -21,7 +21,7 @@ const ChatContainer: React.FC = () => {
     try {
       console.log("WebView: Messages: " + JSON.stringify(newMessages));
 
-      const stream = await promptLLM(newMessages, true);
+      const stream = promptLLM(newMessages, true);
       const reader = stream.getReader();
 
       tokenCount = 0;
@@ -36,7 +36,7 @@ const ChatContainer: React.FC = () => {
 
           try {
             if (tokenCount === 0) {
-              setMessages((prevMessages) => [...prevMessages, { user: 'bot', ts: "todo", payload: { content: sanitizedToken, role: "bot" } }]);
+              setMessages((prevMessages) => [...prevMessages, { user: 'assistant', ts: "todo", payload: { content: sanitizedToken, role: "assistant" } }]);
               tokenCount += 1;
             } else {
               setMessages((prevMessages) => {
@@ -59,8 +59,6 @@ const ChatContainer: React.FC = () => {
 
     } catch (error) {
       console.error("Error getting response from OpenAI:", error);
-      // Optionally display an error message in the chat if desired
-      // setMessages((prevMessages) => [...prevMessages, { user: 'bot', text: "Sorry, I couldn't process that request." }]);
     }
 };
 

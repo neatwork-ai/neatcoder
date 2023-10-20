@@ -12,7 +12,7 @@ export function buildRequest(
   const apiKey = getOrSetApiKey();
 
   try {
-    console.log("Messages: " + msgs.map((msg) => msg.payload));
+    console.log("Messages: " + JSON.stringify(msgs.map((msg) => msg.payload)));
     const body = wasm.requestBody(
       msgs.map((msg) => msg.payload),
       stream
