@@ -30,7 +30,9 @@ const ChatContainer: React.FC = () => {
 
         if (token) {
           console.log(token);
-          const sanitizedToken = token.replace(/\n/g, '<br />');
+          const sanitizedToken = token
+            .replace(/\n/g, '<br />') // Sanitize new lines
+            .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); // Sanitize bold
 
           try {
             if (tokenCount === 0) {
