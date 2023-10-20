@@ -12,6 +12,13 @@ const TextBox: React.FC<{ onSendMessage: (text: string) => void }> = ({ onSendMe
     }
   };
 
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+      event.preventDefault();  // Prevents the default behavior of the Enter key (i.e., a newline)
+      handleSend();
+    }
+  };
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = '2px';
@@ -29,6 +36,7 @@ const TextBox: React.FC<{ onSendMessage: (text: string) => void }> = ({ onSendMe
             ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onKeyPress={handleKeyPress}  // Add this line
             placeholder="Send a message"
         />
         <SVGButton onClick={handleSend} />
