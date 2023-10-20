@@ -1,5 +1,3 @@
-// /// <reference types="./vscode.d.ts" />
-
 import { Message } from "../wasm/neatcoderInterface";
 
 export function promptLLM(msgs: Array<Message>, stream: boolean): ReadableStream {
@@ -7,7 +5,7 @@ export function promptLLM(msgs: Array<Message>, stream: boolean): ReadableStream
 
   const writer = writable.getWriter();
 
-  const vscode = acquireVsCodeApi();
+  const vscode = acquireVsCodeApi(); // TODO: This should be called only once at the start of runtime
 
   vscode.postMessage({
     command: 'promptLLM',

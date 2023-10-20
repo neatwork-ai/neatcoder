@@ -6,10 +6,7 @@ import TextBox from './textBox';
 import { promptLLM } from './httpClient';
 import { Message } from '../wasm/neatcoderInterface';
 
-// export interface MessageProps {
-//     user: 'bot' | 'user';
-//     text: string;
-//   }
+let tokenCount;
 
 const ChatContainer: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -23,22 +20,48 @@ const ChatContainer: React.FC = () => {
     // Send message to OpenAI and get response
     try {
       console.log("WebView: Messages: " + JSON.stringify(newMessages));
+
       const stream = await promptLLM(newMessages, true);
       const reader = stream.getReader();
 
+      tokenCount = 0;
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        console.log(value);  // Here, each value should be a token or whatever unit OpenAI is sending.
+        const { done, value: token } = await reader.read();
+
+        if (token) {
+          console.log(token);
+          const sanitizedToken = token.replace(/\n/g, '<br />');
+
+          try {
+            if (tokenCount === 0) {
+              setMessages((prevMessages) => [...prevMessages, { user: 'bot', ts: "todo", payload: { content: sanitizedToken, role: "bot" } }]);
+              tokenCount += 1;
+            } else {
+              setMessages((prevMessages) => {
+                let newMessages = [...prevMessages];
+
+                newMessages[newMessages.length - 1].payload.content += sanitizedToken;
+                return newMessages;
+              });
+            }
+          } catch {
+            console.error("Unexpected error while streaming")
+          }
+        }
+
+        if (done) {
+          tokenCount += 0;
+          break
+        };
       }
 
-      // setMessages((prevMessages) => [...prevMessages, { user: 'bot', text: responseText }]);
     } catch (error) {
       console.error("Error getting response from OpenAI:", error);
       // Optionally display an error message in the chat if desired
       // setMessages((prevMessages) => [...prevMessages, { user: 'bot', text: "Sorry, I couldn't process that request." }]);
     }
-  };
+};
+
 
   return (
     <div className="chatContainer">

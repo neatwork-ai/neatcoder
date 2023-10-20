@@ -9,11 +9,10 @@ interface ChatStreamProps {
 
 const ChatStream: React.FC<ChatStreamProps> = ({ messages, className }) => (
   <div className={className}>
-    {messages.map((message, index) => (
-      <MessageUi key={index} {...message} />
-    ))}
+    {messages.map((message, idx) => <MessageUi key={idx} {...message} />)}
   </div>
 );
+
 
 const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   const isUser = user === 'user';
@@ -24,7 +23,7 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   return (
     <div className={`message ${isUser ? 'user-message' : 'llm-message'}`}>
       <div className="image-container">
-      {isUser ? (
+        {isUser ? (
           <img src={userAvatar} alt="user profile" />
         ) : (
           <LlmSvgIcon />
@@ -32,10 +31,20 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
       </div>
       <div className="text-container">
         <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
-        <p>{payload.content}</p>
+        <p>
+          {isJSXElementArray(payload.content)
+            ? payload.content.map((elem, idx) => <React.Fragment key={idx}>{elem}</React.Fragment>)
+            : <span dangerouslySetInnerHTML={{ __html: payload.content }} />
+          }
+        </p>
       </div>
     </div>
   );
 };
 
 export default ChatStream;
+
+// Type guard function
+function isJSXElementArray(content: string | JSX.Element[]): content is JSX.Element[] {
+  return Array.isArray(content);
+}
