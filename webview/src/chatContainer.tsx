@@ -34,14 +34,14 @@ const ChatContainer: React.FC = () => {
       const {apiKey, body} = await buildOpenAIRequest(messages, true);
 
       // Usage
-    const stream = await streamOpenAIResponse(apiKey, body);
-    const reader = stream.getReader();
+      const stream = await streamOpenAIResponse(apiKey, body);
+      const reader = stream.getReader();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      console.log(value);  // Here, each value should be a token or whatever unit OpenAI is sending.
-    }
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        console.log(value);  // Here, each value should be a token or whatever unit OpenAI is sending.
+      }
 
       // setMessages((prevMessages) => [...prevMessages, { user: 'bot', text: responseText }]);
     } catch (error) {

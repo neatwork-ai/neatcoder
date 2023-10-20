@@ -20,6 +20,7 @@ export function buildOpenAIRequest(msgs: Array<Message>, stream: boolean): Promi
 
       if (message.command === 'buildOpenAIRequest') {
         window.removeEventListener('message', handleVscodeMessage);
+        console.log("Received message..")
         resolve({ apiKey: message.apiKey, body: message.body });
       }
     }
@@ -32,7 +33,7 @@ export async function streamOpenAIResponse(apiKey: any, body: any) {
   const headers = {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'Accept': 'text/event-stream',  // This header is important for SSE.
+      // 'Accept': 'text/event-stream',  // This header is important for SSE.
   };
 
   try {
@@ -41,6 +42,8 @@ export async function streamOpenAIResponse(apiKey: any, body: any) {
           headers: headers,
           body: JSON.stringify(body)
       });
+
+      console.log("The body: " + JSON.stringify(body));
 
       if (!response.ok) {
           throw new Error(`OpenAI API call failed with status ${response.status}`);

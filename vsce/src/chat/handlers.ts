@@ -6,10 +6,14 @@ export async function buildOpenAIRequest(
   webviewPanel: vscode.WebviewPanel,
   message: any
 ) {
+  console.log("Building OpenAI Request body");
+
   const msgs = message.msgs;
   const stream = message.stream;
 
   const [apiKey, body] = buildRequest(msgs, stream);
+
+  console.log("Built body: " + JSON.stringify(body));
 
   // Respond back to the webview
   webviewPanel.webview.postMessage({
