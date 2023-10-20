@@ -84,15 +84,15 @@
       "activityBarViews": [
         {
           "id": "taskPoolView",
-          "name": "TASK POOL"
+          "name": "TASK MANAGER"
         },
         {
           "id": "auditTrailView",
-          "name": "AUDIT TRAIL"
+          "name": "TASKS COMPLETED"
         },
         {
           "id": "interfacesView",
-          "name": "INTERFACES"
+          "name": "DATA MODELS & APIS"
         },
         {
           "id": "chatTreeView",
