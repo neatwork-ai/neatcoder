@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import ChatStream from './chatStream';
 import TextBox from './textBox';
 import { promptLLM } from './httpClient';
-import { Message } from '../wasm/neatcoderInterface';
+import { Message } from '../../wasm/neatcoderInterface';
 
 let tokenCount;
 

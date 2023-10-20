@@ -5,71 +5,6 @@ import * as https from "https";
 import * as url from "url";
 import { MessageBuffer } from "../utils/httpClient";
 
-// export async function buildOpenAIRequest(
-//   webviewPanel: vscode.WebviewPanel,
-//   message: any
-// ) {
-//   console.log("Building OpenAI Request body");
-
-//   const msgs = message.msgs;
-//   const stream = message.stream;
-
-//   const [apiKey, body] = buildRequest(msgs, stream);
-
-//   console.log("Built body: " + JSON.stringify(body));
-
-//   // Respond back to the webview
-//   webviewPanel.webview.postMessage({
-//     command: "buildOpenAIRequest",
-//     apiKey: apiKey,
-//     body: body,
-//   });
-// }
-
-// export async function promptLLM2(
-//   webviewPanel: vscode.WebviewPanel,
-//   message: any
-// ) {
-//   const msgs: Array<wasm.Message> = message.msgs;
-//   const stream = message.stream;
-
-//   const [apiKey, body] = buildRequest(msgs, stream);
-
-//   console.log("MSG: " + JSON.stringify(msgs));
-//   console.log("Body: " + JSON.stringify(body));
-
-//   const response = await fetch("https://api.openai.com/v1/chat/completions", {
-//     method: "POST",
-//     headers: {
-//       Authorization: `Bearer ${apiKey}`,
-//       "Content-Type": "application/json",
-//     },
-//     body: JSON.stringify(body),
-//   });
-
-//   const reader = response.body?.getReader();
-
-//   if (reader) {
-//     while (true) {
-//       const { done, value } = await reader.read();
-
-//       if (done) {
-//         break;
-//       }
-
-//       if (value) {
-//         // Send this chunk to the webview
-//         webviewPanel.webview.postMessage({
-//           command: "dataChunk",
-//           chunk: new TextDecoder().decode(value),
-//         });
-//       }
-//     }
-//     // Indicate end of stream
-//     webviewPanel.webview.postMessage({ command: "endOfStream" });
-//   }
-// }
-
 export function buildRequest(
   msgs: Array<wasm.Message>,
   stream: boolean
@@ -77,10 +12,12 @@ export function buildRequest(
   const apiKey = getOrSetApiKey();
 
   try {
+    console.log("Messages: " + msgs.map((msg) => msg.payload));
     const body = wasm.requestBody(
       msgs.map((msg) => msg.payload),
       stream
     );
+    console.log("B");
     return [apiKey, body];
   } catch (error) {
     console.error("An error occurred:", error);

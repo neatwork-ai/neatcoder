@@ -1,6 +1,6 @@
 import React from 'react';
 import { LlmSvgIcon } from './llmAvatar';
-import { Message } from '../wasm/neatcoderInterface';
+import { Message } from '../../wasm/neatcoderInterface';
 
 interface ChatStreamProps {
   messages: Message[];
