@@ -5,7 +5,7 @@ body {
   width: 100%;
   overflow: hidden; /* To prevent double scroll bars */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Inter'
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -134,10 +134,22 @@ code {
 }
 
 pre.custom-pre {
-  font-family: inherit;  /* Use the same font as surrounding text */
+  font-family: 'Inter';  /* Use the same font as surrounding text */
   margin: 0;             /* Remove default margin */
   padding: 0;            /* Remove default padding */
   white-space: pre-wrap; /* Wrap lines, but preserve newlines and whitespace */
   border: none;          /* Remove any default borders */
   background: none;      /* Remove any default backgrounds */
+  vertical-align: middle; /* Adjust the alignment */
+}
+
+.one-liner-code {
+  font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; /* To make it look like code */
+  display: inline-block; /* To allow padding */
+  padding: 1px;     /* Add some padding */
+  line-height: normal;
+  background-color: rgba(135,131,120,.15); /* Light grey background */
+  border-radius: 2px;   /* Curved edges */
+  color: var(--vscode-activityBarBadge-background);       /* text color */
+  vertical-align: baseline;
 }
