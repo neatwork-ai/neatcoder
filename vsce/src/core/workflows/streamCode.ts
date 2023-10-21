@@ -6,40 +6,6 @@ import { logger } from "../../utils/logger";
 
 let currentPosition = new Position(0, 0);
 
-/**
- * Asynchronously streams a token (typically a portion of code) to the active text document in the VS Code editor.
- * The function performs the following operations:
- * 1. Opens the active text document in the editor.
- * 2. Inserts the given token at the current position.
- * 3. Updates the current position to point to the end of the document.
- *
- * @param token - The string token to be streamed into the active text document.
- * @param activeTextDocument - The currently active text document in the VS Code editor.
- * @returns Promise<void> - A promise that resolves once the token has been streamed to the document.
- */
-// export async function streamCode(
-//   token: string,
-//   activeTextDocument: TextDocument
-// ): Promise<void> {
-//   try {
-//     const editor = await window.showTextDocument(activeTextDocument, {
-//       preview: false,
-//       preserveFocus: true,
-//     });
-
-//     await editor.edit((editBuilder) => {
-//       editBuilder.insert(currentPosition, token); // Adding a space after every word
-//     });
-
-//     // Update currentPosition to point to the new end of the document
-//     const docContent = editor.document.getText();
-//     currentPosition = editor.document.positionAt(docContent.length);
-//   } catch (error) {
-//     console.log(error);
-//     throw error;
-//   }
-// }
-
 export async function streamCode(
   token: string,
   activeTextDocument: TextDocument

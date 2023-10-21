@@ -1,6 +1,9 @@
+//! This module provides the structure and behavior of the task pool.
+//!
+//! The task pool manages tasks and their parameters in both "to-do" and "done" states.
+
 pub mod task;
 pub mod task_params;
-
 use self::{task::Task, task_params::TaskParams};
 use crate::{JsError, WasmType};
 use anyhow::Result;
@@ -8,6 +11,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, VecDeque};
 use wasm_bindgen::prelude::wasm_bindgen;
 
+/// Represents a pool of tasks.
+///
+/// This struct manages tasks in two separate pipelines: "to-do" and "done".
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -19,6 +25,7 @@ pub struct TaskPool {
 
 #[wasm_bindgen]
 impl TaskPool {
+    /// Creates a new `TaskPool` with the given counter, "to-do", and "done" pipelines.
     #[wasm_bindgen(constructor)]
     pub fn new(counter: usize, todo: Todo, done: Done) -> Self {
         Self {
@@ -28,6 +35,7 @@ impl TaskPool {
         }
     }
 
+    /// Creates a new empty `TaskPool`.
     pub fn empty() -> Self {
         Self {
             counter: 0,
@@ -36,6 +44,9 @@ impl TaskPool {
         }
     }
 
+    /// Adds a task to the "to-do" pipeline.
+    ///
+    /// Returns the ID of the newly added task.
     pub fn add_todo(
         &mut self,
         name: &str,
@@ -51,6 +62,11 @@ impl TaskPool {
         task_id
     }
 
+    /// Removes and returns a task from the "to-do" pipeline by its ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the task ID is not found in the "to-do" pipeline.
     pub fn pop_todo(&mut self, task_id: usize) -> Result<Task, JsError> {
         self.todo.remove(task_id).ok_or_else(|| {
             JsError::from_str(&format!(
@@ -60,34 +76,51 @@ impl TaskPool {
         })
     }
 
+    /// Adds a task to the "done" pipeline.
     pub fn add_done(&mut self, task: Task) {
         self.done.push_back(task);
     }
 
+    /// Adds a task back to the "to-do" pipeline.
     pub fn add_back_todo(&mut self, task: Task) {
         self.todo.push_back(task);
     }
 
-    pub fn finish_task_by_id(&mut self, task_id: usize) {
-        let mut task = self
-            .todo
-            .remove(task_id)
-            .expect("Could not find task in todo list");
+    /// Marks a task as complete by its ID and moves it to the "done" pipeline.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if the task ID is not found in the "to-do" pipeline.
+    pub fn finish_task_by_id(&mut self, task_id: usize) -> Result<(), JsError> {
+        let mut task = self.todo.remove(task_id).ok_or_else(|| {
+            JsError::from_str(&format!(
+                "Failed to retrieve task id: {:?}",
+                task_id
+            ))
+        })?;
 
         task.complete();
 
         self.done.push_back(task);
+
+        Ok(())
     }
 
-    pub fn finish_task_by_order(&mut self) {
-        let mut task = self
-            .todo
-            .pop_front()
-            .expect("Could not find any task in the todo list");
+    /// Marks the first task in the "to-do" pipeline as complete and moves it to the "done" pipeline.
+    ///
+    /// # Errors
+    ///
+    /// Return error if there are no tasks in the "to-do" pipeline.
+    pub fn finish_task_by_order(&mut self) -> Result<(), JsError> {
+        let mut task = self.todo.pop_front().ok_or_else(|| {
+            JsError::from_str("Could not find any task in the todo list")
+        })?;
 
         task.complete();
 
         self.done.push_back(task);
+
+        Ok(())
     }
 }
 
