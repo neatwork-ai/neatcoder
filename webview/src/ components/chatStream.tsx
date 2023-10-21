@@ -31,12 +31,12 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
       </div>
       <div className="text-container">
         <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
-        <p>
+        <pre className="custom-pre">
           {isJSXElementArray(payload.content)
             ? payload.content.map((elem, idx) => <React.Fragment key={idx}>{elem}</React.Fragment>)
             : <span dangerouslySetInnerHTML={{ __html: payload.content }} />
           }
-        </p>
+        </pre>
       </div>
     </div>
   );

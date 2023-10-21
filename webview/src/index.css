@@ -132,3 +132,12 @@ code {
   height: 20px; /* or whatever matches your original design */
   resize: none;
 }
+
+pre.custom-pre {
+  font-family: inherit;  /* Use the same font as surrounding text */
+  margin: 0;             /* Remove default margin */
+  padding: 0;            /* Remove default padding */
+  white-space: pre-wrap; /* Wrap lines, but preserve newlines and whitespace */
+  border: none;          /* Remove any default borders */
+  background: none;      /* Remove any default backgrounds */
+}
