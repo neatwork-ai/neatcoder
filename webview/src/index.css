@@ -133,6 +133,31 @@ code {
   resize: none;
 }
 
+.textBox .editable-div {
+  flex: 1;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: var(--vscode-editor-foreground);
+  overflow: auto; /* allows scrolling when content overflows */
+  white-space: pre-wrap; /* allows for line breaks and white space */
+  word-wrap: break-word; /* allows long words to be broken and wrapped onto the next line */
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  height: 20px; /* or whatever matches your original design */
+  resize: none;
+  display: block;
+}
+
+/* Placeholder styling for when the div is empty
+.textBox .editable-div:empty::before {
+  content: attr(data-placeholder);
+  color: #ccc;
+} */
+
+
 pre.custom-pre {
   font-family: 'Inter';  /* Use the same font as surrounding text */
   margin: 0;             /* Remove default margin */
