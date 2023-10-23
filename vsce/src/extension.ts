@@ -13,6 +13,7 @@ import {
 } from "./foreignInterfaces";
 import {
   runTask,
+  retryTask,
   removeTask,
   removeAllTasks,
   TaskView,
@@ -157,6 +158,15 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("extension.removeAllTasks", () => {
       removeAllTasks(appManager);
     })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "extension.retryTask",
+      async (taskView: TaskView) => {
+        await retryTask(taskView, llmParams, appManager);
+      }
+    )
   );
 }
 
