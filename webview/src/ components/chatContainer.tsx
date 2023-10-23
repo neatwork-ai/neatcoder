@@ -5,6 +5,7 @@ import ChatStream from './chatStream';
 import TextBox from './textBox';
 import { promptLLM } from './httpClient';
 import { Message } from '../../wasm/neatcoderInterface';
+import QuillEditor from './quil';
 
 let tokenCount;
 
@@ -62,10 +63,15 @@ const ChatContainer: React.FC = () => {
     }
 };
 
+const handleContentChange = (content: any) => {
+  console.log(content); // Do something with the content
+}
+
 
   return (
     <div className="chatContainer">
       <ChatStream className="chatStream" messages={messages} />
+      <QuillEditor onContentChange={handleContentChange} />
       <TextBox onSendMessage={handleSendMessage} />
     </div>
   );
