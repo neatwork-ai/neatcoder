@@ -36,10 +36,7 @@ And the following:
 - Wasm Bindgen CLI: `cargo install wasm-bindgen-cli`
 - Wasm Compilation Target: `rustup target add wasm32-unknown-unknown`
 - VSCE: `npm install --global vsce`
-
-VS extension for debugging:
-
-<https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher>
+- Yarn: `npm install --global yarn`
 
 ## Running
 
@@ -54,5 +51,14 @@ To build:
 - webview: `./bin/build_webview.sh`
 - VSCE: `./bin/build_client.sh`
 - Full: `./bin/build.sh`
+- Cross-platform Full: `python ./bin/cross_build.py`
 
 `npm run build`
+
+## Debugging
+
+Install VS extension:
+
+<https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher>
+
+Copy `tasks.json` and `launch.json` from vscode to .vscode folder
