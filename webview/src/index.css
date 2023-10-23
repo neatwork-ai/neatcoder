@@ -105,7 +105,6 @@ code {
   display: flex; /* Makes sure children can be flex items */
   align-items: center; /* Vertically centers children */
   background-color: transparent;
-  /* width: 100%; */
   min-width: 0;
 }
 
@@ -127,6 +126,17 @@ code {
   transition: background-color 0.3s;
 }
 
+.textBox .ql-editor {
+  flex: 1;
+  word-wrap: break-word !important;  /* or overflow-wrap: break-word; */
+  overflow-wrap: break-word !important;
+  width: 100%;
+  margin: 0 auto !important;
+  padding: 0 !important; /* Override Quill's default padding */
+  vertical-align: middle;
+  background-color: blue;
+}
+
 .textBox textarea {
   flex: 1;
   border: none;
@@ -142,59 +152,6 @@ code {
   line-height: inherit;
   height: 20px; /* or whatever matches your original design */
   resize: none;
-}
-
-.textBox .ql-editor {
-  flex: 1;
-  word-wrap: break-word !important;  /* or overflow-wrap: break-word; */
-  overflow-wrap: break-word !important;
-  width: 100%;
-  margin: 0 auto !important;
-  padding: 0 !important; /* Override Quill's default padding */
-  vertical-align: middle;
-  background-color: blue;
-  /* display: flex;
-  align-items: center; */
-
-  /* border: none;
-  outline: none;
-  color: var(--vscode-editor-foreground);
-  overflow: auto !important; /* allows scrolling when content overflows */
-  /* white-space: pre-wrap !important; /* allows for line breaks and white space */
-  /* word-wrap: break-word !important; /* allows long words to be broken and wrapped onto the next line */
-  /* font-family: inherit;
-  /* font-size: inherit;
-  /* font-weight: inherit;
-  /* height: 100%; /* or whatever matches your original design */
-  /* resize: none;*/
-}
-
-.ql-editor.ql-blank::before {
-  content: attr(data-placeholder);
-  top: 0;
-  left: 0;
-  right: 0;
-  vertical-align: middle;
-  color: red;
-  cursor: text;
-  font-style: inherit; /* Remove italic styling */
-  display: flex;
-  align-items: center;
-}
-
-
-.textBox .ql-editor:empty:before {
-  content: '|';
-  display: inline-block;
-  width: 1ch;
-  visibility: visible;
-  animation: blink 1s infinite;
-}
-
-@keyframes blink {
-  0% { opacity: 1; }
-  50% { opacity: 0; }
-  100% { opacity: 1; }
 }
 
 pre.custom-pre {
@@ -216,4 +173,76 @@ pre.custom-pre {
   border-radius: 2px;   /* Curved edges */
   color: var(--vscode-activityBarBadge-background);       /* text color */
   vertical-align: baseline;
+}
+
+/* .ql-container {
+  /* padding: 5px 10px; */
+  /* background-color: var(--vscode-input-background); */
+  /* border-radius: 10px; */
+  /* box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1); */
+  /* margin: 10px; */
+  /*} */
+
+.input-wrapper {
+  padding: 5px 10px;
+  margin: 10px;
+  background-color: var(--vscode-input-background);
+  border-radius: 10px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Remove border around the toolbar */
+.ql-toolbar {
+  border: none !important;  /* Use !important to ensure override */
+  height: 25px !important;
+  display: flex !important;
+  align-items: center !important;  /* This will vertically center the items */
+}
+
+/* Remove border around the editor */
+.ql-container {
+  border: none !important;
+  padding: 0 !important; /* Override Quill's default padding */
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 30px !important; /* Add margin to the right */
+  min-height: 10px !important;  /* Adjust this value as needed */
+  height: auto !important;
+}
+
+button:hover .ql-stroke,
+.ql-picker-label:hover .ql-stroke {
+  fill: none;
+  stroke: red !important;
+}
+
+.ql-active .ql-stroke {
+  fill: none;
+  stroke: red !important;
+}
+
+button:hover .ql-fill,
+.ql-picker-label:hover .ql-fill {
+  fill: red !important;
+  stroke: none;
+}
+
+.ql-active .ql-fill {
+  fill: red !important;
+  stroke: none;
+}
+
+
+button .ql-stroke,
+.ql-picker-label .ql-stroke {
+  fill: none;
+  stroke: blue !important;
+}
+
+
+button .ql-fill,
+.ql-picker-label .ql-fill {
+  fill: blue !important;
+  stroke: none;
 }

@@ -5,7 +5,8 @@ import ChatStream from './chatStream';
 import TextBox from './textBox';
 import { promptLLM } from './httpClient';
 import { Message } from '../../wasm/neatcoderInterface';
-import QuillEditor from './quil';
+import QuillEditor from './reactQuill';
+import SVGButton from './sendButton';
 
 let tokenCount;
 
@@ -71,8 +72,12 @@ const handleContentChange = (content: any) => {
   return (
     <div className="chatContainer">
       <ChatStream className="chatStream" messages={messages} />
-      <QuillEditor onContentChange={handleContentChange} />
-      <TextBox onSendMessage={handleSendMessage} />
+      <div className= "input-wrapper">
+        <SVGButton onClick={() => {}} />
+        <QuillEditor/>
+      </div>
+      {/* <QuillEditor onContentChange={handleContentChange} /> */}
+      {/* <TextBox onSendMessage={handleSendMessage} /> */}
     </div>
   );
 };
