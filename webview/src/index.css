@@ -88,72 +88,6 @@ code {
   color: var(--vscode-activityBarBadge-background); /* Optional: Color for the LLM's name */
 }
 
-.textBox {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 5px 10px;
-  background-color: var(--vscode-input-background);
-  border-radius: 10px;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-  margin: 10px;
-}
-
-.textBox > div {
-  flex: 1;
-  display: flex; /* Makes sure children can be flex items */
-  align-items: center; /* Vertically centers children */
-  background-color: transparent;
-  min-width: 0;
-}
-
-.textBox input {
-  flex: auto;
-  border: none;
-  outline: none;
-  height: 20px;
-  background-color: transparent;
-  color: var(--vscode-editor-foreground);
-}
-
-.textBox .SVGButton {
-  margin: 0;
-  padding: 0;
-  height: auto; /* or a specific height that matches the input */
-  box-sizing: border-box;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.textBox .ql-editor {
-  flex: 1;
-  word-wrap: break-word !important;  /* or overflow-wrap: break-word; */
-  overflow-wrap: break-word !important;
-  width: 100%;
-  margin: 0 auto !important;
-  padding: 0 !important; /* Override Quill's default padding */
-  vertical-align: middle;
-  background-color: blue;
-}
-
-.textBox textarea {
-  flex: 1;
-  border: none;
-  outline: none;
-  background-color: transparent;
-  color: var(--vscode-editor-foreground);
-  /* overflow: auto; /* allows scrolling when content overflows */
-  /* white-space: pre-wrap; /* allows for line breaks and white space */
-  /* word-wrap: break-word; /* allows long words to be broken and wrapped onto the next line */
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: inherit;
-  height: 20px; /* or whatever matches your original design */
-  resize: none;
-}
-
 pre.custom-pre {
   font-family: 'Inter';  /* Use the same font as surrounding text */
   margin: 0;             /* Remove default margin */
@@ -174,14 +108,6 @@ pre.custom-pre {
   color: var(--vscode-activityBarBadge-background);       /* text color */
   vertical-align: baseline;
 }
-
-/* .ql-container {
-  /* padding: 5px 10px; */
-  /* background-color: var(--vscode-input-background); */
-  /* border-radius: 10px; */
-  /* box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1); */
-  /* margin: 10px; */
-  /*} */
 
 .input-wrapper {
   padding: 5px 10px;
