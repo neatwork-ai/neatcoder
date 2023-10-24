@@ -14,6 +14,7 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+  color: var(--vscode-activityBarBadge-background) !important;
 }
 
 .App {
@@ -138,7 +139,7 @@ pre.custom-pre {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   margin-left: 0 !important;
-  margin-right: 30px !important; /* Add margin to the right */
+  margin-right: 35px !important; /* Add margin to the right */
   min-height: 10px !important;  /* Adjust this value as needed */
   height: auto !important;
 }
