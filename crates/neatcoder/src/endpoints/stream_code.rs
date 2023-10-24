@@ -5,11 +5,11 @@ use std::collections::BTreeMap;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-    models::{interfaces::AsContext, state::AppState},
+    models::app_data::{interfaces::AsContext, AppData},
     openai::{
-        client::OpenAI,
         msg::{GptRole, OpenAIMsg},
         params::OpenAIParams,
+        request::request_stream,
     },
     utils::log,
 };
@@ -39,8 +39,7 @@ impl CodeGenParams {
 }
 
 pub fn stream_code(
-    app_state: &AppState,
-    client: &OpenAI,
+    app_state: &AppData,
     ai_params: &OpenAIParams,
     task_params: &CodeGenParams,
     codebase: BTreeMap<String, String>,
@@ -140,7 +139,7 @@ pub fn stream_code(
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let request_body = client.request_stream(ai_params, &prompts, &[], &[])?;
+    let request_body = request_stream(ai_params, &prompts, &[], &[])?;
 
     Ok(request_body)
 }

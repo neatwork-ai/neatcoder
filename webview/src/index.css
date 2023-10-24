@@ -1,0 +1,180 @@
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* To prevent double scroll bars */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Inter'
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  justify-content: space-between;
+}
+
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: transparent;
+  overflow: hidden;
+}
+
+.chatStream {
+    flex-grow: 1;
+    overflow-y: auto;  /* to allow scrolling if the messages exceed the container's height */
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 40px;
+  text-align: left;
+}
+
+.image-container {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  margin-right: 10px; /* Adjust as needed for spacing between image and text */
+}
+
+.image-container svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10%; /* Optional, if you want circular images */
+}
+
+.image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10%; /* Optional, if you want circular images */
+}
+
+.text-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.text-container p {
+  margin: 0;
+}
+
+.user-name {
+  font-weight: bold;
+  margin-bottom: 1px; /* Adjust for spacing between name and message text */
+}
+
+.user-message .user-name {
+  color: var(--vscode-activityBarBadge-background); /* Optional: Color for the user's name */
+}
+
+.llm-message .user-name {
+  color: var(--vscode-activityBarBadge-background); /* Optional: Color for the LLM's name */
+}
+
+.textBox {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  background-color: var(--vscode-input-background);
+  border-radius: 10px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  margin: 10px;
+}
+
+.textBox input {
+  flex: 1;
+  border: none;
+  outline: none;
+  height: 20px;
+  background-color: transparent;
+  color: var(--vscode-editor-foreground);
+}
+
+.textBox .SVGButton {
+  margin: 0;
+  padding: 0;
+  height: auto; /* or a specific height that matches the input */
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.textBox textarea {
+  flex: 1;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: var(--vscode-editor-foreground);
+  overflow: auto; /* allows scrolling when content overflows */
+  white-space: pre-wrap; /* allows for line breaks and white space */
+  word-wrap: break-word; /* allows long words to be broken and wrapped onto the next line */
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  height: 20px; /* or whatever matches your original design */
+  resize: none;
+}
+
+.textBox .editable-div {
+  flex: 1;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  color: var(--vscode-editor-foreground);
+  overflow: auto; /* allows scrolling when content overflows */
+  white-space: pre-wrap; /* allows for line breaks and white space */
+  word-wrap: break-word; /* allows long words to be broken and wrapped onto the next line */
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  height: 20px; /* or whatever matches your original design */
+  resize: none;
+  display: block;
+}
+
+/* Placeholder styling for when the div is empty
+.textBox .editable-div:empty::before {
+  content: attr(data-placeholder);
+  color: #ccc;
+} */
+
+
+pre.custom-pre {
+  font-family: 'Inter';  /* Use the same font as surrounding text */
+  margin: 0;             /* Remove default margin */
+  padding: 0;            /* Remove default padding */
+  white-space: pre-wrap; /* Wrap lines, but preserve newlines and whitespace */
+  border: none;          /* Remove any default borders */
+  background: none;      /* Remove any default backgrounds */
+  vertical-align: middle; /* Adjust the alignment */
+}
+
+.one-liner-code {
+  font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; /* To make it look like code */
+  display: inline-block; /* To allow padding */
+  padding: 1px;     /* Add some padding */
+  line-height: normal;
+  background-color: rgba(135,131,120,.15); /* Light grey background */
+  border-radius: 2px;   /* Curved edges */
+  color: var(--vscode-activityBarBadge-background);       /* text color */
+  vertical-align: baseline;
+}

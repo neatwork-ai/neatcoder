@@ -11,9 +11,8 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     consts::{CONFIG_EXTENSIONS, CONFIG_FILES},
-    models::language::Language,
+    models::app_data::language::Language,
     openai::{
-        client::OpenAI,
         msg::{GptRole, OpenAIMsg},
         params::OpenAIParams,
     },
@@ -42,7 +41,6 @@ impl ScaffoldParams {
 
 pub async fn scaffold_project(
     language: &Language,
-    client: &OpenAI,
     ai_params: &OpenAIParams,
     client_params: &ScaffoldParams,
     request_callback: &Function,
@@ -73,7 +71,7 @@ Answer in JSON format (Do not forget to start with ```json). For each file provi
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
     let (_, mut scaffold_json) =
-        write_json(client, &ai_params, &prompts, request_callback).await?;
+        write_json(&ai_params, &prompts, request_callback).await?;
 
     process_response(&mut scaffold_json)?;
 

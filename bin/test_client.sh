@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Navigate to the wasm-lib directory
-cd client
+cd vsce
 
 # Run tests
 yarn test

@@ -1,6 +1,6 @@
-pub mod client;
 pub mod msg;
-pub mod output;
 pub mod params;
+pub mod request;
+pub mod response;
 
 pub mod utils;

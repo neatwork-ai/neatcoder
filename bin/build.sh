@@ -15,6 +15,17 @@ else
 fi
 
 # Run the second script
+bash "$DIR/build_webview.sh"
+
+# Check if the second script ran successfully
+if [ $? -eq 0 ]; then
+    echo "Built VSCE successfully"
+else
+    echo "VSCE failed"
+    exit 1
+fi
+
+# Run the third script
 bash "$DIR/build_client.sh"
 
 # Check if the second script ran successfully
