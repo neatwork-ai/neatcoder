@@ -12,6 +12,7 @@ import {
   TaskPoolProvider,
   TasksCompletedProvider,
 } from "../taskPool/providers";
+import { Task } from "../../pkg/neatcoder";
 
 /**
  * A class to manage the application state, including functionalities such as
@@ -129,6 +130,36 @@ export class appDataManager {
   }
 
   /**
+   * Runs all tasks in the task pool in the application state sequentially.
+   *
+   * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
+   * @returns {Promise<void>} - A promise indicating the completion of all tasks.
+   */
+  public async runAllTasks(llmParams: wasm.OpenAIParams): Promise<void> {
+    try {
+      // Retrieve all tasks from the task pool.
+      const tasks: wasm.Task[] = this.appData.getTodoTasks();
+
+      if (tasks.length === 0) {
+          window.showInformationMessage("No tasks to run in the task pool.");
+          return;
+      }
+
+      // Run each task sequentially.
+      for (const task of tasks) {
+          const taskId = task.id;  // Assuming task object has an id property
+          await this.runTask(taskId, llmParams);
+      }
+
+      window.showInformationMessage("All tasks completed.");
+
+    } catch (error) {
+        console.error("Error while running all tasks:", error);
+        window.showErrorMessage(`Error while running all tasks: ${error}`);
+    }
+  }
+
+  /**
    * Initiates a task based on the task ID and the associated task parameters.
    *
    * @param {number} taskId - The ID of the task to start.
@@ -199,6 +230,22 @@ export class appDataManager {
     }
 
     this.refresh(); // need to refresh to reflect the state rollback
+  }
+
+ /**
+   * Retries a task based on the task ID and the associated task parameters.
+   *
+   * @param {number} taskId - The ID of the task to retry.
+   * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
+   * @returns {Promise<void>} - A promise indicating the completion of the task.
+   */
+  public async retryTask(
+    taskId: number,
+    llmParams: wasm.OpenAIParams
+  ): Promise<void> {
+    const task = this.appData.popDone(taskId);
+    this.appData.addBackTodo(task);
+    return this.runTask(taskId, llmParams);
   }
 
   /**

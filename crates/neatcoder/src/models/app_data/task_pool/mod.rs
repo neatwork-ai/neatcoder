@@ -70,7 +70,21 @@ impl TaskPool {
     pub fn pop_todo(&mut self, task_id: usize) -> Result<Task, JsError> {
         self.todo.remove(task_id).ok_or_else(|| {
             JsError::from_str(&format!(
-                "Failed to retrieve task id: {:?}",
+                "Failed to retrieve to-do task by id: {:?}",
+                task_id
+            ))
+        })
+    }
+
+    /// Removes and returns a task from the "done" pipeline by its ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the task ID is not found in the "done" pipeline.
+    pub fn pop_done(&mut self, task_id: usize) -> Result<Task, JsError> {
+        self.done.remove(task_id).ok_or_else(|| {
+            JsError::from_str(&format!(
+                "Failed to retrieve done task by id: {:?}",
                 task_id
             ))
         })

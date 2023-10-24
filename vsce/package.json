@@ -37,6 +37,11 @@
         "icon": "$(bracket-dot)"
       },
       {
+        "command": "extension.runAllTasks",
+        "title": "Run All Tasks",
+        "icon": "$(notebook-execute-all)"
+      },
+      {
         "command": "extension.addDatastore",
         "title": "Add Datastore",
         "icon": "$(database)"
@@ -69,6 +74,11 @@
       {
         "command": "extension.createChat",
         "title": "Chat"
+      },
+      {
+        "command": "extension.retryTask",
+        "title": "Retry Task",
+        "icon": "$(debug-restart)"
       }
     ],
     "viewsContainers": {
@@ -108,9 +118,14 @@
           "group": "navigation@1"
         },
         {
-          "command": "extension.removeAllTasks",
+          "command": "extension.runAllTasks",
           "when": "view == taskPoolView",
           "group": "navigation@2"
+        },
+        {
+          "command": "extension.removeAllTasks",
+          "when": "view == taskPoolView",
+          "group": "navigation@3"
         },
         {
           "command": "extension.addDatastore",
@@ -133,6 +148,11 @@
           "command": "extension.removeTask",
           "when": "view == taskPoolView && viewItem == taskItem",
           "group": "inline@2"
+        },
+        {
+          "command": "extension.retryTask",
+          "when": "view == auditTrailView && viewItem == taskItem",
+          "group": "inline@1"
         },
         {
           "command": "extension.removeInterface",
