@@ -16,6 +16,7 @@ import {
   retryTask,
   removeTask,
   removeAllTasks,
+  runAllTasks,
   TaskView,
   TaskPoolProvider,
   TasksCompletedProvider,
@@ -157,6 +158,12 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.removeAllTasks", () => {
       removeAllTasks(appManager);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("extension.runAllTasks", () => {
+      runAllTasks(llmParams, appManager);
     })
   );
 

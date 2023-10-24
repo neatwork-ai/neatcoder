@@ -37,6 +37,11 @@
         "icon": "$(bracket-dot)"
       },
       {
+        "command": "extension.runAllTasks",
+        "title": "Run All Tasks",
+        "icon": "$(notebook-execute-all)"
+      },
+      {
         "command": "extension.addDatastore",
         "title": "Add Datastore",
         "icon": "$(database)"
@@ -113,9 +118,14 @@
           "group": "navigation@1"
         },
         {
-          "command": "extension.removeAllTasks",
+          "command": "extension.runAllTasks",
           "when": "view == taskPoolView",
           "group": "navigation@2"
+        },
+        {
+          "command": "extension.removeAllTasks",
+          "when": "view == taskPoolView",
+          "group": "navigation@3"
         },
         {
           "command": "extension.addDatastore",
