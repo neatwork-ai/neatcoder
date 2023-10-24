@@ -143,39 +143,24 @@ pre.custom-pre {
   height: auto !important;
 }
 
-button:hover .ql-stroke,
-.ql-picker-label:hover .ql-stroke {
-  fill: none;
-  stroke: var(--vscode-activityBarBadge-background) !important;
+/* Default state */
+button i.fa,
+button i.fas,
+.ql-picker-label i.fa,
+.ql-picker-label i.fas {
+  color: white;
 }
 
-.ql-active .ql-stroke {
-  fill: none;
-  stroke: var(--vscode-activityBarBadge-background) !important;
+/* Hover state */
+button:hover i.fa,
+button:hover i.fas,
+.ql-picker-label:hover i.fa,
+.ql-picker-label:hover i.fas {
+  color: var(--vscode-activityBarBadge-background);
 }
 
-button:hover .ql-fill,
-.ql-picker-label:hover .ql-fill {
-  fill: var(--vscode-activityBarBadge-background) !important;
-  stroke: none;
-}
-
-.ql-active .ql-fill {
-  fill: var(--vscode-activityBarBadge-background) !important;
-  stroke: none;
-}
-
-
-button .ql-stroke,
-.ql-picker-label .ql-stroke {
-  fill: none;
-  stroke: white !important;
-}
-
-
-button .ql-fill,
-.ql-picker-label .ql-fill {
-  fill: white !important;
-  stroke: none;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+/* Active state */
+.ql-active i.fa,
+.ql-active i.fas {
+  color: var(--vscode-activityBarBadge-background);
 }
