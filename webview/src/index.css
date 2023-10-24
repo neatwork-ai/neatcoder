@@ -112,9 +112,6 @@ pre.custom-pre {
 .input-wrapper {
   padding: 5px 10px;
   margin: 10px;
-  background-color: var(--vscode-input-background);
-  border-radius: 10px;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 /* Remove border around the toolbar */
@@ -123,6 +120,15 @@ pre.custom-pre {
   height: 25px !important;
   display: flex !important;
   align-items: center !important;  /* This will vertically center the items */
+}
+
+.ql-container-decorator {
+  border: none !important;
+  padding: 0 !important; /* Override Quill's default padding */
+  height: auto !important;
+  background-color: var(--vscode-input-background);
+  border-radius: 10px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 /* Remove border around the editor */
@@ -140,22 +146,22 @@ pre.custom-pre {
 button:hover .ql-stroke,
 .ql-picker-label:hover .ql-stroke {
   fill: none;
-  stroke: red !important;
+  stroke: var(--vscode-activityBarBadge-background) !important;
 }
 
 .ql-active .ql-stroke {
   fill: none;
-  stroke: red !important;
+  stroke: var(--vscode-activityBarBadge-background) !important;
 }
 
 button:hover .ql-fill,
 .ql-picker-label:hover .ql-fill {
-  fill: red !important;
+  fill: var(--vscode-activityBarBadge-background) !important;
   stroke: none;
 }
 
 .ql-active .ql-fill {
-  fill: red !important;
+  fill: var(--vscode-activityBarBadge-background) !important;
   stroke: none;
 }
 
@@ -163,12 +169,13 @@ button:hover .ql-fill,
 button .ql-stroke,
 .ql-picker-label .ql-stroke {
   fill: none;
-  stroke: blue !important;
+  stroke: white !important;
 }
 
 
 button .ql-fill,
 .ql-picker-label .ql-fill {
-  fill: blue !important;
+  fill: white !important;
   stroke: none;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
 }

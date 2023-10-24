@@ -8,7 +8,7 @@ const SVGButton: React.FC<SVGButtonProps> = ({ onClick }) => {
     return (
         <button onClick={onClick} style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', position: 'absolute',
         bottom: '23px',
-        right: '15px'     }}>
+        right: '25px'     }}>
             <svg
                 style={{display: 'block'}}
                 width="24"

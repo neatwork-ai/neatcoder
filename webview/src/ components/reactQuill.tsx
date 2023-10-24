@@ -32,12 +32,15 @@ export const QuillEditor: React.FC = () => {
     return (
         <div>
             <CustomToolbar />
-            <ReactQuill
-                value={editorContent}
-                onChange={setEditorContent}
-                modules={modules}
-                formats={formats}
-            />
+            <div className='ql-container-decorator'>
+                <ReactQuill
+                    value={editorContent}
+                    onChange={setEditorContent}
+                    modules={modules}
+                    formats={formats}
+                />
+            </div>
+
         </div>
     );
 };
