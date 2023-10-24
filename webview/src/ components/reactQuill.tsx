@@ -4,6 +4,12 @@ import React, { useEffect, useRef } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';  // import styles
 import 'font-awesome/css/font-awesome.min.css';
+const Inline = Quill.import('blots/inline');
+
+const delayLoop = (iterations: number) => {
+    for (let i = 0; i < iterations; i++) { }
+};
+
 
 var icons = Quill.import('ui/icons');
 // icons['bold'] = '<i class="fa fa-bold" aria-hidden="true"></i>';
@@ -34,56 +40,71 @@ const formats = [
     "code-block",  // code block
 ];
 
-interface CustomBindingRange {
-    index: number;
-    length: number;
-}
-
-interface CustomBindingContext {
-    format: {
-        code?: boolean;
-    };
-}
-
 export const QuillEditor: React.FC = () => {
     const [editorContent, setEditorContent] = React.useState('');
     const quillRef = useRef<ReactQuill>(null);
 
     useEffect(() => {
-        console.log("YOOH")
         if (quillRef.current) {
-            console.log("YOOYAHHH")
             const quill = quillRef.current.getEditor();
-            const keyboard = quill.getModule('keyboard');
 
-            // Custom key binding for right arrow key
-            keyboard.addBinding({
-                key: 'right',
-                handler: function(range: CustomBindingRange, context: CustomBindingContext) {
-                    if (context.format.code) {
-                        const CodeBlot = Quill.import('formats/code');
-                        // let blot = quill.scroll.descendant(CodeBlot, range.index)[0];
-                        const blot = (quill.scroll as any).descendant(CodeBlot, range.index)[0];
+            let consecutiveBackticks = 0;  // Track consecutive backtick presses
 
-                        console.log("blot.length - 1" + (blot.length - 1));
-                        console.log("blot.offset(quill.scroll)" + blot.offset(quill.scroll));
-                        if (blot && blot.length - 1 === range.index - blot.offset(quill.scroll)) {
-                            console.log("bonkers!");
-                            // Move the selection out of the code blot
-                            quill.setSelection(range.index + 1, 0);
+            const handleKeyDown = (event: KeyboardEvent) => {
+                if (event.code === "BracketRight") {  // Key code for backtick
+                    consecutiveBackticks++;
 
-                            return true;
-                        } else {
-                            console.log("returning false")
-                            quill.setSelection(range.index + 1, 0);
-                            return false;
+                    if (consecutiveBackticks === 3) {
+                        console.log("Three backticks!");
+                        const currentSelection = quill.getSelection(); // Get current selection
+                        if (currentSelection) {
+                            console.log("There's a selection");
+                            const startIndex = Math.max(currentSelection.index - 3, 0); // Start from the first backtick
+                            quill.removeFormat(startIndex, 3); // Remove any existing format for the three backticks
+                            quill.deleteText(startIndex, 2);
+                            quill.formatText(startIndex, 3, 'code-block', true); // Apply the code block format
+                            quill.setSelection(startIndex + 3, 0); // Set the cursor after the third backtick
                         }
+                        event.preventDefault(); // Prevent the third backtick from being typed into the editor
+                        consecutiveBackticks = 0; // Reset the counter
+                    }
+                } else {
+                    if (consecutiveBackticks === 2) {
+                        console.log("Two backticks!");
+                        const currentSelection = quill.getSelection();
+                        if (currentSelection) {
+                            console.log("There's a selection");
+                            const startIndex = Math.max(currentSelection.index - 2, 0); // Start from the first backtick
+                            console.log("startIndex: " + startIndex);
+                        //     // // quill.removeFormat(startIndex, 2); // Remove any existing format for the two backticks
+
+                            quill.formatText(0, 1, 'code', true); // THE ERROR IS HERE..
+                        //     // delayLoop(1000000000);
+                        //     // quill.deleteText(startIndex, 2);
+                        //     // delayLoop(1000000000);
+                        //     // event.preventDefault();
+
+                        //     // delayLoop(1000000000);
+
+                        //     // quill.deleteText(startIndex, 1);
+                        //     // quill.setSelection(startIndex + 2, 0); // Set the cursor after the second backtick
+                        }
+                        consecutiveBackticks = 0; // Reset the counter
                     } else {
-                        quill.setSelection(range.index + 1, 0);
-                        return false;
+
+                        // If any other key is pressed without meeting the conditions above, reset the counter
+                        consecutiveBackticks = 0;
                     }
                 }
-            });
+            };
+
+            const quillContainer = quill.root;
+            quillContainer.addEventListener('keydown', handleKeyDown);
+
+            // Cleanup: remove the event listener when the component is unmounted
+            return () => {
+                quillContainer.removeEventListener('keydown', handleKeyDown);
+            };
         }
     }, []);
 

@@ -5,8 +5,8 @@ import ChatStream from './chatStream';
 import TextBox from './textBox';
 import { promptLLM } from './httpClient';
 import { Message } from '../../wasm/neatcoderInterface';
-import QuillEditor from './reactQuill';
 import SVGButton from './sendButton';
+import { QuillEditor } from './reactQuill';
 
 let tokenCount;
 
