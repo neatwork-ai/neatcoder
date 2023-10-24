@@ -12,6 +12,7 @@ import {
   TaskPoolProvider,
   TasksCompletedProvider,
 } from "../taskPool/providers";
+import { Task } from "../../pkg/neatcoder";
 
 /**
  * A class to manage the application state, including functionalities such as
@@ -199,6 +200,22 @@ export class appDataManager {
     }
 
     this.refresh(); // need to refresh to reflect the state rollback
+  }
+
+ /**
+   * Retries a task based on the task ID and the associated task parameters.
+   *
+   * @param {number} taskId - The ID of the task to retry.
+   * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
+   * @returns {Promise<void>} - A promise indicating the completion of the task.
+   */
+  public async retryTask(
+    taskId: number,
+    llmParams: wasm.OpenAIParams
+  ): Promise<void> {
+    const task = this.appData.popDone(taskId);
+    this.appData.addBackTodo(task);
+    return this.runTask(taskId, llmParams);
   }
 
   /**

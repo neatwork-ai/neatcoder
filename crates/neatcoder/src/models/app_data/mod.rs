@@ -205,6 +205,11 @@ impl AppData {
         self.task_pool.pop_todo(task_id)
     }
 
+    #[wasm_bindgen(js_name = popDone)]
+    pub fn pop_done(&mut self, task_id: usize) -> Result<Task, JsError> {
+        self.task_pool.pop_done(task_id)
+    }
+
     #[wasm_bindgen(js_name = addDone)]
     pub fn add_done(&mut self, task: Task) {
         self.task_pool.add_done(task)
