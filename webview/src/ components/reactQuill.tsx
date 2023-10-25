@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';  // import styles
 import 'font-awesome/css/font-awesome.min.css';
+import deltaToMarkdown from '../quillToMarkdown/fromDelta';
 
 const delayLoop = (iterations: number) => {
     for (let i = 0; i < iterations; i++) { }
@@ -39,9 +40,28 @@ const formats = [
     "code-block",  // code block
 ];
 
-export const QuillEditor: React.FC = () => {
+export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = ({ onSendMessage }) => {
     const [editorContent, setEditorContent] = React.useState('');
     const quillRef = useRef<ReactQuill>(null);
+
+    const handleSend = () => {
+        const delta = quillRef.current?.getEditor().getContents();
+
+        if (delta && delta.ops) {
+            // Convert the delta ops to markdown
+            const markdownString = deltaToMarkdown(delta.ops);
+            console.log(`markdownString: ${markdownString}`)
+
+            onSendMessage(markdownString);
+            setEditorContent('');  // This will clear the editor
+        }
+
+        // const text = quillRef.current?.getEditor().getText().trim();
+        // if (text) {
+        //     onSendMessage(text);
+        //     setEditorContent('');  // This will clear the editor
+        // }
+    };
 
     useEffect(() => {
         if (quillRef.current) {
@@ -50,6 +70,11 @@ export const QuillEditor: React.FC = () => {
             let consecutiveBackticks = 0;  // Track consecutive backtick presses
 
             const handleKeyDown = (event: KeyboardEvent) => {
+                if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+                    event.preventDefault();  // Prevents the default behavior of the Enter key
+                    handleSend();
+                }
+
                 if (event.code === "BracketRight") {  // Key code for backtick
                     consecutiveBackticks++;
                     console.log("consecutiveBackticks: " + consecutiveBackticks);

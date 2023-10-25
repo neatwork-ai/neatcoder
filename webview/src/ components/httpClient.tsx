@@ -16,7 +16,6 @@ export function promptLLM(msgs: Array<Message>, stream: boolean): ReadableStream
   function handleMessage(event: MessageEvent<any>) {
     const message = event.data;
 
-    console.log("Event type: " + message.command);
     if (message.command === 'dataChunk') {
       writer.write(message.chunk);
     } else if (message.command === 'endOfStream') {
