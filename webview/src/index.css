@@ -15,6 +15,27 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
   color: var(--vscode-activityBarBadge-background) !important;
+  background-color: #f0f0f0;
+  border-radius: 3px;
+  font-size: 85%;
+  padding: 2px 4px;
+}
+
+pre > code {
+  background-color: #23241f;
+  color: #f8f8f2 !important;
+  overflow: visible;
+  border-radius: 3px;
+  white-space: pre-wrap;
+  margin-bottom: 5px;
+  margin-top: 5px;
+  padding: 5px 10px;
+  line-height: 1.42;
+  text-align: left;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  tab-size: 4;
+  -moz-tab-size: 4;
 }
 
 .App {
@@ -99,16 +120,16 @@ pre.custom-pre {
   vertical-align: middle; /* Adjust the alignment */
 }
 
-.one-liner-code {
-  font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; /* To make it look like code */
-  display: inline-block; /* To allow padding */
-  padding: 1px;     /* Add some padding */
-  line-height: normal;
-  background-color: rgba(135,131,120,.15); /* Light grey background */
-  border-radius: 2px;   /* Curved edges */
-  color: var(--vscode-activityBarBadge-background);       /* text color */
-  vertical-align: baseline;
-}
+/* pre.custom-pre {
+  background-color: #23241f;
+  color: #f8f8f2 !important;
+  overflow: visible;
+  border-radius: 3px;
+  white-space: pre-wrap;
+  margin-bottom: 5px;
+  margin-top: 5px;
+  padding: 5px 10px;
+} */
 
 .input-wrapper {
   padding: 5px 10px;

@@ -5,11 +5,6 @@ import { marked } from 'marked';
 
 const renderer = new marked.Renderer();
 
-// Override the default behavior for inline 'code' elements
-renderer.codespan = (text) => {
-  return `<span class="one-liner-code">${text}</span>`;
-};
-
 marked.setOptions({ renderer });
 
 interface ChatStreamProps {
@@ -58,12 +53,6 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
       </div>
       <div className="text-container">
         <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
-        {/* <pre className="custom-pre"> */}
-          {/* {isJSXElementArray(payload.content)
-            ? payload.content.map((elem, idx) => <React.Fragment key={idx}>{elem}</React.Fragment>)
-            : <span dangerouslySetInnerHTML={{ __html: payload.content }} />
-          } */}
-        {/* </pre> */}
         <pre className="custom-pre" dangerouslySetInnerHTML={{ __html: htmlContent }} />
       </div>
     </div>

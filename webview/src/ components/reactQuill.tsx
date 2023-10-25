@@ -44,7 +44,7 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
     const [editorContent, setEditorContent] = React.useState('');
     const quillRef = useRef<ReactQuill>(null);
 
-    const handleSend = () => {
+    const handleSend = React.useCallback(() => {
         const delta = quillRef.current?.getEditor().getContents();
 
         if (delta && delta.ops) {
@@ -56,23 +56,22 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
             onSendMessage(markdownString);
             setEditorContent('');  // This will clear the editor
         }
+    }, [onSendMessage]);  // Assuming onSendMessage doesn't change often, otherwise add other dependencies
 
-        // const text = quillRef.current?.getEditor().getText().trim();
-        // if (text) {
-        //     onSendMessage(text);
-        //     setEditorContent('');  // This will clear the editor
-        // }
-    };
 
     useEffect(() => {
         if (quillRef.current) {
             const quill = quillRef.current.getEditor();
 
+            // Disable default behaviour of `Enter`
+            const keyboard = quill.getModule('keyboard');
+            keyboard.bindings['Enter'] = null;
+            keyboard.bindings['13'] = null;
+
             let consecutiveBackticks = 0;  // Track consecutive backtick presses
 
             const handleKeyDown = (event: KeyboardEvent) => {
                 if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
-                    event.preventDefault();  // Prevents the default behavior of the Enter key
                     handleSend();
                 }
 
@@ -89,7 +88,9 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                             quill.removeFormat(startIndex, 3); // Remove any existing format for the three backticks
                             quill.deleteText(startIndex, 2);
                             quill.formatText(startIndex, 3, 'code-block', true); // Apply the code block format
-                            quill.setSelection(startIndex + 3, 0); // Set the cursor after the third backtick
+
+                            const selectIndex = startIndex + 3; // this literally has to be calculated in separate, otherwise javascript concatenates them as strings lol
+                            quill.setSelection(selectIndex, 0); // Set the cursor after the third backtick
                         }
                         event.preventDefault(); // Prevent the third backtick from being typed into the editor
                         consecutiveBackticks = 0; // Reset the counter
@@ -105,14 +106,18 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                             // We delay the application of the format by a few millisecond
                             // to allow the browser to process the initial keystroke. We do this
                             // because if not the browser adds another backtick which is undesirable
+
+                            const formatStartIndex = startIndex + 1; // this literally has to be calculated in separate, otherwise javascript concatenates them as strings lol
+                            const formatEndIndex = startIndex + 2; // this literally has to be calculated in separate, otherwise javascript concatenates them as strings lol
+
                             setTimeout(() => {
-                                quill.formatText(startIndex + 1, startIndex + 2, 'code', true);
+                                quill.formatText(formatStartIndex, formatEndIndex, 'code', true);
                             }, 10);
 
                             // After the format has been applied safely we delete the initial
                             // backtick
                             setTimeout(() => {
-                                quill.deleteText(startIndex, startIndex + 1);
+                                quill.deleteText(startIndex, formatStartIndex);
                             }, 20);
                         }
                         consecutiveBackticks = 0; // Reset the counter
@@ -132,7 +137,7 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                 quillContainer.removeEventListener('keydown', handleKeyDown);
             };
         }
-    }, []);
+    }, [handleSend]);
 
     return (
         <div>
