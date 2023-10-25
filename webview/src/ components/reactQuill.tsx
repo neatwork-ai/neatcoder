@@ -4,7 +4,6 @@ import React, { useEffect, useRef } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';  // import styles
 import 'font-awesome/css/font-awesome.min.css';
-const Inline = Quill.import('blots/inline');
 
 const delayLoop = (iterations: number) => {
     for (let i = 0; i < iterations; i++) { }
@@ -35,7 +34,7 @@ const modules = {
 };
 
 const formats = [
-    // ... other formats you might want to use
+    // ... other formats we might want to use
     "code",  // inline code
     "code-block",  // code block
 ];
@@ -53,6 +52,7 @@ export const QuillEditor: React.FC = () => {
             const handleKeyDown = (event: KeyboardEvent) => {
                 if (event.code === "BracketRight") {  // Key code for backtick
                     consecutiveBackticks++;
+                    console.log("consecutiveBackticks: " + consecutiveBackticks);
 
                     if (consecutiveBackticks === 3) {
                         console.log("Three backticks!");
@@ -68,26 +68,26 @@ export const QuillEditor: React.FC = () => {
                         event.preventDefault(); // Prevent the third backtick from being typed into the editor
                         consecutiveBackticks = 0; // Reset the counter
                     }
+
                 } else {
-                    if (consecutiveBackticks === 2) {
-                        console.log("Two backticks!");
+                    // Create inline code format
+                    if (consecutiveBackticks === 1) {
                         const currentSelection = quill.getSelection();
                         if (currentSelection) {
-                            console.log("There's a selection");
-                            const startIndex = Math.max(currentSelection.index - 2, 0); // Start from the first backtick
-                            console.log("startIndex: " + startIndex);
-                        //     // // quill.removeFormat(startIndex, 2); // Remove any existing format for the two backticks
+                            const startIndex = Math.max(currentSelection.index - 1, 0); // Start from the backtick
 
-                            quill.formatText(0, 1, 'code', true); // THE ERROR IS HERE..
-                        //     // delayLoop(1000000000);
-                        //     // quill.deleteText(startIndex, 2);
-                        //     // delayLoop(1000000000);
-                        //     // event.preventDefault();
+                            // We delay the application of the format by a few millisecond
+                            // to allow the browser to process the initial keystroke. We do this
+                            // because if not the browser adds another backtick which is undesirable
+                            setTimeout(() => {
+                                quill.formatText(startIndex + 1, startIndex + 2, 'code', true);
+                            }, 10);
 
-                        //     // delayLoop(1000000000);
-
-                        //     // quill.deleteText(startIndex, 1);
-                        //     // quill.setSelection(startIndex + 2, 0); // Set the cursor after the second backtick
+                            // After the format has been applied safely we delete the initial
+                            // backtick
+                            setTimeout(() => {
+                                quill.deleteText(startIndex, startIndex + 1);
+                            }, 20);
                         }
                         consecutiveBackticks = 0; // Reset the counter
                     } else {
