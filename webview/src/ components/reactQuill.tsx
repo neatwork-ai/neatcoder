@@ -49,6 +49,7 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
 
         if (delta && delta.ops) {
             // Convert the delta ops to markdown
+            console.log(`delta: ${JSON.stringify(delta)}`)
             const markdownString = deltaToMarkdown(delta.ops);
             console.log(`markdownString: ${markdownString}`)
 

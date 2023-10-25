@@ -47,9 +47,6 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   });
   htmlContent = doc.body.innerHTML;
 
-
-  console.log(htmlContent)
-
   return (
     <div className={`message ${isUser ? 'user-message' : 'llm-message'}`}>
       <div className="image-container">

@@ -262,3 +262,35 @@ test("renders a separator block", function () {
     ])
   ).toEqual("Before" + "\n" + "\n" + "---" + "\n" + "After" + "\n");
 });
+
+test("renders inline code", () => {
+  expect(
+    render([
+      {
+        attributes: {
+          code: true,
+        },
+        insert: "hello",
+      },
+      {
+        insert: "\n\n",
+      },
+    ])
+  ).toEqual("`hello`\n");
+});
+
+test("renders code blocks", () => {
+  expect(
+    render([
+      {
+        insert: "hello",
+      },
+      {
+        attributes: {
+          "code-block": true,
+        },
+        insert: "\n\n",
+      },
+    ])
+  ).toEqual("```\nhello\n```\n");
+});

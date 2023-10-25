@@ -62,10 +62,10 @@ const converters = {
           this.open = count + ". " + this.open;
         }
       },
-      "code-block"(this: Node) {
-        this.open = "```\n" + this.open;
-        this.close = "```\n" + this.close;
-      },
+    },
+    "code-block"(this: Node) {
+      console.log("Code block converter called");
+      this.open = "```\n" + this.open;
     },
   },
 };

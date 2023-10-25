@@ -17,7 +17,6 @@ export function buildRequest(
       msgs.map((msg) => msg.payload),
       stream
     );
-    console.log("B");
     return [apiKey, body];
   } catch (error) {
     console.error("An error occurred:", error);

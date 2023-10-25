@@ -15,17 +15,14 @@ const chatMap: Map<string, ChatInfo> = new Map();
 export function setupChatWatcher(
   chatTreeViewProvider: ChatTreeViewProvider
 ): vscode.FileSystemWatcher {
-  console.log("setting up watcher");
   const watcher = vscode.workspace.createFileSystemWatcher(
     "**/.neat/chats/*.json"
   );
-  console.log("set up watcher!");
 
   watcher.onDidChange(async (uri: vscode.Uri) => {
     console.log("onDidChange triggered", uri.path);
     try {
       const chat = await getChat(uri);
-      console.log(`The chat: ${chat}`);
       chats.insertChat(chat);
       chatTreeViewProvider.refresh();
     } catch (error) {
@@ -42,7 +39,6 @@ export function setupChatWatcher(
     console.log("onDidCreate triggered", uri.path);
     try {
       const chat = await getChat(uri);
-      console.log(`The chat: ${chat}`);
       chatMap.set(uri.toString(), {
         chatId: chat.sessionId,
         chatTitle: chat.title,
