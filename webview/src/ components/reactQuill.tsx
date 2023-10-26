@@ -49,9 +49,7 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
 
         if (delta && delta.ops) {
             // Convert the delta ops to markdown
-            console.log(`delta: ${JSON.stringify(delta)}`)
             const markdownString = deltaToMarkdown(delta.ops);
-            console.log(`markdownString: ${markdownString}`)
 
             onSendMessage(markdownString);
             setEditorContent('');  // This will clear the editor
@@ -75,11 +73,8 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                 shiftKey: true,
                 shortKey: true,
             }, (range: RangeStatic, context: KeyboardEvent) => {
-                console.log('Command + Shift + I pressed');
                 consecutivePresses += 1;
-
                 const format = quill.getFormat(range);
-                console.log("format: " + JSON.stringify(format));
 
                 // If already in code block, then exit code-block
                 if (format['code-block']) {
@@ -107,8 +102,6 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                 return;
             });
 
-            console.log("keyboard.bindings: " + JSON.stringify(keyboard.bindings));
-
             const handleKeyDown = (event: KeyboardEvent) => {
                 if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
                     handleSend();
@@ -127,7 +120,6 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
 
                 if (event.key !== 'I' && event.key !== 'Meta' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
                     // Reset presses
-                    console.log("YIKEE: "+ event.key);
                     consecutivePresses = 0;
                 }
             };
