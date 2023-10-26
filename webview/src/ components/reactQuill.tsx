@@ -76,14 +76,26 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                 shiftKey: true,
                 shortKey: true,
             }, (range: RangeStatic, context: KeyboardEvent) => {
-                consecutivePresses += 1;
-
                 console.log('Command + Shift + I pressed');
-                quill.format('code', true);
+                consecutivePresses += 1;
 
                 if (consecutivePresses === 2) {
                     quill.format('code-block', true);
+                    return;
                 }
+
+                const format = quill.getFormat(range);
+
+                if (format.code) {
+                    // Remove the inline format
+                    quill.format('code', false);
+                    consecutivePresses = 0;
+                } else {
+                    // Add the inline format
+                    quill.format('code', true);
+                }
+
+                return;
             });
 
             console.log("keyboard.bindings: " + JSON.stringify(keyboard.bindings));
