@@ -60,6 +60,7 @@ code {
 .chatStream {
     flex-grow: 1;
     overflow-y: auto;  /* to allow scrolling if the messages exceed the container's height */
+    max-width: 100%;
 }
 
 .message {
@@ -67,6 +68,10 @@ code {
   align-items: flex-start;
   padding: 8px 40px;
   text-align: left;
+}
+
+.message, .message * {
+  box-sizing: border-box;
 }
 
 .image-container {
@@ -95,6 +100,9 @@ code {
   flex-direction: column;
   justify-content: flex-start;
   align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
+  word-wrap: break-word;
 }
 
 .text-container p {
@@ -114,26 +122,30 @@ code {
   color: var(--vscode-activityBarBadge-background); /* Optional: Color for the LLM's name */
 }
 
+pre {
+  width: 100% !important; /* ensure the block doesn't grow beyond its container */
+  max-width: 100% !important;
+}
+
 pre.custom-pre {
   font-family: 'Inter';  /* Use the same font as surrounding text */
   margin: 0;             /* Remove default margin */
   padding: 0;            /* Remove default padding */
-  white-space: pre-wrap; /* Wrap lines, but preserve newlines and whitespace */
+  white-space: pre-wrap !important; /* Wrap lines, but preserve newlines and whitespace */
   border: none;          /* Remove any default borders */
   background: none;      /* Remove any default backgrounds */
   vertical-align: middle; /* Adjust the alignment */
+  overflow-x: hidden;  /* Enables horizontal scrolling only when necessary */
+  word-wrap: break-word !important; /* break words into a new line if they exceed the container width */
+  width: 90% !important; /* ensure the block doesn't grow beyond its container */
+  max-width: 90% !important; /* ensure the block doesn't grow beyond its container */
 }
 
-/* pre.custom-pre {
-  background-color: #23241f;
-  color: #f8f8f2 !important;
-  overflow: visible;
-  border-radius: 3px;
-  white-space: pre-wrap;
-  margin-bottom: 5px;
-  margin-top: 5px;
-  padding: 5px 10px;
-} */
+.hljs {
+  overflow-x: auto;     /* Horizontal scrolling, only if necessary */
+  box-sizing: border-box;
+  max-width: 90%;
+}
 
 .input-wrapper {
   padding: 5px 10px;

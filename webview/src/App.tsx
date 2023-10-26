@@ -1,6 +1,7 @@
 // import React from 'react';
 import './App.css';
 import ChatContainer from './ components/chatContainer';
+import 'highlight.js/styles/atom-one-dark.css';
 
 function App() {
   return (

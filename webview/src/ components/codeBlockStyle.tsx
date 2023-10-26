@@ -16,6 +16,7 @@ import typescript from 'highlight.js/lib/languages/typescript';
 import r from 'highlight.js/lib/languages/r';
 import kotlin from 'highlight.js/lib/languages/kotlin';
 
+
 hljs.registerLanguage('javascript', javascript);
 hljs.registerLanguage('python', python);
 hljs.registerLanguage('rust', rust);
