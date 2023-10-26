@@ -7,10 +7,6 @@ import 'font-awesome/css/font-awesome.min.css';
 import deltaToMarkdown from '../quillToMarkdown/fromDelta';
 import { RangeStatic } from 'quill';
 
-const delayLoop = (iterations: number) => {
-    for (let i = 0; i < iterations; i++) { }
-};
-
 var icons = Quill.import('ui/icons');
 // icons['bold'] = '<i class="fa fa-bold" aria-hidden="true"></i>';
 // icons['italic'] = '<i class="fa fa-italic" aria-hidden="true"></i>';

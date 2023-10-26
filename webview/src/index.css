@@ -25,7 +25,7 @@ code {
   padding: 2px 4px;
 }
 
-pre > code {
+/* pre > code {
   background-color: #23241f;
   color: #f8f8f2 !important;
   overflow: visible;
@@ -40,7 +40,7 @@ pre > code {
   word-wrap: break-word;
   tab-size: 4;
   -moz-tab-size: 4;
-}
+} */
 
 .App {
   display: flex;

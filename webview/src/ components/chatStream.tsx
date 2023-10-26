@@ -2,6 +2,7 @@ import React from 'react';
 import { LlmSvgIcon } from './llmAvatar';
 import { Message } from '../../wasm/neatcoderInterface';
 import { marked } from 'marked';
+import hljs from './codeBlockStyle';
 
 const renderer = new marked.Renderer();
 
@@ -37,9 +38,26 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   // Post-process to add class to all <pre> tags
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlContent, 'text/html');
-  doc.querySelectorAll('pre').forEach((pre) => {
-    pre.classList.add('custom-pre');
+  // doc.querySelectorAll('pre').forEach((pre) => {
+  //   console.log("pre: " + JSON.stringify(pre));
+  //   hljs.highlightElement(pre as HTMLElement);
+  // });
+
+  doc.querySelectorAll('pre').forEach(block => {
+    console.log("block: " + JSON.stringify(block));
+
+    // Temporarily disable sanitization warning..
+    // Somehow it seems to be triggering false positives
+    const originalConsoleWarn = console.warn;
+    console.warn = function() {};
+
+
+    hljs.highlightElement(block as HTMLElement);
+
+    // Restore the original console.warn function
+  console.warn = originalConsoleWarn;
   });
+
   htmlContent = doc.body.innerHTML;
 
   return (
@@ -60,8 +78,3 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
 };
 
 export default ChatStream;
-
-// Type guard function
-function isJSXElementArray(content: string | JSX.Element[]): content is JSX.Element[] {
-  return Array.isArray(content);
-}
