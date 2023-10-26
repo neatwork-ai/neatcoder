@@ -23,15 +23,6 @@ export class ChatTreeViewProvider
     return Promise.resolve(this.getChatTreeItems());
   }
 
-  // private getChatTreeItems(): ChatTreeItem[] {
-  //   const chats = [];
-  //   for (const [key] of activePanels.entries()) {
-  //     chats.push(new ChatTreeItem(key, `Chat ${key}`));
-  //   }
-  //   console.log("ChatTreeItems: ", chats);
-  //   return chats;
-  // }
-
   private async getChatTreeItems(): Promise<ChatTreeItem[]> {
     const chats: ChatTreeItem[] = [];
     const chatsDir = vscode.Uri.file(
@@ -54,8 +45,6 @@ export class ChatTreeViewProvider
           chats.push(new ChatTreeItem(chatName, `${chatName}`));
         }
       });
-
-      console.log("ChatTreeItems: ", chats);
     }
 
     return chats;

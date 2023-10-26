@@ -47,8 +47,6 @@ export function startLoading(message: string) {
     clearInterval(loadingInterval);
   }
 
-  console.log("We are in the loading scope..");
-
   if (statusBar) {
     statusBar.color = new vscode.ThemeColor("statusBarItem.warningForeground");
     statusBar.backgroundColor = new vscode.ThemeColor(
