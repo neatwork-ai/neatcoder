@@ -62,7 +62,6 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
     useEffect(() => {
         if (quillRef.current) {
             const quill = quillRef.current.getEditor();
-            let consecutiveBackticks = 0;
 
             // Disable default behaviour of `Enter`
             const keyboard = quill.getModule('keyboard');
@@ -79,20 +78,30 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                 console.log('Command + Shift + I pressed');
                 consecutivePresses += 1;
 
-                if (consecutivePresses === 2) {
-                    quill.format('code-block', true);
+                const format = quill.getFormat(range);
+                console.log("format: " + JSON.stringify(format));
+
+                // If already in code block, then exit code-block
+                if (format['code-block']) {
+                    quill.format('code-block', false);
+                    consecutivePresses = 0;
                     return;
                 }
 
-                const format = quill.getFormat(range);
-
-                if (format.code) {
-                    // Remove the inline format
-                    quill.format('code', false);
+                // If two consecutive presses then activate code-block
+                if (consecutivePresses === 2) {
+                    quill.format('code-block', true); // activate block
                     consecutivePresses = 0;
-                } else {
-                    // Add the inline format
-                    quill.format('code', true);
+                    return;
+                }
+
+                // If inside inline-code but not consecutive press then
+                // exit inline-code
+                if (format.code) {
+                    quill.format('code', false); // exit iniline
+                    consecutivePresses = 0;
+                } else { // If not inside inline-code then activate inline-code
+                    quill.format('code', true); // activate inline
                 }
 
                 return;
