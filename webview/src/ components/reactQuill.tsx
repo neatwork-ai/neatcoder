@@ -131,15 +131,38 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                     handleSend();
                 }
 
-                if (event.key === 'Enter') {
+                // if (event.key === 'Enter' && event.shiftKey) {
+                //     event.preventDefault();  // prevent the default behavior
+                //     const currentSelection = quill.getSelection();
+                //     if (currentSelection) {
+                //         const currentPosition = currentSelection.index;
+                //         quill.insertText(currentPosition, '\n', 'user');
+                //         quill.setSelection(currentPosition + 1, 0, 'user'); // set the cursor just after the newline
+                //     }
+                // }
+
+                if (event.key === 'Enter' && event.shiftKey) {
                     const selection = quill.getSelection();
                     const format = quill.getFormat(selection!);
 
                     if (format.code) {
+                        console.log("OINC")
+                        // TODO: prevent only if the index is not the last
+
                         // If inside inline code, prevent the newline
                         event.preventDefault();
                         return;
                     }
+
+                    event.preventDefault();  // prevent the default behavior
+                    const currentSelection = quill.getSelection();
+                    if (currentSelection) {
+                        const currentPosition = currentSelection.index;
+                        quill.insertText(currentPosition, '\n', 'user');
+                        quill.setSelection(currentPosition + 1, 0, 'user'); // set the cursor just after the newline
+                    }
+
+                    return;
                 }
 
                 if (event.key !== 'I' && event.key !== 'Meta' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
@@ -150,6 +173,19 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
 
             quill.on('text-change', function(delta, oldDelta, source) {
                 console.log(JSON.stringify(delta));
+            });
+
+            quill.on('selection-change', function(range, oldRange, source) {
+                if (range) {
+                    if (range.length === 0) {
+                        console.log('User cursor is on', range.index);
+                    } else {
+                        const selectedText = quill.getText(range.index, range.length);
+                        console.log('User has highlighted:', selectedText);
+                    }
+                } else {
+                    console.log('Cursor not in the editor');
+                }
             });
 
             const quillContainer = quill.root;
