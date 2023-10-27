@@ -36,6 +36,11 @@ const modules = {
     toolbar: {
         container: "#toolbar",
     },
+    history: {
+        delay: 20,
+        // maxStack: 500,
+        // userOnly: true
+    },
     // syntax: {
     //     highlight: (text: string) => hljs.highlightAuto(text).value
     // }
@@ -127,19 +132,29 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
             });
 
             const handleKeyDown = (event: KeyboardEvent) => {
-                if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
-                    handleSend();
+                // The Quill Editor Undo functionality is messed up
+                // in the iOS (as usual, what is not messed up with Quill?)
+                // So we Check for undo (Ctrl + Z / Cmd + Z) and prevent the
+                // default behaviour.
+                //
+                // The intention was to add a custom binding, but somehow,
+                // placing the handler at the beginning of the event handler
+                // and triggering the immediate stop of the propagation just
+                // makes it work...
+                if ((event.ctrlKey || event.metaKey) && event.key === "z") {
+                    console.log('Custom undo action');
+                    console.log('is cancellable?', event.cancelable);
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    event.stopPropagation();
+                    return false;
                 }
 
-                // if (event.key === 'Enter' && event.shiftKey) {
-                //     event.preventDefault();  // prevent the default behavior
-                //     const currentSelection = quill.getSelection();
-                //     if (currentSelection) {
-                //         const currentPosition = currentSelection.index;
-                //         quill.insertText(currentPosition, '\n', 'user');
-                //         quill.setSelection(currentPosition + 1, 0, 'user'); // set the cursor just after the newline
-                //     }
-                // }
+                // This allows us to click enter to send the message to openAI
+                if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+                    handleSend();
+                    return
+                }
 
                 if (event.key === 'Enter' && event.shiftKey) {
                     const selection = quill.getSelection();
@@ -147,10 +162,21 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
 
                     if (format.code) {
                         console.log("OINC")
-                        // TODO: prevent only if the index is not the last
-
                         // If inside inline code, prevent the newline
                         event.preventDefault();
+                        const startIndex = selection!.index;
+
+                        // Checking if the next character after the selection doesn't have the inline code format
+                        const formatAfterCursor = quill.getFormat(startIndex + 1, 1);
+
+                        // If inside inline code and in the middle of the code,
+                        // then prevent the newline, else go ahead and allow newline
+                        if (!formatAfterCursor.code) {
+                            quill.format('code', false); // remove the code format
+                            quill.insertText(startIndex + 1, '\n', {}, 'user'); // insert a newline
+                            quill.setSelection(startIndex + 2, 0); // set the cursor after the newline
+                        }
+
                         return;
                     }
 
@@ -170,23 +196,6 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                     consecutivePresses = 0;
                 }
             };
-
-            quill.on('text-change', function(delta, oldDelta, source) {
-                console.log(JSON.stringify(delta));
-            });
-
-            quill.on('selection-change', function(range, oldRange, source) {
-                if (range) {
-                    if (range.length === 0) {
-                        console.log('User cursor is on', range.index);
-                    } else {
-                        const selectedText = quill.getText(range.index, range.length);
-                        console.log('User has highlighted:', selectedText);
-                    }
-                } else {
-                    console.log('Cursor not in the editor');
-                }
-            });
 
             const quillContainer = quill.root;
             quillContainer.addEventListener('keydown', handleKeyDown);
