@@ -24,6 +24,7 @@ import {
 import { initCodeBase, appDataManager, setupDotNeatWatcher } from "./core";
 import { getOrSetApiKey, initStatusBar, initLogger, logger } from "./utils";
 import { ChatTreeViewProvider, initChat, setupChatWatcher } from "./chat";
+import { getOrSetModelVersion } from "./utils/utils";
 
 // Declare activePanels at the top-level to make it accessible throughout your extension's main script.
 let configWatcher: fs.FSWatcher | undefined; // TODO: remove, not being used.
@@ -56,7 +57,9 @@ export async function activate(context: vscode.ExtensionContext) {
   // Read or Initialize Application state
 
   let appManager = new appDataManager(jobQueueProvider, auditTrailProvider);
-  let llmParams = wasm.OpenAIParams.empty(wasm.OpenAIModels.Gpt35Turbo16k);
+  let llmParams = await getLLMParams();
+
+  logger.appendLine("[INFO] Extension Activated. llmParams: " + llmParams);
 
   // === Setup File Watchers ===
 
@@ -99,6 +102,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.initCodeBase", async () => {
+      let llmParams = await getLLMParams();
       initCodeBase(llmParams, appManager);
     })
   );
@@ -141,6 +145,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.runTask",
       async (taskView: TaskView) => {
+        let llmParams = await getLLMParams();
         await runTask(taskView, llmParams, appManager);
       }
     )
@@ -162,7 +167,8 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.runAllTasks", () => {
+    vscode.commands.registerCommand("extension.runAllTasks", async () => {
+      let llmParams = await getLLMParams();
       runAllTasks(llmParams, appManager);
     })
   );
@@ -171,10 +177,20 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.retryTask",
       async (taskView: TaskView) => {
+        let llmParams = await getLLMParams();
         await retryTask(taskView, llmParams, appManager);
       }
     )
   );
+}
+
+async function getLLMParams(): Promise<wasm.OpenAIParams> {
+  let modelVersion = await getOrSetModelVersion();
+  if (modelVersion === null) {
+    modelVersion = wasm.OpenAIModels.Gpt4;
+    vscode.window.showErrorMessage("Invalid model version, defaulting to Gpt4.");
+  }
+  return wasm.OpenAIParams.empty(modelVersion);
 }
 
 // This method is called when the extension is deactivated
