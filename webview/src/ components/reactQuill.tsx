@@ -5,7 +5,15 @@ import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';  // import styles
 import 'font-awesome/css/font-awesome.min.css';
 import deltaToMarkdown from '../quillToMarkdown/fromDelta';
+import { postProcessCodeBlocks } from '../quillToMarkdown/postProcess';
 import { RangeStatic } from 'quill';
+import hljs from './codeBlockStyle';
+import Parchment from 'parchment';
+import { Blot } from 'parchment/dist/typings/blot/abstract/blot';
+const Block = Quill.import('blots/block');
+const CodeBlock = Quill.import('formats/code-block');
+
+
 
 var icons = Quill.import('ui/icons');
 // icons['bold'] = '<i class="fa fa-bold" aria-hidden="true"></i>';
@@ -28,6 +36,9 @@ const modules = {
     toolbar: {
         container: "#toolbar",
     },
+    // syntax: {
+    //     highlight: (text: string) => hljs.highlightAuto(text).value
+    // }
 };
 
 const formats = [
@@ -44,8 +55,13 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
         const delta = quillRef.current?.getEditor().getContents();
 
         if (delta && delta.ops) {
+            console.log("delta: " + JSON.stringify(delta))
+
+            // Join respective code-block lines
+            const processedOps = postProcessCodeBlocks(delta.ops);
+
             // Convert the delta ops to markdown
-            const markdownString = deltaToMarkdown(delta.ops);
+            const markdownString = deltaToMarkdown(processedOps);
 
             onSendMessage(markdownString);
             setEditorContent('');  // This will clear the editor
@@ -81,7 +97,19 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
 
                 // If two consecutive presses then activate code-block
                 if (consecutivePresses === 2) {
-                    quill.format('code-block', true); // activate block
+                    const rangeCopy = { ...range };
+
+                    quill.format('code', false); // remove inline code
+
+                    // For some reason the state of the range seems to
+                    // change somewhere under the hood, so we make a deep copy
+                    if (rangeCopy) {
+                        setTimeout(() => {
+                            console.log("Applying format to " + JSON.stringify(rangeCopy))
+                            quill.formatLine(rangeCopy.index, rangeCopy.length, 'code-block', true);
+                        }, 25);
+                    }
+
                     consecutivePresses = 0;
                     return;
                 }
@@ -120,6 +148,10 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                 }
             };
 
+            quill.on('text-change', function(delta, oldDelta, source) {
+                console.log(JSON.stringify(delta));
+            });
+
             const quillContainer = quill.root;
             quillContainer.addEventListener('keydown', handleKeyDown);
 
@@ -148,3 +180,11 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
 };
 
 export default QuillEditor;
+
+const simulateCodeBlockButtonClick = () => {
+    const codeBlockButton = document.querySelector(".ql-code-block");
+    if (codeBlockButton) {
+        console.log("Clicking...")
+        codeBlockButton.dispatchEvent(new Event('click', { 'bubbles': true }));
+    }
+};
