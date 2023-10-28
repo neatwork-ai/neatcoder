@@ -8,12 +8,8 @@ import deltaToMarkdown from '../quillToMarkdown/fromDelta';
 import { postProcessCodeBlocks } from '../quillToMarkdown/postProcess';
 import { RangeStatic } from 'quill';
 import hljs from './codeBlockStyle';
-import Parchment from 'parchment';
-import { Blot } from 'parchment/dist/typings/blot/abstract/blot';
-const Block = Quill.import('blots/block');
-const CodeBlock = Quill.import('formats/code-block');
 
-
+let currentSelection: RangeStatic | null = null;
 
 var icons = Quill.import('ui/icons');
 // icons['bold'] = '<i class="fa fa-bold" aria-hidden="true"></i>';
@@ -197,12 +193,47 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
                 }
             };
 
+            quill.on('selection-change', (range, oldRange, source) => {
+                if (range) {
+                    currentSelection = range;
+                }
+            });
+
+            // If the content being pasted comes from vscode then
+            // we intercept the pasting and apply code-block format
+            const handlePaste = (event: ClipboardEvent) => {
+                if (event.clipboardData) {
+                    const types = event.clipboardData.types;
+                    if (types.includes('vscode-editor-data')) {
+                        // Get the current selection
+                        const selection = currentSelection;
+
+                        if (selection) {
+                            // Create an empty code block at the current position
+                            console.log("NEWLINE!")
+                            quill.insertText(selection.index, '\n', { 'code-block': true });
+
+                            console.log("MOVE SELECTION!")
+                            // Move the cursor inside the code block
+                            // quill.setSelection(selection!.index + 1, 1);
+                            console.log("Selection moved!")
+
+                        }
+
+                        // Let the default paste behavior occur
+                    }
+                }
+            };
+
+
             const quillContainer = quill.root;
             quillContainer.addEventListener('keydown', handleKeyDown);
+            quillContainer.addEventListener('paste', handlePaste);
 
             // Cleanup: remove the event listener when the component is unmounted
             return () => {
                 quillContainer.removeEventListener('keydown', handleKeyDown);
+                quillContainer.removeEventListener('paste', handlePaste);
             };
         }
     }, [handleSend]);
@@ -225,11 +256,3 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
 };
 
 export default QuillEditor;
-
-const simulateCodeBlockButtonClick = () => {
-    const codeBlockButton = document.querySelector(".ql-code-block");
-    if (codeBlockButton) {
-        console.log("Clicking...")
-        codeBlockButton.dispatchEvent(new Event('click', { 'bubbles': true }));
-    }
-};
