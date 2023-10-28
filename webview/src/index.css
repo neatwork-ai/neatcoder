@@ -167,6 +167,8 @@ pre.custom-pre {
   background-color: var(--vscode-input-background);
   border-radius: 10px;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  max-height: 250px;
+  overflow-y: auto;  /* Vertical scrolling */
 }
 
 /* Remove border around the editor */
