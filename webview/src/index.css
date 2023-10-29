@@ -15,6 +15,7 @@ h1 {
   font-family: 'Inter', sans-serif;
 }
 
+/* Inline Code Style */
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
@@ -127,24 +128,45 @@ pre {
   max-width: 100% !important;
 }
 
+.code-wrapper {
+  border-radius: 0.3em;
+  overflow: hidden; /* This ensures the child border-radius is respected */
+  width: 90%;
+  max-width: 90%;
+  background-color: black;
+}
+
 pre.custom-pre {
-  font-family: 'Inter';  /* Use the same font as surrounding text */
-  margin: 0;             /* Remove default margin */
-  padding: 0;            /* Remove default padding */
-  white-space: pre-wrap !important; /* Wrap lines, but preserve newlines and whitespace */
-  border: none;          /* Remove any default borders */
-  background: none;      /* Remove any default backgrounds */
-  vertical-align: middle; /* Adjust the alignment */
-  overflow-x: hidden;  /* Enables horizontal scrolling only when necessary */
-  word-wrap: break-word !important; /* break words into a new line if they exceed the container width */
-  width: 90% !important; /* ensure the block doesn't grow beyond its container */
-  max-width: 90% !important; /* ensure the block doesn't grow beyond its container */
+  font-family: 'Inter';
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap !important;
+  border: none;
+  background: none;
+  vertical-align: middle;
+  width: 90%;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background-color: var(--vscode-input-background);
+  height: 24px;
+  box-sizing: border-box;
+}
+
+.copy-icon {
+  cursor: pointer;
+  font-size: 10px;
 }
 
 .hljs {
   overflow-x: auto;     /* Horizontal scrolling, only if necessary */
   box-sizing: border-box;
   max-width: 90%;
+  margin: 8px;
 }
 
 .input-wrapper {
@@ -203,4 +225,55 @@ button:hover i.fas,
 .ql-active i.fa,
 .ql-active i.fas {
   color: var(--vscode-activityBarBadge-background);
+}
+
+/* Base styling */
+pre[class*=language-] {
+  border-radius: .3em;
+  overflow: auto;
+}
+
+:not(pre) > code.hljs, :not(pre) > code[class*=language-] {
+  border-radius: .3em;
+  padding: .1em;
+  white-space: normal;
+}
+
+/* Color variables */
+:root {
+  --hljs-comment: hsla(0, 0%, 100%, .5);
+  --hljs-built-in: #e9950c;
+  --hljs-keyword: #2e95d3;
+  --hljs-string: #00a67d;
+  --hljs-variable: #df3079;
+  --hljs-title: #f22c3d;
+}
+
+/* Styles based on the constructs */
+.hljs-comment {
+  color: var(--hljs-comment) !important;
+}
+
+.hljs-meta {
+  color: hsla(0, 0%, 100%, .6) !important;
+}
+
+.hljs-built_in, .hljs-class .hljs-title {
+  color: var(--hljs-built-in) !important;
+}
+
+.hljs-doctag, .hljs-formula, .hljs-keyword, .hljs-literal {
+  color: var(--hljs-keyword) !important;
+}
+
+.hljs-addition, .hljs-attribute, .hljs-meta-string, .hljs-regexp, .hljs-string {
+  color: var(--hljs-string) !important;
+}
+
+.hljs-attr, .hljs-number, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-pseudo, .hljs-template-variable, .hljs-type, .hljs-variable {
+  color: var(--hljs-variable) !important;
+}
+
+.hljs-bullet, .hljs-link, .hljs-selector-id, .hljs-symbol, .hljs-title {
+  color: var(--hljs-title) !important;
 }

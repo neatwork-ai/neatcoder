@@ -25,23 +25,11 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   const publicPath = (window as any).publicPath;
   const userAvatar = `${publicPath}/default_user.jpg`;
 
-  // const renderer = new marked.Renderer();
-  // // Override the default behavior for 'pre' elements
-  // renderer.pre = (code, infoString, escaped) => {
-  //   return `<pre class="custom-pre">${code}</pre>`;
-  // };
-
-  // marked.setOptions({ renderer });
-
   let htmlContent = marked(payload.content);
 
   // Post-process to add class to all <pre> tags
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlContent, 'text/html');
-  // doc.querySelectorAll('pre').forEach((pre) => {
-  //   console.log("pre: " + JSON.stringify(pre));
-  //   hljs.highlightElement(pre as HTMLElement);
-  // });
 
   doc.querySelectorAll('pre').forEach(block => {
     console.log("block: " + JSON.stringify(block));
@@ -51,11 +39,31 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
     const originalConsoleWarn = console.warn;
     console.warn = function() {};
 
-
     hljs.highlightElement(block as HTMLElement);
 
+    const wrapper = document.createElement('div');
+    wrapper.className = 'code-wrapper';
+
+    const header = document.createElement('div');
+    header.className = 'code-header';
+
+    const langSpan = document.createElement('span');
+    langSpan.className = 'code-language';
+    const lang = block.querySelector('code[class]')?.className || '';
+    langSpan.innerText = lang;
+
+    const copyIcon = document.createElement('i');
+    copyIcon.className = 'fa-solid fa-copy copy-icon';
+
+    header.appendChild(langSpan);
+    header.appendChild(copyIcon);
+
+    wrapper.appendChild(header);
+    block.parentNode?.insertBefore(wrapper, block);
+    wrapper.appendChild(block);
+
     // Restore the original console.warn function
-  console.warn = originalConsoleWarn;
+    console.warn = originalConsoleWarn;
   });
 
   htmlContent = doc.body.innerHTML;
