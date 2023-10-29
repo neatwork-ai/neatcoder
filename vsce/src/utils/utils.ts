@@ -253,7 +253,7 @@ export async function getOrSetModelVersion(): Promise<wasm.OpenAIModels | null> 
   let modelVersion = config.get("modelVersion") as string;
 
   if (!modelVersion) {
-    const value = await vscode.window.showQuickPick(["gpt-3.5-turbo-16k", "gpt-4", "gpt-4-32k"], { canPickMany: false });
+    const value = await vscode.window.showQuickPick(["gpt-3.5-turbo-16k", "gpt-4"], { canPickMany: false });
     if (value) {
       await config.update("modelVersion", value, vscode.ConfigurationTarget.Global);
       vscode.window.showInformationMessage("Model Version saved!");
