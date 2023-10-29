@@ -131,8 +131,8 @@ pre {
 .code-wrapper {
   border-radius: 0.3em;
   overflow: hidden; /* This ensures the child border-radius is respected */
-  width: 90%;
-  max-width: 90%;
+  /* width: 90%;
+  max-width: 90%; */
   background-color: black;
 }
 
@@ -165,7 +165,7 @@ pre.custom-pre {
 .hljs {
   overflow-x: auto;     /* Horizontal scrolling, only if necessary */
   box-sizing: border-box;
-  max-width: 90%;
+  /* max-width: 90%; */
   margin: 8px;
 }
 
