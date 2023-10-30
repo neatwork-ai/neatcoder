@@ -24,7 +24,7 @@ import {
 import { initCodeBase, appDataManager, setupDotNeatWatcher } from "./core";
 import { getOrSetApiKey, initStatusBar, initLogger, logger } from "./utils";
 import { ChatTreeViewProvider, initChat, setupChatWatcher } from "./chat";
-import { getOrSetModelVersion } from "./utils/utils";
+import { getOrSetModelVersion, setModelVersion } from "./utils/utils";
 
 // Declare activePanels at the top-level to make it accessible throughout your extension's main script.
 let configWatcher: fs.FSWatcher | undefined; // TODO: remove, not being used.
@@ -167,6 +167,12 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("extension.chooseModel", async () => {
+      await setModelVersion();
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand("extension.runAllTasks", async () => {
       let llmParams = await getLLMParams();
       runAllTasks(llmParams, appManager);
@@ -188,7 +194,9 @@ async function getLLMParams(): Promise<wasm.OpenAIParams> {
   let modelVersion = await getOrSetModelVersion();
   if (modelVersion === null) {
     modelVersion = wasm.OpenAIModels.Gpt4;
-    vscode.window.showErrorMessage("Invalid model version, defaulting to Gpt4.");
+    vscode.window.showErrorMessage(
+      "Invalid model version, defaulting to Gpt4."
+    );
   }
   return wasm.OpenAIParams.empty(modelVersion);
 }
