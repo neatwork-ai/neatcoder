@@ -79,6 +79,10 @@
         "command": "extension.retryTask",
         "title": "Retry Task",
         "icon": "$(debug-restart)"
+      },
+      {
+        "command": "extension.chooseModel",
+        "title": "Choose Model"
       }
     ],
     "viewsContainers": {
@@ -178,6 +182,11 @@
           "type": "string",
           "default": "",
           "description": "The API key for OpenAI."
+        },
+        "extension.modelVersion": {
+          "type": "string",
+          "default": "",
+          "description": "The Model Version for OpenAI."
         }
       }
     }

@@ -248,6 +248,72 @@ export function getOrSetApiKey(): any {
   return apiKey;
 }
 
+export async function getOrSetModelVersion(): Promise<wasm.OpenAIModels | null> {
+  let config = vscode.workspace.getConfiguration("extension");
+  let modelVersion = config.get("modelVersion") as string;
+
+  if (!modelVersion) {
+    const value = await vscode.window.showQuickPick(
+      ["gpt-3.5-turbo-16k", "gpt-4"],
+      { canPickMany: false }
+    );
+    if (value) {
+      await config.update(
+        "modelVersion",
+        value,
+        vscode.ConfigurationTarget.Global
+      );
+      vscode.window.showInformationMessage("Model Version saved!");
+      return fromModelVersionToEnum(value);
+    } else {
+      // Handle the case where the input box was dismissed without entering a value
+      vscode.window.showErrorMessage(
+        "Model version is required to use this extension."
+      );
+      return null;
+    }
+  }
+
+  return fromModelVersionToEnum(modelVersion);
+}
+
+export async function setModelVersion() {
+  let config = vscode.workspace.getConfiguration("extension");
+
+  const value = await vscode.window.showQuickPick(
+    ["gpt-3.5-turbo-16k", "gpt-4"],
+    {
+      canPickMany: false,
+      placeHolder: "Select an OpenAI model", // This is the placeholder text
+    }
+  );
+  if (value) {
+    await config.update(
+      "modelVersion",
+      value,
+      vscode.ConfigurationTarget.Global
+    );
+    vscode.window.showInformationMessage("Model Version saved!");
+  }
+}
+
+export function fromModelVersionToEnum(
+  modelStr: string
+): wasm.OpenAIModels | null {
+  switch (modelStr) {
+    case "gpt-4-32k":
+      return wasm.OpenAIModels.Gpt432k;
+    case "gpt-4":
+      return wasm.OpenAIModels.Gpt4;
+    case "gpt-3.5-turbo":
+      return wasm.OpenAIModels.Gpt35Turbo;
+    case "gpt-3.5-turbo-16k":
+      return wasm.OpenAIModels.Gpt35Turbo16k;
+    default:
+      return null;
+  }
+}
+
 export async function getChat(uri: vscode.Uri): Promise<wasm.Chat> {
   try {
     const data = await vscode.workspace.fs.readFile(uri);
