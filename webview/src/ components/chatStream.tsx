@@ -2,6 +2,7 @@ import React from 'react';
 import { LlmSvgIcon } from './llmAvatar';
 import { Message } from '../../wasm/neatcoderInterface';
 import { marked } from 'marked';
+import hljs from './codeBlockStyle';
 
 const renderer = new marked.Renderer();
 
@@ -24,22 +25,47 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   const publicPath = (window as any).publicPath;
   const userAvatar = `${publicPath}/default_user.jpg`;
 
-  // const renderer = new marked.Renderer();
-  // // Override the default behavior for 'pre' elements
-  // renderer.pre = (code, infoString, escaped) => {
-  //   return `<pre class="custom-pre">${code}</pre>`;
-  // };
-
-  // marked.setOptions({ renderer });
-
   let htmlContent = marked(payload.content);
 
   // Post-process to add class to all <pre> tags
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlContent, 'text/html');
-  doc.querySelectorAll('pre').forEach((pre) => {
-    pre.classList.add('custom-pre');
+
+  doc.querySelectorAll('pre').forEach(block => {
+    console.log("block: " + JSON.stringify(block));
+
+    // Temporarily disable sanitization warning..
+    // Somehow it seems to be triggering false positives
+    const originalConsoleWarn = console.warn;
+    console.warn = function() {};
+
+    hljs.highlightElement(block as HTMLElement);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'code-wrapper';
+
+    const header = document.createElement('div');
+    header.className = 'code-header';
+
+    const langSpan = document.createElement('span');
+    langSpan.className = 'code-language';
+    const lang = block.querySelector('code[class]')?.className || '';
+    langSpan.innerText = lang;
+
+    const copyIcon = document.createElement('i');
+    copyIcon.className = 'fa-solid fa-copy copy-icon';
+
+    header.appendChild(langSpan);
+    header.appendChild(copyIcon);
+
+    wrapper.appendChild(header);
+    block.parentNode?.insertBefore(wrapper, block);
+    wrapper.appendChild(block);
+
+    // Restore the original console.warn function
+    console.warn = originalConsoleWarn;
   });
+
   htmlContent = doc.body.innerHTML;
 
   return (
@@ -60,8 +86,3 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
 };
 
 export default ChatStream;
-
-// Type guard function
-function isJSXElementArray(content: string | JSX.Element[]): content is JSX.Element[] {
-  return Array.isArray(content);
-}

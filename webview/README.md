@@ -48,3 +48,4 @@ To learn React, check out the [React documentation](https://reactjs.org/).
 ## Tests
 
 `npm test -- fromDelta.test.ts`
+`npm test -- postProcess.test.ts`

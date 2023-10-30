@@ -1,4 +1,4 @@
-import render from "./fromDelta";
+import render from "../quillToMarkdown/fromDelta";
 
 test("renders inline format", () => {
   expect(
