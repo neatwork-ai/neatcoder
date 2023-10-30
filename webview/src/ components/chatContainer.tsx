@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import ChatStream from './chatStream';
-import TextBox from './textBox';
 import { promptLLM } from './httpClient';
 import { Message } from '../../wasm/neatcoderInterface';
 import QuillEditor from './reactQuill';
@@ -64,7 +63,6 @@ const ChatContainer: React.FC = () => {
         <SVGButton onClick={() => {}} />
         <QuillEditor onSendMessage={handleSendMessage}/>
       </div>
-      {/* <TextBox onSendMessage={handleSendMessage} /> */}
     </div>
   );
 };

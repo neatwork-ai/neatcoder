@@ -4,12 +4,32 @@ import React, { useEffect, useRef } from 'react';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';  // import styles
 import 'font-awesome/css/font-awesome.min.css';
-import deltaToMarkdown from '../quillToMarkdown/fromDelta';
-import { postProcessCodeBlocks } from '../quillToMarkdown/postProcess';
 import { RangeStatic } from 'quill';
 import hljs from './codeBlockStyle';
+import TurndownService from 'turndown';
 
 let currentSelection: RangeStatic | null = null;
+
+// Initialize Turndown service
+const turndownService = new TurndownService();
+
+// Disable all escaping - TODO: If we introduce markdown rendering this
+// will become a problem
+turndownService.escape = (string: string) => string;
+
+// Define a custom rule for 'pre.ql-syntax' elements
+turndownService.addRule('qlSyntax', {
+    filter: (node) => {
+      return (
+        node.nodeName === 'PRE' &&
+        node.classList.contains('ql-syntax')
+      );
+    },
+    replacement: (content) => {
+      // The replacement function will wrap the content in a code block syntax
+      return '\n```\n' + content.trim() + '\n```\n';
+    }
+  });
 
 var icons = Quill.import('ui/icons');
 // icons['bold'] = '<i class="fa fa-bold" aria-hidden="true"></i>';
@@ -53,22 +73,22 @@ export const QuillEditor: React.FC<{ onSendMessage: (text: string) => void }> = 
     const quillRef = useRef<ReactQuill>(null);
 
     const handleSend = React.useCallback(() => {
-        const delta = quillRef.current?.getEditor().getContents();
+        // Assuming quillRef is a ref to the Quill editor instance
+        const editor = quillRef.current?.getEditor();
 
-        if (delta && delta.ops) {
-            console.log("delta: " + JSON.stringify(delta))
+        if (editor) {
+            const htmlContent = editor.root.innerHTML; // Get the inner HTML content
+            console.log("HTML Content: " + htmlContent);
 
-            // Join respective code-block lines
-            const processedOps = postProcessCodeBlocks(delta.ops);
+            // Convert the HTML to Markdown
+            const markdownString = turndownService.turndown(htmlContent);
+            console.log("Markdown String: " + markdownString);
 
-            // Convert the delta ops to markdown
-            const markdownString = deltaToMarkdown(processedOps);
-
+            // Assuming onSendMessage is a prop that handles sending the markdown content
             onSendMessage(markdownString);
-            setEditorContent('');  // This will clear the editor
+            editor.setText('');  // This will clear the editor
         }
-    }, [onSendMessage]);  // Assuming onSendMessage doesn't change often, otherwise add other dependencies
-
+    }, [onSendMessage, quillRef]); // Add quillRef to dependencies if it changes
 
     useEffect(() => {
         if (quillRef.current) {
