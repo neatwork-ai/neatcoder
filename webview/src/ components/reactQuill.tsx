@@ -6,6 +6,7 @@ import 'react-quill/dist/quill.snow.css';  // import styles
 import 'font-awesome/css/font-awesome.min.css';
 import { RangeStatic } from 'quill';
 import TurndownService from 'turndown';
+import { Tooltip } from 'react-tooltip';
 
 let currentSelection: RangeStatic | null = null;
 
@@ -37,8 +38,19 @@ icons['code-block'] = '<i class="fas fa-file-code-o" aria-hidden="true"></i>';
 const CustomToolbar: React.FC = () => {
     return (
         <div id="toolbar">
-            <button className="ql-code"/>
-            <button className="ql-code-block"/>
+            <button
+                className="ql-code"
+                data-tooltip-id="my-tooltip"
+                data-tooltip-html="Code<br/><span class='tooltip-shortcut'>⌘ + Shift + I</span>"
+                data-tooltip-place="top"
+            />
+            <button
+                className="ql-code-block"
+                data-tooltip-id="my-tooltip"
+                data-tooltip-html="Code Block<br/><span class='tooltip-shortcut'>(⌘ + Shift + I) x2</span>"
+                data-tooltip-place="top"
+            />
+            <Tooltip id="my-tooltip"/>
         </div>
     );
 };
