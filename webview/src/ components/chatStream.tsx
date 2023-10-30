@@ -19,7 +19,6 @@ const ChatStream: React.FC<ChatStreamProps> = ({ messages, className }) => (
   </div>
 );
 
-
 const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   const isUser = user === 'user';
   const publicPath = (window as any).publicPath;
@@ -55,6 +54,11 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
     const copyIcon = document.createElement('i');
     copyIcon.className = 'fa-solid fa-copy copy-icon';
 
+    copyIcon.addEventListener('click', () => {
+      const codeContent = block.querySelector('code')?.innerText || '';
+      copyToClipboard(codeContent);
+    });
+
     header.appendChild(langSpan);
     header.appendChild(copyIcon);
 
@@ -84,5 +88,16 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
     </div>
   );
 };
+
+
+function copyToClipboard(text: string) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
+}
+
 
 export default ChatStream;
