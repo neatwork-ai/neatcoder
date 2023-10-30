@@ -12,8 +12,15 @@ let tokenCount;
 const ChatContainer: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const quillRef = useRef<any>(null);
+  const [isStreaming, setIsStreaming] = useState(false);  // State to track if streaming is active
 
   const handleSendMessage = async (text: string) => {
+    if (isStreaming) {
+      // Prevent sending new messages if stream is active
+      console.warn("Please wait for the current response to finish streaming.");
+      return;
+    }
+
     const newMessages = [...messages, { user: 'user', ts: "todo", payload: { content: text, role: "user" } }];
 
     // Add user's message to the chat stream
@@ -21,6 +28,7 @@ const ChatContainer: React.FC = () => {
 
     // Send message to OpenAI and get response
     try {
+      setIsStreaming(true); // Start streaming
       const stream = promptLLM(newMessages, true);
       const reader = stream.getReader();
 
@@ -47,6 +55,7 @@ const ChatContainer: React.FC = () => {
         }
 
         if (done) {
+          setIsStreaming(false); // End streaming
           tokenCount += 0;
           break
         };
@@ -68,7 +77,7 @@ const ChatContainer: React.FC = () => {
     <div className="chatContainer">
       <ChatStream className="chatStream" messages={messages} />
       <div className= "input-wrapper">
-        <SendButton onClick={handleSendButtonClick} />
+        <SendButton onClick={handleSendButtonClick} disabled={isStreaming}/>
         <QuillEditor ref={quillRef} onSendMessage={handleSendMessage}/>
       </div>
     </div>
