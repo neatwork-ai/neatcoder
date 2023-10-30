@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import SVGButton from './sendButton';
+import SendButton from './sendButton';
 
 const TextBox: React.FC<{ onSendMessage: (text: string) => void }> = ({ onSendMessage }) => {
   const [text, setText] = useState('');
@@ -39,7 +39,7 @@ const TextBox: React.FC<{ onSendMessage: (text: string) => void }> = ({ onSendMe
             onKeyPress={handleKeyPress}  // Add this line
             placeholder="Send a message"
         />
-        <SVGButton onClick={handleSend} />
+        <SendButton onClick={handleSend} />
     </div>
 );
 };

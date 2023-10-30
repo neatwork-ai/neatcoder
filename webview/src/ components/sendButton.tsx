@@ -1,10 +1,10 @@
 import React from 'react';
 
-type SVGButtonProps = {
+type SendButtonProps = {
     onClick: () => void;
 };
 
-const SVGButton: React.FC<SVGButtonProps> = ({ onClick }) => {
+const SendButton: React.FC<SendButtonProps> = ({ onClick }) => {
     return (
         <button onClick={onClick} style={{ backgroundColor: 'transparent', border: 'none', cursor: 'pointer', position: 'absolute',
         bottom: '23px',
@@ -24,4 +24,4 @@ const SVGButton: React.FC<SVGButtonProps> = ({ onClick }) => {
     );
 };
 
-export default SVGButton;
+export default SendButton;

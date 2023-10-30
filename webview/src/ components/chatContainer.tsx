@@ -1,16 +1,17 @@
 // ChatContainer.tsx
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import ChatStream from './chatStream';
 import { promptLLM } from './httpClient';
 import { Message } from '../../wasm/neatcoderInterface';
 import QuillEditor from './reactQuill';
-import SVGButton from './sendButton';
+import SendButton from './sendButton';
 
 let tokenCount;
 
 const ChatContainer: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const quillRef = useRef<any>(null);
 
   const handleSendMessage = async (text: string) => {
     const newMessages = [...messages, { user: 'user', ts: "todo", payload: { content: text, role: "user" } }];
@@ -56,12 +57,19 @@ const ChatContainer: React.FC = () => {
     }
   };
 
+  const handleSendButtonClick = () => {
+    if (quillRef.current) {
+      quillRef.current.handleSend();
+    }
+  };
+
+
   return (
     <div className="chatContainer">
       <ChatStream className="chatStream" messages={messages} />
       <div className= "input-wrapper">
-        <SVGButton onClick={() => {}} />
-        <QuillEditor onSendMessage={handleSendMessage}/>
+        <SendButton onClick={handleSendButtonClick} />
+        <QuillEditor ref={quillRef} onSendMessage={handleSendMessage}/>
       </div>
     </div>
   );
