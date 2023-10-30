@@ -79,6 +79,10 @@
         "command": "extension.retryTask",
         "title": "Retry Task",
         "icon": "$(debug-restart)"
+      },
+      {
+        "command": "extension.chooseModel",
+        "title": "Choose Model"
       }
     ],
     "viewsContainers": {
