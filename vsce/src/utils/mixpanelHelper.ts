@@ -10,7 +10,14 @@ class MixpanelHelper {
     private userId: string;
 
     private constructor(token: string, config?: mixpanel.InitConfig) {
-        this.mixpanelInstance = mixpanel.init(token, config);
+        const defaultConfig = {
+            geolocate: true
+        };
+
+        // If there's any user-provided config, it will overwrite the defaults
+        const finalConfig = { ...defaultConfig, ...config };
+
+        this.mixpanelInstance = mixpanel.init(token, finalConfig);
 
         // Retrieve or generate the userId
         this.userId = this.getUserId();
