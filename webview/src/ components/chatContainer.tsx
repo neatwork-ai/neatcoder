@@ -21,7 +21,7 @@ const ChatContainer: React.FC = () => {
       return;
     }
 
-    const newMessages = [...messages, { user: 'user', ts: "todo", payload: { content: text, role: "user" } }];
+    const newMessages = [...messages, { user: 'user', ts: new Date().toISOString(), payload: { content: text, role: "user" } }];
 
     // Add user's message to the chat stream
     setMessages(newMessages);

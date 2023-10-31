@@ -55,11 +55,6 @@ export function saveappDataToFile(appData: wasm.AppData): void {
   saveFile(payload, ".neat/cache", "state");
 }
 
-export function saveCump(appData: wasm.AppData): void {
-  const payload = serializeappData(appData);
-  saveFile(payload, ".neat/cache", "state");
-}
-
 function saveFile(
   payload: ArrayBuffer,
   folder: string,

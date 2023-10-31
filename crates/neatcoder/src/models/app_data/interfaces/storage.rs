@@ -1,5 +1,6 @@
 use crate::{
     openai::msg::{GptRole, OpenAIMsg},
+    typescript::ISchemas,
     JsError, WasmType,
 };
 use anyhow::Result;
@@ -11,7 +12,7 @@ use std::{
 };
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use super::{AsContext, ISchemas, SchemaFile};
+use super::{AsContext, SchemaFile};
 
 /// Struct documenting a Data storage interface. This refers to more raw storage
 /// solutions that usually provide a direct interface to a file or object-store

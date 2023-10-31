@@ -3,17 +3,11 @@ pub mod dbs;
 pub mod storage;
 
 use self::{apis::Api, dbs::Database, storage::Storage};
-use crate::{openai::msg::OpenAIMsg, JsError};
+use crate::{openai::msg::OpenAIMsg, typescript::ISchemas, JsError};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "Record<string, string>")]
-    pub type ISchemas;
-}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]

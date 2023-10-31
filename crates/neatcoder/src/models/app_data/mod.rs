@@ -8,6 +8,7 @@ use crate::{
         stream_code::{stream_code, CodeGenParams},
     },
     openai::params::OpenAIParams,
+    typescript::{ICodebase, IInterfaces, ITasksVec},
     JsError, WasmType,
 };
 use anyhow::{anyhow, Result};
@@ -81,18 +82,6 @@ pub struct AppData {
     /// etc.) The BTreeMap represents BTreeMap<Interface Name, Interface>
     pub(crate) interfaces: BTreeMap<String, Interface>,
     pub(crate) task_pool: TaskPool,
-}
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "Record<string, Interface>")]
-    pub type IInterfaces;
-
-    #[wasm_bindgen(typescript_type = "Record<string, string>")]
-    pub type ICodebase;
-
-    #[wasm_bindgen(typescript_type = "Array<Task>")]
-    pub type ITasksVec;
 }
 
 #[wasm_bindgen]

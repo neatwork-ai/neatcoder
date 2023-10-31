@@ -1,5 +1,6 @@
 use anyhow::Result;
-use js_sys::JsString;
+use chrono::{DateTime, Utc};
+use js_sys::{Date as IDate, JsString};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -7,7 +8,11 @@ use std::{
 };
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
-use crate::{openai::msg::OpenAIMsg, JsError, WasmType};
+use crate::{
+    openai::msg::OpenAIMsg,
+    typescript::{IMessages, IModels},
+    JsError, WasmType,
+};
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -50,15 +55,6 @@ impl DerefMut for Chats {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
-}
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "Record<string, Model>")]
-    pub type IModels;
-
-    #[wasm_bindgen(typescript_type = "Array<Message>")]
-    pub type IMessages;
 }
 
 #[wasm_bindgen]
@@ -168,18 +164,23 @@ impl Model {
 #[serde(rename_all = "camelCase")]
 pub struct Message {
     pub(crate) user: String,
-    pub(crate) ts: String,
+    pub(crate) ts: DateTime<Utc>,
     pub(crate) payload: OpenAIMsg,
 }
 
 #[wasm_bindgen]
 impl Message {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Result<Message, JsValue> {
+    pub fn new(
+        user: String,
+        ts: IDate,
+        payload: OpenAIMsg,
+    ) -> Result<Message, JsValue> {
+        let datetime = DateTime::from_extern(ts.into())?;
         Ok(Self {
-            user: String::from("TODO"),
-            ts: String::from("TODO"),
-            payload: OpenAIMsg::user("TODO"),
+            user,
+            ts: datetime,
+            payload,
         })
     }
 
@@ -189,8 +190,8 @@ impl Message {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn ts(&self) -> JsString {
-        self.ts.clone().into()
+    pub fn ts(&self) -> Result<IDate, JsError> {
+        DateTime::to_extern(self.ts.clone().into())
     }
 
     #[wasm_bindgen(getter)]

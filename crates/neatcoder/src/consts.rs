@@ -1,3 +1,4 @@
+///< Constants used throughout the application.
 pub const CONFIG_EXTENSIONS: [&str; 15] = [
     "txt", "json", "toml", "lock", "yaml", "gemspec", "xml", "gradle",
     "csproj", "config", "sln", "mod", "sbt", "cabal", "md",
