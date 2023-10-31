@@ -2,6 +2,7 @@ import * as mixpanel from 'mixpanel';
 import * as vscode from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
 import { CONFIG } from '../config';
+import * as os from 'os';
 
 class MixpanelHelper {
     private static instance: MixpanelHelper;
@@ -34,8 +35,8 @@ class MixpanelHelper {
     }
 
     trackEvent(eventName: string, properties: mixpanel.PropertyDict = {}): void {
-        // Add the userId to the properties
         properties.distinct_id = this.userId;
+        properties.os = os.type();
 
         this.mixpanelInstance.track(eventName, properties, (err) => {
             if (err) {
