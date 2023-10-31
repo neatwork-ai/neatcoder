@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import MixpanelWebviewHelper from './mixpanel-webview-helper';
+import { Metric } from 'web-vitals';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -13,7 +15,17 @@ root.render(
   </React.StrictMode>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+function sendToMixpanel(metric: Metric) {
+    const mixpanelWebview = MixpanelWebviewHelper.getInstance();
+
+    const eventData = {
+        id: metric.id,
+        name: metric.name,
+        value: metric.value,
+        delta: metric.delta,
+    };
+
+    mixpanelWebview.trackEvent('WebVitals', eventData);
+}
+
+reportWebVitals(sendToMixpanel);

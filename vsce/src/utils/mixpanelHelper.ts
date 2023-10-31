@@ -50,6 +50,7 @@ class MixpanelHelper {
         properties.distinct_id = this.userId;
         properties.$os = os.type();
         properties.extensionVersion = this.getExtensionVersion();
+        properties.moduleName = 'VSCodeExtension';
 
         this.mixpanelInstance.track(eventName, properties, (err) => {
             if (err) {

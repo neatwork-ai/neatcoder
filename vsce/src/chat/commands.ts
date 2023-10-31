@@ -43,6 +43,10 @@ export async function initChat(
           // panel so it knows which panel sent the message
           promptLLM(panel, message);
           break;
+        case "getUserId":
+          const userId = vscode.workspace.getConfiguration().get<string>('NeatworkAi.neatcoder.userId');
+          panel.webview.postMessage({ command: 'userId', userId: userId });
+          break;
       }
     },
     undefined,
