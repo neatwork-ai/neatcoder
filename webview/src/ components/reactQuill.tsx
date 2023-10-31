@@ -188,6 +188,7 @@ export const QuillEditor = forwardRef<QuillEditorHandles, QuillEditorProps>(
 
                     // This allows us to click enter to send the message to openAI
                     if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+                        event.preventDefault();
                         handleSend();
                         return
                     }
