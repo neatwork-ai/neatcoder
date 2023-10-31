@@ -31,19 +31,25 @@ class MixpanelHelper {
     }
 
     private getUserId(): string {
-        const userId = vscode.workspace.getConfiguration().get<string>('yourExtensionName.userId');
+        const userId = vscode.workspace.getConfiguration().get<string>('NeatworkAi.neatcoder.userId');
         if (userId) {
             return userId;
         }
 
         const newUserId = uuidv4();
-        vscode.workspace.getConfiguration().update('yourExtensionName.userId', newUserId, vscode.ConfigurationTarget.Global);
+        vscode.workspace.getConfiguration().update('NeatworkAi.neatcoder.userId', newUserId, vscode.ConfigurationTarget.Global);
         return newUserId;
+    }
+
+   private getExtensionVersion(): string {
+        const extension = vscode.extensions.getExtension('NeatworkAi.neatcoder');
+        return extension?.packageJSON.version || 'unknown';
     }
 
     trackEvent(eventName: string, properties: mixpanel.PropertyDict = {}): void {
         properties.distinct_id = this.userId;
         properties.os = os.type();
+        properties.extensionVersion = this.getExtensionVersion();
 
         this.mixpanelInstance.track(eventName, properties, (err) => {
             if (err) {
