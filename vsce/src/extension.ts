@@ -108,8 +108,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.initCodeBase", async () => {
-      mixpanel.trackEvent('initCodeBase');
-
       let llmParams = await getLLMParams();
       initCodeBase(llmParams, appManager);
     })
