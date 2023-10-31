@@ -72,6 +72,7 @@ const formats = [
 
 type QuillEditorProps = {
     onSendMessage: (text: string) => void;
+    isStreaming: boolean;
   };
 
   // You will also need to define the type for the ref
@@ -82,11 +83,16 @@ type QuillEditorProps = {
 
 
 export const QuillEditor = forwardRef<QuillEditorHandles, QuillEditorProps>(
-    ({ onSendMessage }, ref) => {
+    ({ onSendMessage, isStreaming }, ref) => {
         const [editorContent, setEditorContent] = React.useState('');
         const quillRef = useRef<ReactQuill>(null);
 
         const handleSend = React.useCallback(() => {
+            if (isStreaming) {
+                console.log("Streaming in progress. Message sending is disabled.");
+                return; // Exit early if streaming is in progress
+            }
+
             // Assuming quillRef is a ref to the Quill editor instance
             const editor = quillRef.current?.getEditor();
 
@@ -102,7 +108,7 @@ export const QuillEditor = forwardRef<QuillEditorHandles, QuillEditorProps>(
                 onSendMessage(markdownString);
                 editor.setText('');  // This will clear the editor
             }
-        }, [onSendMessage, quillRef]); // Add quillRef to dependencies if it changes
+        }, [onSendMessage, isStreaming, quillRef]); // Add quillRef to dependencies if it changes
 
         useEffect(() => {
             if (quillRef.current) {

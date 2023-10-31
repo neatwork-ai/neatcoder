@@ -78,7 +78,7 @@ const ChatContainer: React.FC = () => {
       <ChatStream className="chatStream" messages={messages} />
       <div className= "input-wrapper">
         <SendButton onClick={handleSendButtonClick} disabled={isStreaming}/>
-        <QuillEditor ref={quillRef} onSendMessage={handleSendMessage}/>
+        <QuillEditor ref={quillRef} onSendMessage={handleSendMessage} isStreaming={isStreaming}/>
       </div>
     </div>
   );
