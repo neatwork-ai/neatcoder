@@ -102,6 +102,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Register the Chat command
   vscode.commands.registerCommand("extension.createChat", () => {
+    mixpanel.trackEvent('createChat');
     initChat(context);
   });
 
