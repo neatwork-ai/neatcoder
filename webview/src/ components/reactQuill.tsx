@@ -98,11 +98,9 @@ export const QuillEditor = forwardRef<QuillEditorHandles, QuillEditorProps>(
 
             if (editor) {
                 const htmlContent = editor.root.innerHTML; // Get the inner HTML content
-                console.log("HTML Content: " + htmlContent);
 
                 // Convert the HTML to Markdown
                 const markdownString = turndownService.turndown(htmlContent);
-                console.log("Markdown String: " + markdownString);
 
                 // Assuming onSendMessage is a prop that handles sending the markdown content
                 onSendMessage(markdownString);
@@ -146,7 +144,6 @@ export const QuillEditor = forwardRef<QuillEditorHandles, QuillEditorProps>(
                         // change somewhere under the hood, so we make a deep copy
                         if (rangeCopy) {
                             setTimeout(() => {
-                                console.log("Applying format to " + JSON.stringify(rangeCopy))
                                 quill.formatLine(rangeCopy.index, rangeCopy.length, 'code-block', true);
                             }, 25);
                         }
@@ -178,8 +175,6 @@ export const QuillEditor = forwardRef<QuillEditorHandles, QuillEditorProps>(
                     // and triggering the immediate stop of the propagation just
                     // makes it work...
                     if ((event.ctrlKey || event.metaKey) && event.key === "z") {
-                        console.log('Custom undo action');
-                        console.log('is cancellable?', event.cancelable);
                         event.preventDefault();
                         event.stopImmediatePropagation();
                         event.stopPropagation();
@@ -198,7 +193,6 @@ export const QuillEditor = forwardRef<QuillEditorHandles, QuillEditorProps>(
                         const format = quill.getFormat(selection!);
 
                         if (format.code) {
-                            console.log("OINC")
                             // If inside inline code, prevent the newline
                             event.preventDefault();
                             const startIndex = selection!.index;
@@ -251,14 +245,10 @@ export const QuillEditor = forwardRef<QuillEditorHandles, QuillEditorProps>(
 
                             if (selection) {
                                 // Create an empty code block at the current position
-                                console.log("NEWLINE!")
                                 quill.insertText(selection.index, '\n', { 'code-block': true });
 
-                                console.log("MOVE SELECTION!")
                                 // Move the cursor inside the code block
                                 // quill.setSelection(selection!.index + 1, 1);
-                                console.log("Selection moved!")
-
                             }
 
                             // Let the default paste behavior occur

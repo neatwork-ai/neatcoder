@@ -31,8 +31,6 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   const doc = parser.parseFromString(htmlContent, 'text/html');
 
   doc.querySelectorAll('pre').forEach(block => {
-    console.log("block: " + JSON.stringify(block));
-
     // Temporarily disable sanitization warning..
     // Somehow it seems to be triggering false positives
     const originalConsoleWarn = console.warn;
