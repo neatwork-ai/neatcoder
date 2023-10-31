@@ -48,7 +48,7 @@ class MixpanelHelper {
 
     trackEvent(eventName: string, properties: mixpanel.PropertyDict = {}): void {
         properties.distinct_id = this.userId;
-        properties.os = os.type();
+        properties.$os = os.type();
         properties.extensionVersion = this.getExtensionVersion();
 
         this.mixpanelInstance.track(eventName, properties, (err) => {
