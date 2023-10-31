@@ -111,7 +111,7 @@
         {
           "id": "chatTreeView",
           "name": "Chats"
-      }
+        }
       ]
     },
     "menus": {
@@ -230,6 +230,7 @@
     "@wasm-tool/wasm-pack-plugin": "^1.7.0",
     "eventsource": "^2.0.2",
     "http": "^0.0.1-security",
+    "mixpanel": "^0.18.0",
     "node-fetch": "^3.3.2",
     "pako": "^2.1.0",
     "rimraf": "^5.0.1",
