@@ -1,10 +1,10 @@
 import * as wasm from "../../pkg/neatcoder";
 import * as vscode from "vscode";
 import * as path from "path";
-import { storeChat } from "../utils/utils";
+import { getOrSetModelVersion, storeChat } from "../utils/utils";
 import { setWebviewContent } from "./webview";
 import { promptLLM } from "./handlers";
-import { activePanels, chats } from ".";
+import { activePanels } from ".";
 
 export let panelCounter = 1;
 
@@ -30,9 +30,11 @@ export async function initChat(
     path.join(context.extensionPath, "assets", "robot-32-30.png")
   );
 
-  const newChat = new wasm.Chat();
-  storeChat("TODO", newChat);
-  chats.insertChat(newChat);
+  let modelVersion = await getOrSetModelVersion();
+
+  const chat = new wasm.Chat("TODO");
+  chat.addModel(modelVersion!);
+  storeChat(chat);
 
   // Setup event listeners and corresponding handlers
   panel.webview.onDidReceiveMessage(
@@ -41,6 +43,8 @@ export async function initChat(
         case "promptLLM":
           // Now, when we call buildOpenAIRequest, we pass along the
           // panel so it knows which panel sent the message
+          chat.setMessages(message.msgs); // TODO: Move to addMessage to reduce communication overhead
+          storeChat(chat);
           promptLLM(panel, message);
           break;
       }
@@ -58,7 +62,6 @@ export async function initChat(
     for (const [key, activePanel] of activePanels.entries()) {
       if (activePanel === panel) {
         activePanels.delete(key);
-        chats.removeChat("TODO");
       }
     }
   });

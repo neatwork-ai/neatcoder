@@ -8,9 +8,6 @@ extern "C" {
 
     #[wasm_bindgen(typescript_type = "Array<Message>")]
     pub type IMessages;
-
-    // #[wasm_bindgen(typescript_type = "Date")]
-    // pub type IDate;
 }
 
 #[wasm_bindgen]

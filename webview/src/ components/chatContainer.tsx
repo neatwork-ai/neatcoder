@@ -21,7 +21,7 @@ const ChatContainer: React.FC = () => {
       return;
     }
 
-    const newMessages = [...messages, { user: 'user', ts: new Date().toISOString(), payload: { content: text, role: "user" } }];
+    const newMessages = [...messages, { user: 'user', ts: new Date(), payload: { content: text, role: "user" } }];
 
     // Add user's message to the chat stream
     setMessages(newMessages);
@@ -39,7 +39,7 @@ const ChatContainer: React.FC = () => {
         if (token) {
           try {
             if (tokenCount === 0) {
-              setMessages((prevMessages) => [...prevMessages, { user: 'assistant', ts: "todo", payload: { content: token, role: "assistant" } }]);
+              setMessages((prevMessages) => [...prevMessages, { user: 'assistant', ts: new Date(), payload: { content: token, role: "assistant" } }]);
               tokenCount += 1;
             } else {
               setMessages((prevMessages) => {

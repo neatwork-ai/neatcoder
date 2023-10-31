@@ -320,8 +320,9 @@ export async function getChat(uri: vscode.Uri): Promise<wasm.Chat> {
   }
 }
 
-export async function storeChat(name: string, chat: wasm.Chat): Promise<void> {
+export async function storeChat(chat: wasm.Chat): Promise<void> {
   try {
+    const chatId = chat.sessionId;
     // Convert the chat instance to a JSON string
     const jsonString = chat.castToString();
 
@@ -331,7 +332,7 @@ export async function storeChat(name: string, chat: wasm.Chat): Promise<void> {
       ".neat",
       "chats"
     );
-    const filePath = path.join(folderPath, `${name}.json`);
+    const filePath = path.join(folderPath, `${chatId}.json`);
 
     // Ensure the directory exists
     await vscode.workspace.fs.createDirectory(vscode.Uri.file(folderPath));

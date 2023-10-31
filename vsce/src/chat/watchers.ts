@@ -3,7 +3,6 @@ import * as fs from "fs";
 import * as path from "path";
 import { ChatTreeViewProvider } from "../chat/providers";
 import { getChat } from "../utils/utils";
-import { chats } from ".";
 
 type ChatInfo = {
   chatId: string;
@@ -23,7 +22,7 @@ export function setupChatWatcher(
     console.log("onDidChange triggered", uri.path);
     try {
       const chat = await getChat(uri);
-      chats.insertChat(chat);
+      // chats.insertChat(chat); // TODO: Lazily read chats on webview open
       chatTreeViewProvider.refresh();
     } catch (error) {
       vscode.window.showErrorMessage(
@@ -43,7 +42,7 @@ export function setupChatWatcher(
         chatId: chat.sessionId,
         chatTitle: chat.title,
       });
-      chats.insertChat(chat);
+      // chats.insertChat(chat); // TODO: Lazily read chats on webview open
       chatTreeViewProvider.refresh();
     } catch (error) {
       vscode.window.showErrorMessage(
@@ -58,7 +57,7 @@ export function setupChatWatcher(
     try {
       const uriString = uri.toString();
       const chatInfo = chatMap.get(uriString)!;
-      chats.removeChat(chatInfo.chatId);
+      // chats.removeChat(chatInfo.chatId); TODO: Lazily remove chats..
       chatMap.delete(uriString);
     } catch (error) {
       console.error("Failed to remove chat state:", error);
