@@ -1,11 +1,12 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use js_sys::{Date as IDate, JsString};
+use js_sys::{Date as IDate, Function, JsString};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::{
+    endpoints::get_chat_title::get_chat_title,
     openai::{msg::OpenAIMsg, params::OpenAIModels},
     typescript::{IMessages, IModels},
     JsError, WasmType,
@@ -98,6 +99,29 @@ impl Chat {
     #[wasm_bindgen(getter)]
     pub fn messages(&self) -> Result<IMessages, JsError> {
         Vec::to_extern(self.messages.clone())
+    }
+
+    #[wasm_bindgen(js_name = setTitle)]
+    pub async fn set_title(
+        &mut self,
+        request_callback: &Function,
+    ) -> Result<(), JsError> {
+        if !self.messages.is_empty() {
+            // Get the first element using indexing (index 0)
+            let first_msg = self.messages[0].clone();
+            let title =
+                get_chat_title(&first_msg.payload.content, request_callback)
+                    .await
+                    .map_err(|e| JsError::from_str(&e.to_string()))?;
+
+            self.title = title;
+
+            Ok(())
+        } else {
+            Err(JsError::from(JsValue::from_str(
+                "Unable to create title. No messages in the Chat.",
+            )))
+        }
     }
 
     #[wasm_bindgen(js_name = addMessage)]

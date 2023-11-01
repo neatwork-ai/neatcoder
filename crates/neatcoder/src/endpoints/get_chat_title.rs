@@ -1,7 +1,5 @@
 use anyhow::{anyhow, Result};
-use js_sys::{Function, JsString};
-use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::wasm_bindgen;
+use js_sys::Function;
 
 use crate::openai::{
     msg::{GptRole, OpenAIMsg},
@@ -9,28 +7,8 @@ use crate::openai::{
     request::chat_raw,
 };
 
-#[wasm_bindgen]
-#[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ChatTitleParams {
-    pub(crate) msg: String,
-}
-
-#[wasm_bindgen]
-impl ChatTitleParams {
-    #[wasm_bindgen(constructor)]
-    pub fn new(msg: String) -> ChatTitleParams {
-        ChatTitleParams { msg }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn msg(&self) -> JsString {
-        self.msg.clone().into()
-    }
-}
-
 pub async fn get_chat_title(
-    client_params: &ChatTitleParams,
+    msg: &str,
     request_callback: &Function,
 ) -> Result<String> {
     let mut prompts = Vec::new();
@@ -48,7 +26,7 @@ Your task is to create a title for the following prompt:
 \"\"\"{}\"\"\"
 
 The title of the prompt is:",
-        client_params.msg
+        msg
     );
 
     prompts.push(OpenAIMsg {

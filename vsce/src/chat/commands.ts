@@ -6,6 +6,7 @@ import { setWebviewContent } from "./webview";
 import { promptLLM } from "./handlers";
 import { activePanels } from ".";
 import { v4 as uuidv4 } from "uuid";
+import { makeRequest } from "../utils/httpClient";
 
 export let panelCounter = 1;
 
@@ -46,7 +47,16 @@ export async function initChat(
           // panel so it knows which panel sent the message
           chat.setMessages(message.msgs); // TODO: Move to addMessage to reduce communication overhead
           storeChat(chat);
+          const msgs: Array<wasm.Message> = message.msgs;
+          const isFirst = msgs.length === 1 ? true : false;
+
           promptLLM(panel, message);
+
+          if (isFirst) {
+            chat.setTitle(makeRequest);
+            storeChat(chat);
+          }
+
           break;
 
         case "saveChat":
