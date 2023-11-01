@@ -3,7 +3,6 @@ use chrono::{DateTime, Utc};
 use js_sys::{Date as IDate, JsString};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::{
@@ -63,7 +62,7 @@ use crate::{
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Chat {
-    pub(crate) session_id: Uuid,
+    pub(crate) session_id: String,
     pub(crate) title: String,
     pub(crate) models: HashMap<String, Model>,
     pub(crate) messages: Vec<Message>,
@@ -72,18 +71,18 @@ pub struct Chat {
 #[wasm_bindgen]
 impl Chat {
     #[wasm_bindgen(constructor)]
-    pub fn new(title: String) -> Result<Chat, JsValue> {
-        Ok(Self {
-            session_id: Uuid::new_v4(),
+    pub fn new(session_id: String, title: String) -> Chat {
+        Self {
+            session_id,
             title,
             models: HashMap::new(),
             messages: Vec::new(),
-        })
+        }
     }
 
     #[wasm_bindgen(getter, js_name = sessionId)]
     pub fn session_id(&self) -> JsString {
-        self.session_id.clone().to_string().into()
+        self.session_id.clone().into()
     }
 
     #[wasm_bindgen(getter)]

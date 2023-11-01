@@ -5,6 +5,7 @@ import { getOrSetModelVersion, storeChat } from "../utils/utils";
 import { setWebviewContent } from "./webview";
 import { promptLLM } from "./handlers";
 import { activePanels } from ".";
+import { v4 as uuidv4 } from "uuid";
 
 export let panelCounter = 1;
 
@@ -31,8 +32,8 @@ export async function initChat(
   );
 
   let modelVersion = await getOrSetModelVersion();
-
-  const chat = new wasm.Chat("TODO");
+  const sessionId = uuidv4();
+  const chat = new wasm.Chat(sessionId, "TODO");
   chat.addModel(modelVersion!);
   storeChat(chat);
 
