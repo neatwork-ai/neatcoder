@@ -48,6 +48,12 @@ export async function initChat(
           storeChat(chat);
           promptLLM(panel, message);
           break;
+
+        case "saveChat":
+          // Store when GPT answer is complete
+          chat.setMessages(message.msgs); // TODO: Move to addMessage to reduce communication overhead
+          storeChat(chat);
+          break;
       }
     },
     undefined,

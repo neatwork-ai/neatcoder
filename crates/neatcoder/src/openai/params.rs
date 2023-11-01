@@ -171,6 +171,12 @@ impl OpenAIParams {
         self
     }
 
+    #[wasm_bindgen(js_name = maxTokens)]
+    pub fn max_tokens(mut self, max_tokens: u64) -> Self {
+        self.max_tokens = Some(max_tokens);
+        self
+    }
+
     #[wasm_bindgen(js_name = frequencyPenalty)]
     pub fn frequency_penalty(mut self, frequency_penalty: f64) -> Self {
         self.frequency_penalty = Some(

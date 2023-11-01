@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import ChatStream from './chatStream';
-import { promptLLM } from './httpClient';
+import { promptLLM, saveChat } from './vsceClient';
 import { Message } from '../../wasm/neatcoderInterface';
 import QuillEditor from './reactQuill';
 import SendButton from './sendButton';
@@ -55,8 +55,10 @@ const ChatContainer: React.FC = () => {
         }
 
         if (done) {
+          saveChat(newMessages);
           setIsStreaming(false); // End streaming
           tokenCount += 0;
+          // Make call to VSCE to store the latest chat state
           break
         };
       }
