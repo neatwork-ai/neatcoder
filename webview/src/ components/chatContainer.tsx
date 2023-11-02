@@ -1,19 +1,26 @@
 // ChatContainer.tsx
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import ChatStream from './chatStream';
-import TextBox from './textBox';
 import { promptLLM } from './httpClient';
 import { Message } from '../../wasm/neatcoderInterface';
 import QuillEditor from './reactQuill';
-import SVGButton from './sendButton';
+import SendButton from './sendButton';
 
 let tokenCount;
 
 const ChatContainer: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const quillRef = useRef<any>(null);
+  const [isStreaming, setIsStreaming] = useState(false);  // State to track if streaming is active
 
   const handleSendMessage = async (text: string) => {
+    if (isStreaming) {
+      // Prevent sending new messages if stream is active
+      console.warn("Please wait for the current response to finish streaming.");
+      return;
+    }
+
     const newMessages = [...messages, { user: 'user', ts: "todo", payload: { content: text, role: "user" } }];
 
     // Add user's message to the chat stream
@@ -21,6 +28,7 @@ const ChatContainer: React.FC = () => {
 
     // Send message to OpenAI and get response
     try {
+      setIsStreaming(true); // Start streaming
       const stream = promptLLM(newMessages, true);
       const reader = stream.getReader();
 
@@ -47,6 +55,7 @@ const ChatContainer: React.FC = () => {
         }
 
         if (done) {
+          setIsStreaming(false); // End streaming
           tokenCount += 0;
           break
         };
@@ -57,14 +66,20 @@ const ChatContainer: React.FC = () => {
     }
   };
 
+  const handleSendButtonClick = () => {
+    if (quillRef.current) {
+      quillRef.current.handleSend();
+    }
+  };
+
+
   return (
     <div className="chatContainer">
       <ChatStream className="chatStream" messages={messages} />
       <div className= "input-wrapper">
-        <SVGButton onClick={() => {}} />
-        <QuillEditor onSendMessage={handleSendMessage}/>
+        <SendButton onClick={handleSendButtonClick} disabled={isStreaming}/>
+        <QuillEditor ref={quillRef} onSendMessage={handleSendMessage} isStreaming={isStreaming}/>
       </div>
-      {/* <TextBox onSendMessage={handleSendMessage} /> */}
     </div>
   );
 };
