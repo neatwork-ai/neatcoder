@@ -9,6 +9,12 @@ export type ChatEntry = {
 export class ChatItem extends vscode.TreeItem {
   constructor(public readonly id: string, public readonly label: string) {
     super(label, vscode.TreeItemCollapsibleState.None);
+
+    this.command = {
+      command: "extension.openChat", // This should match the command you register
+      title: "Open Chat", // This is the text that appears in the UI
+      arguments: [this], // Arguments passed to the command handler, the `ChatItem` in this case
+    };
   }
 }
 

@@ -1,8 +1,8 @@
 {
   "name": "neatcoder",
-  "displayName": "Neatcoder",
+  "displayName": "Neatwork AI - GPT4 on Steroids",
   "description": "Turn your IDE into an AI Sofware engineer.",
-  "version": "9.9.9",
+  "version": "0.2.0",
   "publisher": "NeatworkAi",
   "repository": {
     "url": "https://github.com/neatwork-ai/neatcoder-issues.git",
@@ -13,7 +13,10 @@
     "vscode": ">=1.80.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages", "Machine Learning", "Notebooks", "Testing", "Snippets", "Education"
+  ],
+  "keywords": [
+    "ai", "chatgpt", "copilot", "github", "ai-tools", "assistant", "ai-agent", "codegen", "code-generation", "gpt3", "gpt3.5", "gpt4", "documentation", "find bugs"
   ],
   "activationEvents": [
     "workspaceContains:**"
@@ -75,6 +78,15 @@
         "command": "extension.createChat",
         "title": "New Chat",
         "icon": "$(notebook-render-output)"
+      },
+      {
+        "command": "extension.openChat",
+        "title": "Open Chat"
+      },
+      {
+        "command": "extension.removeChat",
+        "title": "Remove Chat",
+        "icon": "$(remove)"
       },
       {
         "command": "extension.retryTask",
@@ -178,6 +190,11 @@
           "command": "extension.removeSchema",
           "when": "view == interfacesView && viewItem == fileItem",
           "group": "inline"
+        },
+        {
+          "command": "extension.removeChat",
+          "when": "view == chatTreeView",
+          "group": "inline"
         }
       ]
     },
@@ -237,11 +254,11 @@
     "@wasm-tool/wasm-pack-plugin": "^1.7.0",
     "eventsource": "^2.0.2",
     "http": "^0.0.1-security",
+    "mixpanel": "^0.18.0",
     "node-fetch": "^3.3.2",
     "pako": "^2.1.0",
     "rimraf": "^5.0.1",
     "uuid": "^9.0.1",
-    "ws": "^8.13.0",
-    "mixpanel": "^0.18.0"
+    "ws": "^8.13.0"
   }
 }

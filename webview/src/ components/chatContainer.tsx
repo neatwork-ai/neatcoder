@@ -1,6 +1,6 @@
 // ChatContainer.tsx
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ChatStream from './chatStream';
 import { promptLLM, saveChat } from './vsceClient';
 import { Message } from '../../wasm/neatcoderInterface';
@@ -10,9 +10,14 @@ import SendButton from './sendButton';
 let tokenCount;
 
 const ChatContainer: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Initialize messages from window.initialChatHistory if it exists
+  const [messages, setMessages] = useState<Message[]>(
+    window.initialChatHistory || []
+  );
+
   const quillRef = useRef<any>(null);
   const [isStreaming, setIsStreaming] = useState(false);  // State to track if streaming is active
+  const [canSave, setCanSave] = useState(false);
 
   const handleSendMessage = async (text: string) => {
     if (isStreaming) {
@@ -21,15 +26,15 @@ const ChatContainer: React.FC = () => {
       return;
     }
 
-    const newMessages = [...messages, { user: 'user', ts: new Date(), payload: { content: text, role: "user" } }];
+    let localMessages = [...messages, { user: 'user', ts: new Date(), payload: { content: text, role: "user" } }];
 
     // Add user's message to the chat stream
-    setMessages(newMessages);
+    setMessages(localMessages);
 
     // Send message to OpenAI and get response
     try {
       setIsStreaming(true); // Start streaming
-      const stream = promptLLM(newMessages, true);
+      const stream = promptLLM(localMessages, true);
       const reader = stream.getReader();
 
       tokenCount = 0;
@@ -39,13 +44,14 @@ const ChatContainer: React.FC = () => {
         if (token) {
           try {
             if (tokenCount === 0) {
-              setMessages((prevMessages) => [...prevMessages, { user: 'assistant', ts: new Date(), payload: { content: token, role: "assistant" } }]);
+              const newAssistantMessage = { user: 'assistant', ts: new Date(), payload: { content: token, role: "assistant" } };
+              setMessages((prevMessages) => [...prevMessages, newAssistantMessage]);
               tokenCount += 1;
             } else {
               setMessages((prevMessages) => {
                 let newMessages = [...prevMessages];
-
                 newMessages[newMessages.length - 1].payload.content += token;
+
                 return newMessages;
               });
             }
@@ -55,10 +61,9 @@ const ChatContainer: React.FC = () => {
         }
 
         if (done) {
-          saveChat(newMessages);
+          setCanSave(true);
           setIsStreaming(false); // End streaming
           tokenCount += 0;
-          // Make call to VSCE to store the latest chat state
           break
         };
       }
@@ -73,6 +78,15 @@ const ChatContainer: React.FC = () => {
       quillRef.current.handleSend();
     }
   };
+
+  useEffect(() => {
+    // This effect runs when `canSave` changes.
+    // When canSave is set to true, you can save the chat.
+    if (canSave) {
+      saveChat(messages);
+      setCanSave(false);
+    }
+  }, [canSave, messages]);
 
 
   return (

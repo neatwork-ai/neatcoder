@@ -19,18 +19,6 @@ export function setupChatWatcher(
 
   watcher.onDidChange(async (uri: vscode.Uri) => {
     // No-Op
-    // console.log("onDidChange triggered", uri.path);
-    // try {
-    //   const chat = await getChat(uri);
-    //   // chats.insertChat(chat); // TODO: Lazily read chats on webview open
-    //   chatTreeViewProvider.refresh();
-    // } catch (error) {
-    //   vscode.window.showErrorMessage(
-    //     `[ERROR] Failed to read chat file ${uri}. Error: ${error}`
-    //   );
-    //   console.error("Failed to update chat state:", error);
-    //   throw new Error(`Failed to update chat state ${uri.path}: ${error}`);
-    // }
   });
 
   watcher.onDidCreate(async (uri: vscode.Uri) => {
