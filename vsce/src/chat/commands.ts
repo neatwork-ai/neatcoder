@@ -44,7 +44,7 @@ export async function initChat(
   const sessionId = uuidv4();
   const chat = new wasm.Chat(sessionId, "Chat with Neat");
   chat.addModel(modelVersion!);
-  storeChat(chat);
+  await storeChat(chat);
 
   // Setup event listeners and corresponding handlers
   panel.webview.onDidReceiveMessage(
@@ -127,7 +127,7 @@ const setupWebviewSockets = async (
       // Now, when we call buildOpenAIRequest, we pass along the
       // panel so it knows which panel sent the message
       chat.setMessages(message.msgs); // TODO: Move to addMessage to reduce communication overhead
-      storeChat(chat);
+      await storeChat(chat);
       const msgs: Array<wasm.Message> = message.msgs;
       const isFirst = msgs.length === 1 ? true : false;
 
@@ -137,7 +137,7 @@ const setupWebviewSockets = async (
 
       if (isFirst) {
         await chat.setTitle(makeRequest);
-        storeChat(chat);
+        await storeChat(chat);
 
         // Change the title in the config
         let config = getOrInitConfig();
@@ -198,9 +198,12 @@ const setupWebviewSockets = async (
       break;
 
     case "saveChat":
+      console.log("Received saveChat request.");
+
+      console.log(`Messages: ${JSON.stringify(message.msgs)}`);
       // Store when GPT answer is complete
       chat.setMessages(message.msgs); // TODO: Move to addMessage to reduce communication overhead
-      storeChat(chat);
+      await storeChat(chat);
       break;
   }
 };
