@@ -73,7 +73,7 @@
       },
       {
         "command": "extension.createChat",
-        "title": "Chat",
+        "title": "New Chat",
         "icon": "$(notebook-render-output)"
       },
       {
