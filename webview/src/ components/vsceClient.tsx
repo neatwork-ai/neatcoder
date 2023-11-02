@@ -29,3 +29,10 @@ export function promptLLM(msgs: Array<Message>, stream: boolean): ReadableStream
 
   return readable;
 }
+
+export function saveChat(msgs: Array<Message>) {
+  vscode.postMessage({
+    command: 'saveChat',
+    msgs: msgs,
+  });
+}

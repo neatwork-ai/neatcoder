@@ -1,5 +1,5 @@
 use super::{msg::OpenAIMsg, params::OpenAIParams, response::ResponseBody};
-use crate::{utils::log, JsError, WasmType};
+use crate::{typescript::IOpenAIMsg, utils::log, JsError, WasmType};
 use anyhow::{anyhow, Result};
 use js_sys::{Function, Promise};
 use serde_json::{json, Value};
@@ -7,12 +7,6 @@ use serde_wasm_bindgen::from_value;
 use std::ops::Deref;
 use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "Array<OpenAIMsg>")]
-    pub type IOpenAIMsg;
-}
 
 #[wasm_bindgen(js_name = requestBody)]
 pub fn request_body_(

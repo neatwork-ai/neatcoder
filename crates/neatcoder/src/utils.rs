@@ -1,3 +1,4 @@
+///< Contains utility functions and helpers.
 use crate::openai::request::chat_raw;
 use crate::openai::{msg::OpenAIMsg, params::OpenAIParams};
 use crate::JsError;

@@ -1,65 +1,63 @@
 use anyhow::Result;
-use js_sys::JsString;
+use chrono::{DateTime, Utc};
+use js_sys::{Date as IDate, Function, JsString};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{BTreeMap, HashMap},
-    ops::{Deref, DerefMut},
-};
+use std::collections::HashMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
-use crate::{openai::msg::OpenAIMsg, JsError, WasmType};
+use crate::{
+    endpoints::get_chat_title::get_chat_title,
+    openai::{msg::OpenAIMsg, params::OpenAIModels},
+    typescript::{IMessages, IModels},
+    JsError, WasmType,
+};
 
-#[wasm_bindgen]
-#[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Chats(BTreeMap<String, Chat>);
+// TODO: Do we need to store all chates in a BTreeMap or just a
+// reference to all chats? We could lazily read the chats as they're opened
+// in the webview as opposed to having all the chats in the BTreeMap on start
 
-#[wasm_bindgen]
-impl Chats {
-    #[wasm_bindgen(constructor)]
-    pub fn new() -> Result<Chats, JsValue> {
-        Ok(Self(BTreeMap::new()))
-    }
+// #[wasm_bindgen]
+// #[derive(Debug, Deserialize, Serialize, Clone)]
+// #[serde(rename_all = "camelCase")]
+// pub struct Chats(BTreeMap<String, Chat>);
 
-    #[wasm_bindgen(js_name = insertChat)]
-    pub fn insert_chat(&mut self, chat: Chat) {
-        self.insert(chat.session_id.clone(), chat);
-    }
+// #[wasm_bindgen]
+// impl Chats {
+//     #[wasm_bindgen(constructor)]
+//     pub fn new() -> Result<Chats, JsValue> {
+//         Ok(Self(BTreeMap::new()))
+//     }
 
-    #[wasm_bindgen(js_name = removeChat)]
-    pub fn remove_chat(&mut self, chat_id: String) {
-        self.remove(&chat_id);
-    }
-}
+//     #[wasm_bindgen(js_name = insertChat)]
+//     pub fn insert_chat(&mut self, chat: Chat) {
+//         self.insert(chat.session_id.clone(), chat);
+//     }
 
-impl AsRef<BTreeMap<String, Chat>> for Chats {
-    fn as_ref(&self) -> &BTreeMap<String, Chat> {
-        &self.0
-    }
-}
+//     #[wasm_bindgen(js_name = removeChat)]
+//     pub fn remove_chat(&mut self, chat_id: String) {
+//         self.remove(&chat_id);
+//     }
+// }
 
-impl Deref for Chats {
-    type Target = BTreeMap<String, Chat>;
+// impl AsRef<BTreeMap<String, Chat>> for Chats {
+//     fn as_ref(&self) -> &BTreeMap<String, Chat> {
+//         &self.0
+//     }
+// }
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
+// impl Deref for Chats {
+//     type Target = BTreeMap<String, Chat>;
 
-impl DerefMut for Chats {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
+//     fn deref(&self) -> &Self::Target {
+//         &self.0
+//     }
+// }
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "Record<string, Model>")]
-    pub type IModels;
-
-    #[wasm_bindgen(typescript_type = "Array<Message>")]
-    pub type IMessages;
-}
+// impl DerefMut for Chats {
+//     fn deref_mut(&mut self) -> &mut Self::Target {
+//         &mut self.0
+//     }
+// }
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -74,13 +72,13 @@ pub struct Chat {
 #[wasm_bindgen]
 impl Chat {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Result<Chat, JsValue> {
-        Ok(Self {
-            session_id: String::from("TODO"),
-            title: String::from("TODO"),
+    pub fn new(session_id: String, title: String) -> Chat {
+        Self {
+            session_id,
+            title,
             models: HashMap::new(),
             messages: Vec::new(),
-        })
+        }
     }
 
     #[wasm_bindgen(getter, js_name = sessionId)]
@@ -101,6 +99,49 @@ impl Chat {
     #[wasm_bindgen(getter)]
     pub fn messages(&self) -> Result<IMessages, JsError> {
         Vec::to_extern(self.messages.clone())
+    }
+
+    #[wasm_bindgen(js_name = setTitle)]
+    pub async fn set_title(
+        &mut self,
+        request_callback: &Function,
+    ) -> Result<(), JsError> {
+        if !self.messages.is_empty() {
+            // Get the first element using indexing (index 0)
+            let first_msg = self.messages[0].clone();
+            let title =
+                get_chat_title(&first_msg.payload.content, request_callback)
+                    .await
+                    .map_err(|e| JsError::from_str(&e.to_string()))?;
+
+            self.title = title;
+
+            Ok(())
+        } else {
+            Err(JsError::from(JsValue::from_str(
+                "Unable to create title. No messages in the Chat.",
+            )))
+        }
+    }
+
+    #[wasm_bindgen(js_name = addMessage)]
+    pub fn add_message(&mut self, message: Message) {
+        self.messages.push(message);
+    }
+
+    #[wasm_bindgen(js_name = setMessages)]
+    pub fn set_messages(&mut self, messages: IMessages) -> Result<(), JsError> {
+        let messages = Vec::from_extern(messages)?;
+
+        self.messages = messages;
+
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = addModel)]
+    pub fn add_model(&mut self, model: OpenAIModels) {
+        let model_id = model.as_string();
+        self.models.insert(model_id.clone(), Model::new(model_id));
     }
 
     #[wasm_bindgen(js_name = castFromString)]
@@ -125,7 +166,6 @@ impl Chat {
 #[serde(rename_all = "camelCase")]
 pub struct Model {
     pub(crate) id: String,
-    pub(crate) model: String,
     pub(crate) uri: String,
     pub(crate) interface: String,
 }
@@ -133,23 +173,17 @@ pub struct Model {
 #[wasm_bindgen]
 impl Model {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Result<Model, JsValue> {
-        Ok(Self {
-            id: String::from("TODO"),
-            model: String::from("TODO"),
-            uri: String::from("TODO"),
-            interface: String::from("TODO"),
-        })
+    pub fn new(id: String) -> Model {
+        Self {
+            id,
+            uri: String::from("https://api.openai.com/v1/chat/completions"),
+            interface: String::from("OpenAI"),
+        }
     }
 
     #[wasm_bindgen(getter)]
     pub fn id(&self) -> JsString {
         self.id.clone().into()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn model(&self) -> JsString {
-        self.model.clone().into()
     }
 
     #[wasm_bindgen(getter)]
@@ -168,18 +202,23 @@ impl Model {
 #[serde(rename_all = "camelCase")]
 pub struct Message {
     pub(crate) user: String,
-    pub(crate) ts: String,
+    pub(crate) ts: DateTime<Utc>,
     pub(crate) payload: OpenAIMsg,
 }
 
 #[wasm_bindgen]
 impl Message {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Result<Message, JsValue> {
+    pub fn new(
+        user: String,
+        ts: IDate,
+        payload: OpenAIMsg,
+    ) -> Result<Message, JsValue> {
+        let datetime = DateTime::from_extern(ts.into())?;
         Ok(Self {
-            user: String::from("TODO"),
-            ts: String::from("TODO"),
-            payload: OpenAIMsg::user("TODO"),
+            user,
+            ts: datetime,
+            payload,
         })
     }
 
@@ -189,8 +228,8 @@ impl Message {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn ts(&self) -> JsString {
-        self.ts.clone().into()
+    pub fn ts(&self) -> Result<IDate, JsError> {
+        DateTime::to_extern(self.ts.clone().into())
     }
 
     #[wasm_bindgen(getter)]

@@ -23,7 +23,7 @@ import {
 } from "./taskPool";
 import { initCodeBase, appDataManager, setupDotNeatWatcher } from "./core";
 import { getOrSetApiKey, initStatusBar, initLogger, logger } from "./utils";
-import { ChatTreeViewProvider, initChat, setupChatWatcher } from "./chat";
+import { ChatProvider, initChat, setupChatWatcher } from "./chat";
 import { getOrSetModelVersion, setModelVersion } from "./utils/utils";
 import MixpanelHelper from "./utils/mixpanelHelper";
 
@@ -53,7 +53,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const jobQueueProvider = new TaskPoolProvider();
   const auditTrailProvider = new TasksCompletedProvider();
   const interfacesProvider = new InterfacesProvider();
-  const chatTreeProvider = new ChatTreeViewProvider();
+  const chatProvider = new ChatProvider();
 
   // init Mixpanel
   let mixpanel = MixpanelHelper.getInstance();
@@ -70,8 +70,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Setup File Watcher which checks for changes in the `.neat` and
   // communicates them to the server if relevant
-  setupDotNeatWatcher(schemaWatchers, interfacesProvider, appManager);
-  chatWatcher = setupChatWatcher(chatTreeProvider);
+  setupDotNeatWatcher(
+    schemaWatchers,
+    interfacesProvider,
+    chatProvider,
+    appManager
+  );
+  chatWatcher = setupChatWatcher(chatProvider);
 
   // === Registration & Garbage Collection ===
 
@@ -97,7 +102,7 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("chatTreeView", chatTreeProvider)
+    vscode.window.registerTreeDataProvider("chatTreeView", chatProvider)
   );
 
   // Register the Chat command

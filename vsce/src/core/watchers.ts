@@ -7,12 +7,14 @@ import { appDataManager } from "../core/appData";
 import { logger } from "../utils/logger";
 import { InterfacesProvider } from "../foreignInterfaces/providers";
 import { setupSchemaWatchers } from "../foreignInterfaces/watchers";
+import { ChatProvider } from "../chat/providers";
 
 let originalConfig: any;
 
 export function setupDotNeatWatcher(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
+  chatProvider: ChatProvider, // TODO: Add data from chats from this watcher
   appManager: appDataManager
 ) {
   if (!vscode.workspace.workspaceFolders) {
@@ -25,18 +27,33 @@ export function setupDotNeatWatcher(
 
   if (fs.existsSync(configDir)) {
     if (fs.existsSync(configPath)) {
-      setupFileWatcher(schemaWatchers, interfacesProvider, appManager);
+      setupCoreWatcher(
+        schemaWatchers,
+        interfacesProvider,
+        chatProvider,
+        appManager
+      );
       setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager);
     } else {
       watchForFileCreation(configDir, "config.json", () => {
-        setupFileWatcher(schemaWatchers, interfacesProvider, appManager);
+        setupCoreWatcher(
+          schemaWatchers,
+          interfacesProvider,
+          chatProvider,
+          appManager
+        );
         setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager);
       });
     }
   } else {
     watchForFileCreation(root, ".neat", () => {
       watchForFileCreation(configDir, "config.json", () => {
-        setupFileWatcher(schemaWatchers, interfacesProvider, appManager);
+        setupCoreWatcher(
+          schemaWatchers,
+          interfacesProvider,
+          chatProvider,
+          appManager
+        );
         setupSchemaWatchers(schemaWatchers, interfacesProvider, appManager);
       });
     });
@@ -64,9 +81,10 @@ function watchForFileCreation(
  * @param interfacesProvider - Provider for managing interfaces.
  * @param appManager - The application manager for handling state and configurations.
  */
-export function setupFileWatcher(
+export function setupCoreWatcher(
   schemaWatchers: { [key: string]: fs.FSWatcher },
   interfacesProvider: InterfacesProvider,
+  chatProvider: ChatProvider,
   appManager: appDataManager
 ) {
   if (!vscode.workspace.workspaceFolders) {
@@ -93,6 +111,7 @@ export function setupFileWatcher(
 
         // Refresh UI
         interfacesProvider.refresh();
+        chatProvider.refresh();
 
         // Read the new content
         const newContentString = fs.readFileSync(fullPath, "utf-8");
@@ -104,6 +123,8 @@ export function setupFileWatcher(
           logger.appendLine(`[ERROR] Failed to parse JSON: ${error}`);
           return;
         }
+
+        // Propagate Interface changes to AppData
 
         // Compare and handle additions
         const bool1 = handleAdditions(
@@ -134,6 +155,8 @@ export function setupFileWatcher(
         );
 
         const toUpdate = bool1 || bool2 || bool3 || bool4;
+
+        // Update Schema watchers according to interface changes
 
         if (toUpdate) {
           // Close the old schema watchers

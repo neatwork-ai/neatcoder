@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import ChatStream from './chatStream';
-import { promptLLM } from './httpClient';
+import { promptLLM, saveChat } from './vsceClient';
 import { Message } from '../../wasm/neatcoderInterface';
 import QuillEditor from './reactQuill';
 import SendButton from './sendButton';
@@ -21,7 +21,7 @@ const ChatContainer: React.FC = () => {
       return;
     }
 
-    const newMessages = [...messages, { user: 'user', ts: "todo", payload: { content: text, role: "user" } }];
+    const newMessages = [...messages, { user: 'user', ts: new Date(), payload: { content: text, role: "user" } }];
 
     // Add user's message to the chat stream
     setMessages(newMessages);
@@ -39,7 +39,7 @@ const ChatContainer: React.FC = () => {
         if (token) {
           try {
             if (tokenCount === 0) {
-              setMessages((prevMessages) => [...prevMessages, { user: 'assistant', ts: "todo", payload: { content: token, role: "assistant" } }]);
+              setMessages((prevMessages) => [...prevMessages, { user: 'assistant', ts: new Date(), payload: { content: token, role: "assistant" } }]);
               tokenCount += 1;
             } else {
               setMessages((prevMessages) => {
@@ -55,8 +55,10 @@ const ChatContainer: React.FC = () => {
         }
 
         if (done) {
+          saveChat(newMessages);
           setIsStreaming(false); // End streaming
           tokenCount += 0;
+          // Make call to VSCE to store the latest chat state
           break
         };
       }

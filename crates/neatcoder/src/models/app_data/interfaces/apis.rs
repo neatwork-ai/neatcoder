@@ -1,6 +1,7 @@
-use super::{AsContext, ISchemas, SchemaFile};
+use super::{AsContext, SchemaFile};
 use crate::{
     openai::msg::{GptRole, OpenAIMsg},
+    typescript::ISchemas,
     JsError, WasmType,
 };
 use anyhow::Result;

@@ -4,6 +4,7 @@ import * as path from "path";
 import * as pako from "pako";
 import * as wasm from "../../pkg/neatcoder";
 import { ApiEntry, DbEntry, PathEntry } from "../foreignInterfaces/providers";
+import { ChatEntry } from "../chat/providers";
 
 /// ===== Read ===== ///
 
@@ -51,11 +52,6 @@ function readDirectoryStructure(
 /// ===== Write ===== ///
 
 export function saveappDataToFile(appData: wasm.AppData): void {
-  const payload = serializeappData(appData);
-  saveFile(payload, ".neat/cache", "state");
-}
-
-export function saveCump(appData: wasm.AppData): void {
   const payload = serializeappData(appData);
   saveFile(payload, ".neat/cache", "state");
 }
@@ -118,6 +114,7 @@ export function getConfigIfAny(): {
   paths: PathEntry[];
   dbs: DbEntry[];
   apis: ApiEntry[];
+  chats: ChatEntry[];
 } | null {
   const root = getRoot();
 
@@ -145,6 +142,17 @@ export function getConfigIfAny(): {
     }
   }
   return config;
+}
+
+export function getOrInitConfig(): {
+  paths: PathEntry[];
+  dbs: DbEntry[];
+  apis: ApiEntry[];
+  chats: ChatEntry[];
+} {
+  getOrCreateConfigPath();
+
+  return getConfigIfAny()!;
 }
 
 export function getOrCreateConfigPath(): string {
@@ -325,8 +333,9 @@ export async function getChat(uri: vscode.Uri): Promise<wasm.Chat> {
   }
 }
 
-export async function storeChat(name: string, chat: wasm.Chat): Promise<void> {
+export async function storeChat(chat: wasm.Chat): Promise<void> {
   try {
+    const chatId = chat.sessionId;
     // Convert the chat instance to a JSON string
     const jsonString = chat.castToString();
 
@@ -336,7 +345,7 @@ export async function storeChat(name: string, chat: wasm.Chat): Promise<void> {
       ".neat",
       "chats"
     );
-    const filePath = path.join(folderPath, `${name}.json`);
+    const filePath = path.join(folderPath, `${chatId}.json`);
 
     // Ensure the directory exists
     await vscode.workspace.fs.createDirectory(vscode.Uri.file(folderPath));

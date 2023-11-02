@@ -20,9 +20,6 @@ export interface Chat {
     title: string;
 }
 
-export interface Chats {
-}
-
 export interface CodeGenParams {
     filename: string;
 }
@@ -55,14 +52,13 @@ export interface Language {
 
 export interface Message {
     payload: OpenAIMsg;
-    ts: string;
+    ts: Date;
     user: string;
 }
 
 export interface Model {
     id: string;
     interface: string;
-    model: string;
     uri: string;
 }
 

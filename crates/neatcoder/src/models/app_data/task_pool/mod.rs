@@ -5,7 +5,10 @@
 pub mod task;
 pub mod task_params;
 use self::{task::Task, task_params::TaskParams};
-use crate::{JsError, WasmType};
+use crate::{
+    typescript::{IOrder, ITasks},
+    JsError, WasmType,
+};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, VecDeque};
@@ -140,15 +143,6 @@ impl TaskPool {
 
 pub type Todo = Pipeline;
 pub type Done = Pipeline;
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(typescript_type = "Record<number, Task>")]
-    pub type ITasks;
-
-    #[wasm_bindgen(typescript_type = "Array<number>")]
-    pub type IOrder;
-}
 
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize, Clone)]

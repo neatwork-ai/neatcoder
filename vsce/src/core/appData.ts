@@ -12,7 +12,6 @@ import {
   TaskPoolProvider,
   TasksCompletedProvider,
 } from "../taskPool/providers";
-import { Task } from "../../pkg/neatcoder";
 
 /**
  * A class to manage the application state, including functionalities such as
@@ -141,21 +140,20 @@ export class appDataManager {
       const tasks: wasm.Task[] = this.appData.getTodoTasks();
 
       if (tasks.length === 0) {
-          window.showInformationMessage("No tasks to run in the task pool.");
-          return;
+        window.showInformationMessage("No tasks to run in the task pool.");
+        return;
       }
 
       // Run each task sequentially.
       for (const task of tasks) {
-          const taskId = task.id;  // Assuming task object has an id property
-          await this.runTask(taskId, llmParams);
+        const taskId = task.id; // Assuming task object has an id property
+        await this.runTask(taskId, llmParams);
       }
 
       window.showInformationMessage("All tasks completed.");
-
     } catch (error) {
-        console.error("Error while running all tasks:", error);
-        window.showErrorMessage(`Error while running all tasks: ${error}`);
+      console.error("Error while running all tasks:", error);
+      window.showErrorMessage(`Error while running all tasks: ${error}`);
     }
   }
 
@@ -232,7 +230,7 @@ export class appDataManager {
     this.refresh(); // need to refresh to reflect the state rollback
   }
 
- /**
+  /**
    * Retries a task based on the task ID and the associated task parameters.
    *
    * @param {number} taskId - The ID of the task to retry.
