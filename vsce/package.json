@@ -73,7 +73,8 @@
       },
       {
         "command": "extension.createChat",
-        "title": "Chat"
+        "title": "Chat",
+        "icon": "$(notebook-render-output)"
       },
       {
         "command": "extension.retryTask",
@@ -140,6 +141,11 @@
           "command": "extension.addApi",
           "when": "view == interfacesView",
           "group": "navigation@2"
+        },
+        {
+          "command": "extension.createChat",
+          "when": "view == chatTreeView",
+          "group": "navigation@1"
         }
       ],
       "view/item/context": [
