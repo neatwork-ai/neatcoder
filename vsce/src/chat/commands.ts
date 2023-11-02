@@ -7,11 +7,12 @@ import {
   getOrCreateConfigPath,
   getOrInitConfig,
   getOrSetModelVersion,
+  getRoot,
   storeChat,
 } from "../utils/utils";
 import { setWebviewContent } from "./webview";
 import { promptLLM } from "./handlers";
-import { ChatProvider, activePanels } from ".";
+import { activePanels } from ".";
 import { v4 as uuidv4 } from "uuid";
 import { makeRequest } from "../utils/httpClient";
 import { ChatItem } from "./providers";
@@ -182,6 +183,7 @@ const setupWebviewSockets = async (
         }
 
         console.log("Persisting changes");
+
         // Persist changes to the config - TODO: centralize this logic
         let configPath = getOrCreateConfigPath();
         const updatedContent = Buffer.from(JSON.stringify(config, null, 4)); // 4 spaces indentation
@@ -202,3 +204,42 @@ const setupWebviewSockets = async (
       break;
   }
 };
+
+export function removeChat(chatItem: ChatItem) {
+  if (!chatItem) {
+    vscode.window.showErrorMessage("Please select a schema to remove.");
+    return;
+  }
+
+  const chatID = chatItem.id;
+  const config = getOrInitConfig();
+
+  // Filter out the chat entry with the matching id
+  const updatedChats = config.chats.filter((chat) => chat.id !== chatID);
+
+  // Update the config object
+  config.chats = updatedChats;
+
+  // Persist changes to the config - TODO: centralize this logic
+  let configPath = getOrCreateConfigPath();
+  const updatedContent = Buffer.from(JSON.stringify(config, null, 4)); // 4 spaces indentation
+  fs.writeFileSync(configPath, updatedContent);
+
+  // Construct the path to the chat file
+  const root = getRoot();
+  const schemaFilePath = path.join(root, ".neat", "chats", `${chatID}.json`);
+
+  if (!fs.existsSync(schemaFilePath)) {
+    vscode.window.showErrorMessage(
+      `Schema file not found at ${schemaFilePath}`
+    );
+    return;
+  }
+
+  // Delete the chat file
+  fs.unlinkSync(schemaFilePath);
+
+  vscode.window.showInformationMessage(
+    `Chat named ${chatItem.label} removed successfully.`
+  );
+}

@@ -81,6 +81,11 @@
         "title": "Open Chat"
       },
       {
+        "command": "extension.removeChat",
+        "title": "Remove Chat",
+        "icon": "$(remove)"
+      },
+      {
         "command": "extension.retryTask",
         "title": "Retry Task",
         "icon": "$(debug-restart)"
@@ -181,6 +186,11 @@
         {
           "command": "extension.removeSchema",
           "when": "view == interfacesView && viewItem == fileItem",
+          "group": "inline"
+        },
+        {
+          "command": "extension.removeChat",
+          "when": "view == chatTreeView",
           "group": "inline"
         }
       ]
