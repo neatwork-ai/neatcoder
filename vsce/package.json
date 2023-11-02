@@ -76,6 +76,10 @@
         "title": "Chat"
       },
       {
+        "command": "extension.openChat",
+        "title": "Open Chat"
+      },
+      {
         "command": "extension.retryTask",
         "title": "Retry Task",
         "icon": "$(debug-restart)"

@@ -10,7 +10,11 @@ import SendButton from './sendButton';
 let tokenCount;
 
 const ChatContainer: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Initialize messages from window.initialChatHistory if it exists
+  const [messages, setMessages] = useState<Message[]>(
+    window.initialChatHistory || []
+  );
+
   const quillRef = useRef<any>(null);
   const [isStreaming, setIsStreaming] = useState(false);  // State to track if streaming is active
 

@@ -1,10 +1,12 @@
 import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
+import * as wasm from "../../pkg/neatcoder";
 
 export function setWebviewContent(
   panel: vscode.WebviewPanel,
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
+  chatHistory?: wasm.Chat
 ) {
   const reactBuildPath = path.join(
     context.extensionPath,
@@ -42,6 +44,17 @@ export function setWebviewContent(
     '<script id="pathInjection"></script>',
     inlineScript
   );
+
+  if (chatHistory) {
+    const historyScript = `<script>window.initialChatHistory = ${JSON.stringify(
+      chatHistory.messages
+    )};</script>`;
+    // Insert the script before your React app's root div or the first script tag
+    content = content.replace(
+      '<div id="root"></div>',
+      `<div id="root"></div>${historyScript}`
+    );
+  }
 
   panel.webview.html = content;
 }

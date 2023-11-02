@@ -25,6 +25,8 @@ import { initCodeBase, appDataManager, setupDotNeatWatcher } from "./core";
 import { getOrSetApiKey, initStatusBar, initLogger, logger } from "./utils";
 import { ChatProvider, initChat, setupChatWatcher } from "./chat";
 import { getOrSetModelVersion, setModelVersion } from "./utils/utils";
+import { ChatItem } from "./chat/providers";
+import { openChat } from "./chat/commands";
 
 // Declare activePanels at the top-level to make it accessible throughout your extension's main script.
 let configWatcher: fs.FSWatcher | undefined; // TODO: remove, not being used.
@@ -103,6 +105,10 @@ export async function activate(context: vscode.ExtensionContext) {
   // Register the Chat command
   vscode.commands.registerCommand("extension.createChat", () => {
     initChat(context);
+  });
+
+  vscode.commands.registerCommand("extension.openChat", (item: ChatItem) => {
+    openChat(context, item);
   });
 
   context.subscriptions.push(

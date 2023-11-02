@@ -333,6 +333,20 @@ export async function getChat(uri: vscode.Uri): Promise<wasm.Chat> {
   }
 }
 
+// The wrapper function that constructs the Uri from the chat ID
+export async function getChatById(chatId: string): Promise<wasm.Chat> {
+  const root = getRoot();
+  const chatsDir = path.join(root, ".neat", "chats"); // The directory where chats are stored
+  const fileName = `${chatId}.json`; // Assuming the ID should be the filename
+  const filePath = path.join(chatsDir, fileName); // Construct the full file path
+
+  // Use vscode.Uri.file to convert file path to a vscode.Uri
+  const uri = vscode.Uri.file(filePath);
+
+  // Use getChat function with the constructed Uri
+  return getChat(uri);
+}
+
 export async function storeChat(chat: wasm.Chat): Promise<void> {
   try {
     const chatId = chat.sessionId;
