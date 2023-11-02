@@ -73,7 +73,8 @@
       },
       {
         "command": "extension.createChat",
-        "title": "Chat"
+        "title": "New Chat",
+        "icon": "$(notebook-render-output)"
       },
       {
         "command": "extension.openChat",
@@ -144,6 +145,11 @@
           "command": "extension.addApi",
           "when": "view == interfacesView",
           "group": "navigation@2"
+        },
+        {
+          "command": "extension.createChat",
+          "when": "view == chatTreeView",
+          "group": "navigation@1"
         }
       ],
       "view/item/context": [
@@ -239,6 +245,7 @@
     "pako": "^2.1.0",
     "rimraf": "^5.0.1",
     "uuid": "^9.0.1",
-    "ws": "^8.13.0"
+    "ws": "^8.13.0",
+    "mixpanel": "^0.18.0"
   }
 }

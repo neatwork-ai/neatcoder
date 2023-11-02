@@ -27,6 +27,7 @@ import { ChatProvider, initChat, setupChatWatcher } from "./chat";
 import { getOrSetModelVersion, setModelVersion } from "./utils/utils";
 import { ChatItem } from "./chat/providers";
 import { openChat } from "./chat/commands";
+import MixpanelHelper from "./utils/mixpanelHelper";
 
 // Declare activePanels at the top-level to make it accessible throughout your extension's main script.
 let configWatcher: fs.FSWatcher | undefined; // TODO: remove, not being used.
@@ -55,6 +56,10 @@ export async function activate(context: vscode.ExtensionContext) {
   const auditTrailProvider = new TasksCompletedProvider();
   const interfacesProvider = new InterfacesProvider();
   const chatProvider = new ChatProvider();
+
+  // init Mixpanel
+  let mixpanel = MixpanelHelper.getInstance();
+  mixpanel.trackEvent("activate");
 
   // Read or Initialize Application state
 
@@ -104,6 +109,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Register the Chat command
   vscode.commands.registerCommand("extension.createChat", () => {
+    mixpanel.trackEvent('createChat');
     initChat(context);
   });
 
@@ -120,24 +126,30 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.addDatastore", async () => {
+      mixpanel.trackEvent('addDatastore');
       addInterface(wasm.InterfaceType.Database, interfacesProvider);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.addApi", async () => {
+      mixpanel.trackEvent('addApi');
       addInterface(wasm.InterfaceType.Api, interfacesProvider);
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addSchema", addSchema)
+    vscode.commands.registerCommand("extension.addSchema", async (item: InterfaceItem) => {
+      mixpanel.trackEvent('addSchema');
+      await addSchema(item);
+    })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "extension.removeInterface",
       (item: InterfaceItem) => {
+        mixpanel.trackEvent('removeInterface');
         removeInterface(item);
       }
     )
@@ -147,6 +159,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.removeSchema",
       (item: InterfaceItem) => {
+        mixpanel.trackEvent('removeSchema');
         removeSchema(item);
       }
     )
@@ -156,6 +169,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.runTask",
       async (taskView: TaskView) => {
+        mixpanel.trackEvent('runTask');
         let llmParams = await getLLMParams();
         await runTask(taskView, llmParams, appManager);
       }
@@ -166,6 +180,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.removeTask",
       (taskView: TaskView) => {
+        mixpanel.trackEvent('removeTask');
         removeTask(taskView, appManager);
       }
     )
@@ -173,18 +188,21 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.removeAllTasks", () => {
+      mixpanel.trackEvent('removeAllTasks');
       removeAllTasks(appManager);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.chooseModel", async () => {
+      mixpanel.trackEvent('chooseModel');
       await setModelVersion();
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.runAllTasks", async () => {
+      mixpanel.trackEvent('runAllTasks');
       let llmParams = await getLLMParams();
       runAllTasks(llmParams, appManager);
     })
@@ -194,6 +212,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.retryTask",
       async (taskView: TaskView) => {
+        mixpanel.trackEvent('retryTask');
         let llmParams = await getLLMParams();
         await retryTask(taskView, llmParams, appManager);
       }
@@ -214,6 +233,9 @@ async function getLLMParams(): Promise<wasm.OpenAIParams> {
 
 // This method is called when the extension is deactivated
 export function deactivate() {
+  let mixpanel = MixpanelHelper.getInstance();
+  mixpanel.trackEvent("deactivate");
+
   if (configWatcher) {
     configWatcher.close();
   }
