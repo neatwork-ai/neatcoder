@@ -1,8 +1,19 @@
 // import React from 'react';
 import './App.css';
 import ChatContainer from './ components/chatContainer';
+import { useEffect } from 'react';
+import MixpanelWebviewHelper from './mixpanel-webview-helper';
+// import 'highlight.js/styles/atom-one-dark.css';
 
 function App() {
+    useEffect(() => {
+        try {
+            const mixpanelWebview = MixpanelWebviewHelper.getInstance();
+            console.log("MixpanelWebviewHelper initialized", mixpanelWebview);
+        } catch (error) {
+            console.error("Error initializing MixpanelWebviewHelper:", error);
+        }
+    }, []);
   return (
     <div className="App">
       <header>

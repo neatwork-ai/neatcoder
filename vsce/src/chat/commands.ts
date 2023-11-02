@@ -129,6 +129,10 @@ export async function initChat(
           chat.setMessages(message.msgs); // TODO: Move to addMessage to reduce communication overhead
           storeChat(chat);
           break;
+        case "getUserId":
+          const userId = vscode.workspace.getConfiguration().get<string>('NeatworkAi.neatcoder.userId');
+          panel.webview.postMessage({ command: 'userId', userId: userId });
+          break;
       }
     },
     undefined,
