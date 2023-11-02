@@ -3,6 +3,7 @@ import * as wasm from "../../../pkg/neatcoder";
 import { appDataManager } from "../appData";
 import { addLanguage } from "../commands/addLanguage";
 import { startLoading, stopLoading } from "../../utils/statusBar";
+import MixpanelHelper from "../../utils/mixpanelHelper";
 
 /**
  * Asynchronously initiates a prompt to gather user input and starts processing based on the input.
@@ -34,6 +35,9 @@ export async function initCodeBase(
     });
 
     if (userInput !== undefined) {
+      let mixpanel = MixpanelHelper.getInstance();
+      mixpanel.trackEvent('initCodeBase', { userInput: userInput });
+
       startLoading("Prompting the LLM..");
       await appManager.initCodeBase(llmParams, userInput);
       stopLoading();
