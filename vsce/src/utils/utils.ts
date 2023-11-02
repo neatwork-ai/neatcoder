@@ -4,6 +4,7 @@ import * as path from "path";
 import * as pako from "pako";
 import * as wasm from "../../pkg/neatcoder";
 import { ApiEntry, DbEntry, PathEntry } from "../foreignInterfaces/providers";
+import { ChatEntry } from "../chat/providers";
 
 /// ===== Read ===== ///
 
@@ -113,6 +114,7 @@ export function getConfigIfAny(): {
   paths: PathEntry[];
   dbs: DbEntry[];
   apis: ApiEntry[];
+  chats: ChatEntry[];
 } | null {
   const root = getRoot();
 
@@ -140,6 +142,17 @@ export function getConfigIfAny(): {
     }
   }
   return config;
+}
+
+export function getOrInitConfig(): {
+  paths: PathEntry[];
+  dbs: DbEntry[];
+  apis: ApiEntry[];
+  chats: ChatEntry[];
+} {
+  getOrCreateConfigPath();
+
+  return getConfigIfAny()!;
 }
 
 export function getOrCreateConfigPath(): string {

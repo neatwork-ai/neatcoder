@@ -1,10 +1,16 @@
 import * as wasm from "../../pkg/neatcoder";
 import * as vscode from "vscode";
+import * as fs from "fs";
 import * as path from "path";
-import { getOrSetModelVersion, storeChat } from "../utils/utils";
+import {
+  getOrCreateConfigPath,
+  getOrInitConfig,
+  getOrSetModelVersion,
+  storeChat,
+} from "../utils/utils";
 import { setWebviewContent } from "./webview";
 import { promptLLM } from "./handlers";
-import { activePanels } from ".";
+import { ChatProvider, activePanels } from ".";
 import { v4 as uuidv4 } from "uuid";
 import { makeRequest } from "../utils/httpClient";
 
@@ -40,7 +46,7 @@ export async function initChat(
 
   // Setup event listeners and corresponding handlers
   panel.webview.onDidReceiveMessage(
-    (message) => {
+    async (message) => {
       switch (message.command) {
         case "promptLLM":
           // Now, when we call buildOpenAIRequest, we pass along the
@@ -50,11 +56,70 @@ export async function initChat(
           const msgs: Array<wasm.Message> = message.msgs;
           const isFirst = msgs.length === 1 ? true : false;
 
+          console.log(`Is first? ${isFirst}`);
+
           promptLLM(panel, message);
 
           if (isFirst) {
-            chat.setTitle(makeRequest);
+            await chat.setTitle(makeRequest);
             storeChat(chat);
+
+            // Change the title in the config
+            let config = getOrInitConfig();
+
+            const chatEntry = {
+              id: chat.sessionId,
+              title: chat.title,
+            };
+
+            console.log(`The new title: ${chatEntry.title}`);
+
+            console.log(`Is config.chats? ${config?.chats}`);
+            if (config?.chats) {
+              const isChatEntryExist = config.chats.some(
+                (chat) => chat.id === chatEntry.id
+              );
+
+              console.log(`Is isChatEntryExist? ${isChatEntryExist}`);
+              if (!isChatEntryExist) {
+                config = {
+                  ...config,
+                  chats: [...config.chats, chatEntry],
+                };
+              } else {
+                console.log("Updating title.");
+                const chatIndexToUpdate = config.chats.findIndex(
+                  (chat) => chat.id === chatEntry.id
+                );
+
+                console.log(`chatIndexToUpdate? ${chatIndexToUpdate}`);
+                if (chatIndexToUpdate !== -1) {
+                  // Chat entry with the specified ID exists; update its properties
+                  config = {
+                    ...config,
+                    chats: config.chats.map((chat, index) =>
+                      index === chatIndexToUpdate
+                        ? { ...chat, ...chatEntry }
+                        : chat
+                    ),
+                  };
+                } else {
+                  throw new Error(`Failed to update title in the config file`);
+                }
+              }
+            } else {
+              console.log("Adding new title..");
+              config = {
+                ...config,
+                chats: [chatEntry],
+              };
+            }
+
+            console.log("Persisting changes");
+            // Persist changes to the config - TODO: centralize this logic
+            let configPath = getOrCreateConfigPath();
+            const updatedContent = Buffer.from(JSON.stringify(config, null, 4)); // 4 spaces indentation
+            fs.writeFileSync(configPath, updatedContent);
           }
 
           break;

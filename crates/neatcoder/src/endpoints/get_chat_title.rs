@@ -16,7 +16,11 @@ pub async fn get_chat_title(
     prompts.push(OpenAIMsg {
         role: GptRole::System,
         content: String::from(
-            "You are a copyrigther specialised in creating titles for texts",
+            "
+- Context: Briefly describe the key topics or themes of the chat.
+- Title Specifications: The title should be concise, and not exceed 6 words. It should reflect the tone of the chat (e.g., professional, casual, informative, provocative, etc.).
+- Output: Provide a title that encapsulates the main focus of the chat.
+            ",
         ),
     });
 
@@ -36,12 +40,13 @@ The title of the prompt is:",
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
 
-    let ai_params = OpenAIParams::empty(OpenAIModels::Gpt35Turbo).max_tokens(5);
+    let ai_params =
+        OpenAIParams::empty(OpenAIModels::Gpt35Turbo).max_tokens(15);
 
     let chat =
         chat_raw(request_callback, &ai_params, &prompts, &[], &[]).await?;
 
-    let answer = chat
+    let mut answer = chat
         .choices
         .first()
         .ok_or_else(|| anyhow!("LLM Respose seems to be empty :("))?
@@ -49,5 +54,11 @@ The title of the prompt is:",
         .content
         .clone();
 
+    answer = clean_title(answer);
+
     Ok(answer)
+}
+
+fn clean_title(answer: String) -> String {
+    answer.replace("\"", "")
 }
