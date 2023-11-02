@@ -1,8 +1,8 @@
 {
   "name": "neatcoder",
-  "displayName": "Neatcoder",
+  "displayName": "Neatwork AI - GPT4 on Steroids",
   "description": "Turn your IDE into an AI Sofware engineer.",
-  "version": "9.9.9",
+  "version": "0.2.0",
   "publisher": "NeatworkAi",
   "repository": {
     "url": "https://github.com/neatwork-ai/neatcoder-issues.git",
@@ -13,7 +13,10 @@
     "vscode": ">=1.80.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages", "Machine Learning", "Notebooks", "Testing", "Snippets", "Education"
+  ],
+  "keywords": [
+    "ai", "chatgpt", "copilot", "github", "ai-tools", "assistant", "ai-agent", "codegen", "code-generation", "gpt3", "gpt3.5", "gpt4", "documentation", "find bugs"
   ],
   "activationEvents": [
     "workspaceContains:**"
