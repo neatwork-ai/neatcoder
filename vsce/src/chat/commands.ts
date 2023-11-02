@@ -23,7 +23,7 @@ export async function initChat(
 ): Promise<void> {
   const panel = vscode.window.createWebviewPanel(
     "chatPanel",
-    `Chat ${panelCounter}`,
+    "Let's Chat",
     vscode.ViewColumn.One,
     {
       enableScripts: true,
@@ -77,7 +77,7 @@ export async function openChat(
 
   const panel = vscode.window.createWebviewPanel(
     "chatPanel",
-    `Chat ${panelCounter}`,
+    chatHistory.title,
     vscode.ViewColumn.One,
     {
       enableScripts: true,
@@ -131,8 +131,6 @@ const setupWebviewSockets = async (
       const msgs: Array<wasm.Message> = message.msgs;
       const isFirst = msgs.length === 1 ? true : false;
 
-      console.log(`Is first? ${isFirst}`);
-
       promptLLM(panel, message);
 
       if (isFirst) {
@@ -147,15 +145,11 @@ const setupWebviewSockets = async (
           title: chat.title,
         };
 
-        console.log(`The new title: ${chatEntry.title}`);
-
-        console.log(`Is config.chats? ${config?.chats}`);
         if (config?.chats) {
           const isChatEntryExist = config.chats.some(
             (chat) => chat.id === chatEntry.id
           );
 
-          console.log(`Is isChatEntryExist? ${isChatEntryExist}`);
           if (!isChatEntryExist) {
             config = {
               ...config,
@@ -167,7 +161,6 @@ const setupWebviewSockets = async (
               (chat) => chat.id === chatEntry.id
             );
 
-            console.log(`chatIndexToUpdate? ${chatIndexToUpdate}`);
             if (chatIndexToUpdate !== -1) {
               // Chat entry with the specified ID exists; update its properties
               config = {
@@ -193,6 +186,8 @@ const setupWebviewSockets = async (
         let configPath = getOrCreateConfigPath();
         const updatedContent = Buffer.from(JSON.stringify(config, null, 4)); // 4 spaces indentation
         fs.writeFileSync(configPath, updatedContent);
+
+        panel.title = chatEntry.title;
       }
 
       break;
