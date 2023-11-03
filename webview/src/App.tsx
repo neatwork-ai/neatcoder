@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 import MixpanelWebviewHelper from './mixpanel-webview-helper';
 // import 'highlight.js/styles/atom-one-dark.css';
 
+export const vscode = acquireVsCodeApi();
+
 function App() {
     useEffect(() => {
         try {

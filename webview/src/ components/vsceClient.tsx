@@ -1,6 +1,5 @@
 import { Message } from "../../wasm/neatcoderInterface";
-
-const vscode = acquireVsCodeApi();
+import { vscode } from "../App";
 
 export function promptLLM(msgs: Array<Message>, stream: boolean): ReadableStream {
   const { readable, writable } = new TransformStream();

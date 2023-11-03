@@ -26,23 +26,6 @@ code {
   padding: 1px 4px;
 }
 
-/* pre > code {
-  background-color: #23241f;
-  color: #f8f8f2 !important;
-  overflow: visible;
-  border-radius: 3px;
-  white-space: pre-wrap;
-  margin-bottom: 5px;
-  margin-top: 5px;
-  padding: 5px 10px;
-  line-height: 1.42;
-  text-align: left;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  tab-size: 4;
-  -moz-tab-size: 4;
-} */
-
 .App {
   display: flex;
   flex-direction: column;
@@ -61,13 +44,14 @@ code {
 .chatStream {
     flex-grow: 1;
     overflow-y: auto;  /* to allow scrolling if the messages exceed the container's height */
+    overflow-x: hidden; /* Prevents horizontal scrolling */
     max-width: 100%;
 }
 
 .message {
   display: flex;
   align-items: flex-start;
-  padding: 8px 40px;
+  padding: 8px 10px;
   text-align: left;
 }
 
@@ -82,14 +66,7 @@ code {
   margin-right: 10px; /* Adjust as needed for spacing between image and text */
 }
 
-.image-container svg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10%; /* Optional, if you want circular images */
-}
-
-.image-container img {
+.image-container svg, .image-container img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -104,6 +81,7 @@ code {
   width: 100%;
   max-width: 100%;
   word-wrap: break-word;
+  overflow-x: hidden; /* Prevents horizontal scrolling */
 }
 
 .text-container p {
@@ -132,6 +110,18 @@ pre {
   border-radius: 0.3em;
   overflow: hidden; /* This ensures the child border-radius is respected */
   background-color: black;
+  margin: 8px;
+}
+
+.text-container > * { /* Apply this to all direct children of .chatStream */
+  max-width: 100%;
+  word-wrap: break-word; /* Ensures words do not overflow */
+  overflow-wrap: break-word; /* Ensures overflow text is broken up */
+}
+
+.custom-pre > * { /* Apply this to all direct children of .chatStream */
+  word-wrap: break-word; /* Ensures words do not overflow */
+  overflow-wrap: break-word; /* Ensures overflow text is broken up */
 }
 
 pre.custom-pre {
@@ -142,7 +132,7 @@ pre.custom-pre {
   border: none;
   background: none;
   vertical-align: middle;
-  width: 90%;
+  max-width: 100%;
 }
 
 .code-header {
@@ -158,6 +148,20 @@ pre.custom-pre {
 .copy-icon {
   cursor: pointer;
   font-size: 12px;
+  color: white; /* Set the default color to white */
+  background-color: transparent;
+  transition: color 0.2s ease; /* Transition for the color property */
+}
+
+/* To remove additional default styling that might be causing the outdated appearance */
+button.copy-icon {
+  background-color: transparent;
+  border: none;
+  box-shadow: none; /* Remove box shadows if any */
+}
+
+.copy-icon:active {
+  color: var(--vscode-activityBarBadge-background);; /* Temporarily change the color to blue when active (clicked) */
 }
 
 .hljs {
@@ -274,3 +278,4 @@ pre[class*=language-] {
 .hljs-bullet, .hljs-link, .hljs-selector-id, .hljs-symbol, .hljs-title {
   color: var(--hljs-title) !important;
 }
+
