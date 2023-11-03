@@ -23,9 +23,10 @@ export async function streamCode(
 
     // Apply the edit to the document
     await vscode.workspace.applyEdit(workspaceEdit);
-  } catch (error) {
-    console.error(error);
-    throw error;
+  } catch (err) {
+    console.error(`Error while sgreaming code to editor: ${err}`);
+    window.showErrorMessage(`Error while sgreaming code to editor: ${err}`);
+    throw new Error((err as Error).message);
   }
 }
 
@@ -65,8 +66,10 @@ export async function scanSourceFolder(): Promise<Record<string, string>> {
         try {
           const fileContent = fs.readFileSync(filePath, "utf-8");
           record[file] = fileContent;
-        } catch (error) {
-          logger.appendLine(`[ERROR] Could not read file: ${error}`);
+        } catch (err) {
+          logger.appendLine(`[ERROR] Could not read file: ${err}`);
+          console.error(err);
+          throw new Error((err as Error).message);
         }
       }
     }

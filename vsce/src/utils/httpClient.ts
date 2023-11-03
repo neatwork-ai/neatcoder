@@ -27,6 +27,7 @@ export async function makeRequest(body: string): Promise<object> {
   const apiKey = getOrSetApiKey();
 
   try {
+    console.log("About to make request");
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -41,9 +42,9 @@ export async function makeRequest(body: string): Promise<object> {
     }
 
     return (await response.json()) as object;
-  } catch (error) {
-    console.error("Error making request:", error);
-    throw error;
+  } catch (err) {
+    console.error("Error making request:", err);
+    throw new Error((err as Error).message);
   }
 }
 
@@ -70,6 +71,7 @@ export async function makeStreamingRequest(
 
     const apiKey = getOrSetApiKey();
     try {
+      console.log("DEBUG: Starting proceess ");
       const urlString = "https://api.openai.com/v1/chat/completions";
       const parsedUrl = url.parse(urlString);
 
@@ -82,7 +84,9 @@ export async function makeStreamingRequest(
         },
       };
 
+      console.log("DEBUG: Making request");
       const req = https.request(options, async (res) => {
+        console.log("DEBUG: Inside request callback");
         console.log(`STATUS: ${res.statusCode}`);
         res.setEncoding("utf8");
         res.pause();
@@ -192,7 +196,9 @@ export async function makeStreamingRequest(
         });
       });
 
+      console.log("OINK OINK");
       req.on("error", (e) => {
+        console.log("ZINK");
         cleanup();
         isProcessing = false;
         console.error(`Problem with request: ${e.message}`);
@@ -201,11 +207,12 @@ export async function makeStreamingRequest(
 
       req.write(body);
       req.end();
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.log("OINK....");
+      console.error(err);
       cleanup();
       isProcessing = false;
-      reject(e);
+      reject(err);
     }
   });
 }
@@ -361,6 +368,7 @@ export class MessageBuffer {
               `Unable to parse message in HTTP stream into JSON object: ${message}`,
               err
             );
+            throw new Error((err as Error).message);
           }
         }
       } else {

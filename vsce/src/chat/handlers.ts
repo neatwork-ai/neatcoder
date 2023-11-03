@@ -18,9 +18,9 @@ export function buildRequest(
       stream
     );
     return [apiKey, body];
-  } catch (error) {
-    console.error("An error occurred:", error);
-    throw new Error((error as Error).message);
+  } catch (err) {
+    console.error(`Failed to build request: ${err}`);
+    throw new Error((err as Error).message);
   }
 }
 
@@ -103,9 +103,9 @@ export async function promptLLM(
 
       req.write(body);
       req.end();
-    } catch (e) {
-      console.error(e);
-      reject(e);
+    } catch (err) {
+      console.error(`Failed to prompt the LLM: ${err}`);
+      reject(err);
     }
   });
 }

@@ -144,8 +144,10 @@ async function handleSelection(
     logger.appendLine("[INFO] Config updated successfully");
 
     interfacesProvider.refresh();
-  } catch (error) {
-    logger.appendLine(`[ERROR] Failed to update config: ${error}`);
+  } catch (err) {
+    logger.appendLine(`[ERROR] Failed to update config: ${err}`);
+    console.error(err);
+    throw new Error((err as Error).message);
   }
 }
 

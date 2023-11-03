@@ -100,7 +100,8 @@ function handleSelection(
     const langType = wasm.languageTypeFromFriendlyUX(selectedType);
     const lang = new wasm.Language(langType);
     appManager.addLanguage(lang);
-  } catch (error) {
-    logger.appendLine(`[ERROR] Failed to add programming language: ${error}`);
+  } catch (err) {
+    logger.appendLine(`[ERROR] Failed to add programming language: ${err}`);
+    throw new Error((err as Error).message);
   }
 }

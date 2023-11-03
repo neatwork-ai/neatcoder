@@ -10,8 +10,8 @@ function App() {
         try {
             const mixpanelWebview = MixpanelWebviewHelper.getInstance();
             console.log("MixpanelWebviewHelper initialized", mixpanelWebview);
-        } catch (error) {
-            console.error("Error initializing MixpanelWebviewHelper:", error);
+        } catch (err) {
+            console.error("Error initializing MixpanelWebviewHelper:", err);
         }
     }, []);
   return (

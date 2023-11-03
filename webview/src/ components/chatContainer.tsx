@@ -68,8 +68,9 @@ const ChatContainer: React.FC = () => {
         };
       }
 
-    } catch (error) {
-      console.error("Error getting response from OpenAI:", error);
+    } catch (err) {
+      console.error("Error getting response from OpenAI:", err);
+      throw new Error((err as Error).message);
     }
   };
 
