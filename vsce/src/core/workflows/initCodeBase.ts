@@ -23,9 +23,9 @@ export async function initCodeBase(
   {
     try {
       await addLanguage(appManager);
-    } catch (error) {
-      vscode.window.showErrorMessage(`Error: ${error}`);
-      throw error;
+    } catch (err) {
+      vscode.window.showErrorMessage(`Error while adding Language: ${err}`);
+      throw new Error((err as Error).message);
     }
 
     const userInput = await vscode.window.showInputBox({
@@ -36,15 +36,21 @@ export async function initCodeBase(
 
     if (userInput !== undefined) {
       let mixpanel = MixpanelHelper.getInstance();
-      mixpanel.trackEvent('initCodeBase', { userInput: userInput });
+      mixpanel.trackEvent("initCodeBase", { userInput: userInput });
 
       startLoading("Prompting the LLM..");
-      await appManager.initCodeBase(llmParams, userInput);
-      stopLoading();
+      try {
+        await appManager.initCodeBase(llmParams, userInput);
+        stopLoading();
 
-      vscode.window.showInformationMessage(
-        `The project tasks are now available.`
-      );
+        vscode.window.showInformationMessage(
+          `The project tasks are now available.`
+        );
+      } catch (err) {
+        stopLoading();
+        console.error(err);
+        throw new Error((err as Error).message);
+      }
     }
   }
 }

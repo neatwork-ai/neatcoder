@@ -60,12 +60,12 @@ export function setupChatWatcher(
       fs.writeFileSync(configPath, updatedContent);
 
       chatTreeViewProvider.refresh(); // Redundant?
-    } catch (error) {
+    } catch (err) {
       vscode.window.showErrorMessage(
-        `[ERROR] Failed to read new chat file ${uri}. Error: ${error}`
+        `[ERROR] Failed to read new chat file ${uri}. Error: ${err}`
       );
 
-      throw new Error(`Failed to create chat state from ${uri.path}: ${error}`);
+      throw new Error(`Failed to create chat state from ${uri.path}: ${err}`);
     }
   });
 
@@ -98,9 +98,9 @@ export function setupChatWatcher(
       }
 
       chatTreeViewProvider.refresh();
-    } catch (error) {
-      console.error("Failed to remove chat state:", error);
-      throw new Error(`Failed to remove chat state from ${uri.path}: ${error}`);
+    } catch (err) {
+      console.error("Failed to remove chat state:", err);
+      throw new Error(`Failed to remove chat state from ${uri.path}: ${err}`);
     }
   });
 

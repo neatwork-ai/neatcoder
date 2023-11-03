@@ -119,8 +119,9 @@ export function setupCoreWatcher(
 
         try {
           newContent = JSON.parse(newContentString);
-        } catch (error) {
-          logger.appendLine(`[ERROR] Failed to parse JSON: ${error}`);
+        } catch (err) {
+          console.error(`[ERROR] Failed to parse JSON: ${err}`);
+          logger.appendLine(`[ERROR] Failed to parse JSON: ${err}`);
           return;
         }
 

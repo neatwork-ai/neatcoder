@@ -25,9 +25,9 @@ export function readappData(): wasm.AppData {
     const appData = deserializeappData(binaryData);
 
     return appData;
-  } catch (e) {
-    vscode.window.showErrorMessage(`Failed to Retrieve cached data: ${e}`);
-    throw e;
+  } catch (err) {
+    vscode.window.showErrorMessage(`Failed to Retrieve cached data: ${err}`);
+    throw new Error((err as Error).message);
   }
 }
 
@@ -81,9 +81,9 @@ export function serializeappData(appData: wasm.AppData): ArrayBuffer {
     const jsonString = appData.castToString();
     const compressedData = pako.gzip(jsonString);
     return compressedData.buffer as ArrayBuffer;
-  } catch (e) {
-    vscode.window.showErrorMessage(`Serialization failed:, ${e}`);
-    throw e;
+  } catch (err) {
+    vscode.window.showErrorMessage(`Serialization failed:, ${err}`);
+    throw new Error((err as Error).message);
   }
 }
 
@@ -93,9 +93,9 @@ function deserializeappData(buffer: ArrayBuffer): wasm.AppData {
     const jsonString = new TextDecoder().decode(decompressedData);
     const appData = wasm.AppData.castFromString(jsonString);
     return appData;
-  } catch (e) {
-    vscode.window.showErrorMessage(`Deserialization failed:, ${e}`);
-    throw e;
+  } catch (err) {
+    vscode.window.showErrorMessage(`Deserialization failed:, ${err}`);
+    throw new Error((err as Error).message);
   }
 }
 
@@ -327,9 +327,9 @@ export async function getChat(uri: vscode.Uri): Promise<wasm.Chat> {
     const data = await vscode.workspace.fs.readFile(uri);
     const content = Buffer.from(data).toString("utf8");
     return wasm.Chat.castFromString(content);
-  } catch (error) {
-    console.error("Failed to get chat:", error);
-    throw new Error(`Failed to get chat from ${uri.path}: ${error}`);
+  } catch (err) {
+    console.error("Failed to get chat:", err);
+    throw new Error(`Failed to get chat from ${uri.path}: ${err}`);
   }
 }
 
@@ -367,8 +367,8 @@ export async function storeChat(chat: wasm.Chat): Promise<void> {
     // Write the JSON string to the file
     const data = Buffer.from(jsonString, "utf8");
     await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), data);
-  } catch (error) {
-    console.error("Failed to store chat:", error);
-    throw new Error(`Failed to store chat to ${name}.json: ${error}`);
+  } catch (err) {
+    console.error("Failed to store chat:", err);
+    throw new Error(`Failed to store chat to ${name}.json: ${err}`);
   }
 }

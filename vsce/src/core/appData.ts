@@ -151,9 +151,10 @@ export class appDataManager {
       }
 
       window.showInformationMessage("All tasks completed.");
-    } catch (error) {
-      console.error("Error while running all tasks:", error);
-      window.showErrorMessage(`Error while running all tasks: ${error}`);
+    } catch (err) {
+      console.error("Error while running all tasks:", err);
+      window.showErrorMessage(`Error while running all tasks: ${err}`);
+      throw new Error((err as Error).message);
     }
   }
 
@@ -221,10 +222,11 @@ export class appDataManager {
       this.appData.addDone(task);
       // Persist updated state
       saveappDataToFile(this.appData);
-    } catch (error) {
+    } catch (err) {
       this.appData.addBackTodo(task);
-      console.error("Error while performing Task:", error);
-      window.showErrorMessage(`Error while performing Task: ${error}`);
+      console.error(`Error while performing task ${task.name}. ERROR: ${err}`);
+      window.showErrorMessage(`Error while performing task: ${err}`);
+      throw new Error((err as Error).message);
     }
 
     this.refresh(); // need to refresh to reflect the state rollback
@@ -253,11 +255,17 @@ export class appDataManager {
    * @param {string} userInput - The user input to start the prompt with.
    */
   public async initCodeBase(llmParams: wasm.OpenAIParams, userInput: string) {
-    await this.scaffoldProject(llmParams, userInput);
-    saveappDataToFile(this.appData);
+    try {
+      await this.scaffoldProject(llmParams, userInput);
+      saveappDataToFile(this.appData);
 
-    // Update providers
-    this.refresh();
+      // Update providers
+      this.refresh();
+    } catch (err) {
+      console.error("Error while initialising codebase:", err);
+      window.showErrorMessage(`Error while initialising codebase: ${err}`);
+      throw new Error((err as Error).message);
+    }
   }
 
   /**
@@ -277,8 +285,9 @@ export class appDataManager {
 
     try {
       await this.appData.scaffoldProject(llmParams, taskParams, makeRequest);
-    } catch (error) {
-      console.error("Error occurred:", error);
+    } catch (err) {
+      console.error(`Error while scaffolding the project: ${err}`);
+      throw new Error((err as Error).message);
     }
   }
 
@@ -295,8 +304,9 @@ export class appDataManager {
 
       // Refresh the view
       this.taskPoolProvider.refresh();
-    } catch (error) {
-      console.error("Error while updating FE TaskPool:", error);
+    } catch (err) {
+      console.error(`Error while updating FE TaskPool: ${err}`);
+      throw new Error((err as Error).message);
     }
   }
 
@@ -313,8 +323,9 @@ export class appDataManager {
 
       // Refresh the view
       this.tasksCompletedProvider.refresh();
-    } catch (error) {
-      console.error("Error while updating FE AuditPool:", error);
+    } catch (err) {
+      console.error(`Error while updating FE AuditPool: ${err}`);
+      throw new Error((err as Error).message);
     }
   }
 
