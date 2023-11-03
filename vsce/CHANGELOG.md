@@ -4,6 +4,23 @@ All notable changes to the "neatcoder" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.2.0] - 03/11/2023
+
+### Added
+- Embedded portable OpenAI Chat in VS Code with
+- Added Chat View for creating and managing chats
+- `createChat` and `openChat` commands
+- MixPanel analytics
+- Added retry button in `Tasks Completed`
+- Added support for multiple OpenAI Models (Currently GPT3.5 and GPT4)
+- Added `Run All Tasks` command and button in `Task Manager` view
+
+### Changed
+- Renamed `Task Pool` to `Task Manager` view
+- Renamed `Audit Trail` to `Tasks Completed` view
+- Renamed `Interfaces` to `Data Models and APIs` view
+- Fixed error escalation/handling accross all functionalities
+
 ## [0.1.0] - 05/10/2023
 
 ### Changed
