@@ -5,26 +5,46 @@ import { marked } from 'marked';
 import hljs from './codeBlockStyle';
 import ReactMarkdown, {Components} from 'react-markdown';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism';
-import { dark, vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+// import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+// import { dark, vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import codeTheme from './codeTheme';
 
-const customStyles: { [key: string]: CSSProperties } = {
-  // You can base this on the 'dark' theme you are extending or define from scratch
-  root: { // 'root' typically styles the <pre> element wrapping your code
-    borderRadius: '0.3em',
-    overflow: 'auto',
-  },
-  code: { // Styles for the <code> element
-    borderRadius: '0.3em',
-    padding: '0.1em',
-    whiteSpace: 'normal',
-  },
-  // SyntaxHighlighter uses language-specific tokens, here are examples
-  comment: { color: 'hsla(0, 0%, 100%, .5)' },
-  keyword: { color: '#2e95d3' },
-  string: { color: '#00a67d' },
-  variable: { color: '#df3079' },
-  // ... add more styles for other tokens
-};
+
+// // Start with the `dark` theme as the base.
+// const baseStyle: { [key: string]: React.CSSProperties } = { ...dark };
+
+// // Define your custom styles for specific tokens.
+// const customTokenStyles: { [key: string]: React.CSSProperties } = {
+//   'code[class*="language-"]': {
+//     ...dark['code[class*="language-"]'], // Spread in existing styles if needed
+//     borderRadius: '0.3em',
+//     padding: '0.1em',
+//     whiteSpace: 'normal',
+//   },
+//   'comment': {
+//     ...dark['comment'], // Spread in existing styles if needed
+//     color: 'hsla(0, 0%, 100%, .5)',
+//   },
+//   'keyword': {
+//     ...dark['keyword'], // Spread in existing styles if needed
+//     color: '#2e95d3',
+//   },
+//   'string': {
+//     ...dark['string'], // Spread in existing styles if needed
+//     color: '#00a67d',
+//   },
+//   'variable': {
+//     ...dark['variable'], // Spread in existing styles if needed
+//     color: '#df3079',
+//   },
+//   // ... add more custom styles for other tokens
+// };
+
+// // Create a new style object by merging the base styles with your custom token styles.
+// const customStyle: { [key: string]: React.CSSProperties } =  {
+//   ...baseStyle,
+//   ...customTokenStyles
+// };
 
 const renderer = new marked.Renderer();
 
@@ -84,7 +104,7 @@ const renderers: Components = {
       return (
         <SyntaxHighlighter
           language={match[1]}
-          style={customStyles}
+          style={codeTheme}
         >
           {String(children).replace(/\n$/, '')}
         </SyntaxHighlighter>
