@@ -235,9 +235,7 @@ export function removeChat(chatItem: ChatItem) {
   const schemaFilePath = path.join(root, ".neat", "chats", `${chatID}.json`);
 
   if (!fs.existsSync(schemaFilePath)) {
-    vscode.window.showErrorMessage(
-      `Schema file not found at ${schemaFilePath}`
-    );
+    vscode.window.showErrorMessage(`Chat file not found at ${schemaFilePath}`);
     return;
   }
 
