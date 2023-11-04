@@ -1,54 +1,8 @@
 import React, { CSSProperties, useEffect, useRef, useState } from 'react';
 import { LlmSvgIcon } from './llmAvatar';
 import { Message } from '../../wasm/neatcoderInterface';
-import { marked } from 'marked';
 import hljs from './codeBlockStyle';
-import ReactMarkdown, {Components} from 'react-markdown';
-import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism';
-// import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-// import { dark, vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import codeTheme from './codeTheme';
-
-
-// // Start with the `dark` theme as the base.
-// const baseStyle: { [key: string]: React.CSSProperties } = { ...dark };
-
-// // Define your custom styles for specific tokens.
-// const customTokenStyles: { [key: string]: React.CSSProperties } = {
-//   'code[class*="language-"]': {
-//     ...dark['code[class*="language-"]'], // Spread in existing styles if needed
-//     borderRadius: '0.3em',
-//     padding: '0.1em',
-//     whiteSpace: 'normal',
-//   },
-//   'comment': {
-//     ...dark['comment'], // Spread in existing styles if needed
-//     color: 'hsla(0, 0%, 100%, .5)',
-//   },
-//   'keyword': {
-//     ...dark['keyword'], // Spread in existing styles if needed
-//     color: '#2e95d3',
-//   },
-//   'string': {
-//     ...dark['string'], // Spread in existing styles if needed
-//     color: '#00a67d',
-//   },
-//   'variable': {
-//     ...dark['variable'], // Spread in existing styles if needed
-//     color: '#df3079',
-//   },
-//   // ... add more custom styles for other tokens
-// };
-
-// // Create a new style object by merging the base styles with your custom token styles.
-// const customStyle: { [key: string]: React.CSSProperties } =  {
-//   ...baseStyle,
-//   ...customTokenStyles
-// };
-
-const renderer = new marked.Renderer();
-
-marked.setOptions({ renderer });
+import ReactMarkdown from 'react-markdown';
 
 interface ChatStreamProps {
   messages: Message[];
@@ -95,30 +49,63 @@ function copyToClipboard(text: string) {
   }
 }
 
-const renderers: Components = {
-  // Custom code rendering for fenced code blocks (not inline)
-  code({ node, className, children, ...props }) {
-    // Check if there's a class indicating the language (e.g., "language-js")
-    const match = /language-(\w+)/.exec(className || '');
-    if (match) {
-      return (
-        <SyntaxHighlighter
-          language={match[1]}
-          style={codeTheme}
-        >
-          {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
-      );
-    }
-    // Return a regular code tag for inline code or unspecified language blocks
-    return <code className={className} {...props}>{children}</code>;
-  }
-};
-
 const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   const isUser = user === 'user';
   const publicPath = (window as any).publicPath;
   const userAvatar = `${publicPath}/default_user.jpg`;
+  const markdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+      // Highlight all code blocks within the markdownRef current element
+      markdownRef.current?.querySelectorAll<HTMLElement>(':scope > .custom-pre > pre code').forEach((block) => {
+        // Assuming codeElement is the <code> inside the <pre>
+        // Add 'code-wrapper' class to the parent <pre> of this <code>
+        const preElement = block.parentElement;
+        if (preElement) {
+          preElement.classList.add('code-wrapper');
+        }
+
+        // Remove the attribute to force re-highlighting
+        delete block.dataset.highlighted;
+
+        hljs.highlightElement(block as HTMLElement);
+
+        // if (block.dataset.wrapped !== 'yes') {
+        //   const wrapper = document.createElement('div');
+        //   wrapper.className = 'code-wrapper';
+
+        //   const codeHeader = document.createElement('div');
+        //   codeHeader.className = 'code-header';
+
+        //   const langSpan = document.createElement('span');
+        //   langSpan.className = 'code-language';
+        //   const lang = block.querySelector('code[class]')?.className || '';
+        //   langSpan.innerText = lang;
+
+        //   const copyButton = document.createElement('button');
+        //   copyButton.className = 'fa-solid fa-copy copy-icon';
+        //   copyButton.onclick = () => {
+        //     // Assuming the `copyToClipboard` function takes the text you want to copy as an argument
+        //     if (block.textContent) {
+        //         copyToClipboard(block.textContent);
+        //     }
+        //   };
+
+        //   codeHeader.appendChild(langSpan);
+        //   codeHeader.appendChild(copyButton);
+
+        //   wrapper.appendChild(codeHeader);
+        //   block.parentNode?.insertBefore(wrapper, block);
+        //   wrapper.appendChild(block);
+
+        //   // Flag that this block is now wrapped, so no need to
+        //   // repeat this wrapping operation
+        //   block.dataset.wrapped = 'yes';
+        // }
+      });
+
+  }, [payload]); // Re-run the effect when payload changes
+
   return (
     <div className={`message ${isUser ? 'user-message' : 'llm-message'}`}>
       <div className="image-container">
@@ -130,12 +117,13 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
       </div>
       <div className="text-container">
         <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
-        <ReactMarkdown
-          className="custom-pre"
-          components={renderers}
-        >
-            {payload.content}
-        </ReactMarkdown>
+        <div ref={markdownRef}>
+          <ReactMarkdown
+            className="custom-pre"
+          >
+              {payload.content}
+          </ReactMarkdown>
+        </div>
       </div>
     </div>
   );
