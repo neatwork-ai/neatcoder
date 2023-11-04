@@ -1,8 +1,30 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { CSSProperties, useEffect, useRef, useState } from 'react';
 import { LlmSvgIcon } from './llmAvatar';
 import { Message } from '../../wasm/neatcoderInterface';
 import { marked } from 'marked';
 import hljs from './codeBlockStyle';
+import ReactMarkdown, {Components} from 'react-markdown';
+import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism';
+import { dark, vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+const customStyles: { [key: string]: CSSProperties } = {
+  // You can base this on the 'dark' theme you are extending or define from scratch
+  root: { // 'root' typically styles the <pre> element wrapping your code
+    borderRadius: '0.3em',
+    overflow: 'auto',
+  },
+  code: { // Styles for the <code> element
+    borderRadius: '0.3em',
+    padding: '0.1em',
+    whiteSpace: 'normal',
+  },
+  // SyntaxHighlighter uses language-specific tokens, here are examples
+  comment: { color: 'hsla(0, 0%, 100%, .5)' },
+  keyword: { color: '#2e95d3' },
+  string: { color: '#00a67d' },
+  variable: { color: '#df3079' },
+  // ... add more styles for other tokens
+};
 
 const renderer = new marked.Renderer();
 
@@ -18,83 +40,6 @@ const ChatStream: React.FC<ChatStreamProps> = ({ messages, className }) => {
     {messages.map((message, idx) => <MessageUi key={idx} {...message} />)}
   </div>
 )};
-
-const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
-  const isUser = user === 'user';
-  const publicPath = (window as any).publicPath;
-  const userAvatar = `${publicPath}/default_user.jpg`;
-  const [htmlContent, setHtmlContent] = useState('');
-  // Typing the ref with HTMLDivElement because the ref will be attached to a div element
-
-  useEffect(() => {
-    // Ensure the payload content is present
-    if (payload && payload.content) {
-      // Convert markdown to HTML
-      const rawHtml = marked(payload.content);
-      // Create a virtual DOM element to manipulate
-      const virtualDocument = new DOMParser().parseFromString(rawHtml, 'text/html');
-
-      // Set the innerHTML directly on the ref's current element
-      // Apply syntax highlighting and other transformations
-      virtualDocument.querySelectorAll('pre').forEach(block => {
-
-        // Apply syntax highlighting to all <pre> elements
-        hljs.highlightElement(block as HTMLElement);
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'code-wrapper';
-
-        const codeHeader = document.createElement('div');
-        codeHeader.className = 'code-header';
-
-        const langSpan = document.createElement('span');
-        langSpan.className = 'code-language';
-        const lang = block.querySelector('code[class]')?.className || '';
-        langSpan.innerText = lang;
-
-        const copyButton = document.createElement('button');
-        copyButton.className = 'fa-solid fa-copy copy-icon';
-        copyButton.onclick = () => {
-          // Assuming the `copyToClipboard` function takes the text you want to copy as an argument
-          if (block.textContent) {
-              copyToClipboard(block.textContent);
-          }
-        };
-
-        codeHeader.appendChild(langSpan);
-        codeHeader.appendChild(copyButton);
-
-        wrapper.appendChild(codeHeader);
-        block.parentNode?.insertBefore(wrapper, block);
-        wrapper.appendChild(block);
-      });
-
-      // Set the HTML content to the transformed HTML
-      setHtmlContent(virtualDocument.body.innerHTML);
-
-    }
-  }, [payload]);
-
-  return (
-    <div className={`message ${isUser ? 'user-message' : 'llm-message'}`}>
-      <div className="image-container">
-        {isUser ? (
-          <img src={userAvatar} alt="user profile" />
-        ) : (
-          // Replace LlmSvgIcon with actual SVG or component
-          <LlmSvgIcon />
-        )}
-      </div>
-      <div className="text-container">
-        <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
-        <div
-            className="custom-pre"
-            dangerouslySetInnerHTML={{ __html: htmlContent }}
-        />
-      </div>
-    </div>
-  );
-};
 
 export default ChatStream;
 
@@ -129,3 +74,49 @@ function copyToClipboard(text: string) {
     document.body.removeChild(textarea);
   }
 }
+
+const renderers: Components = {
+  // Custom code rendering for fenced code blocks (not inline)
+  code({ node, className, children, ...props }) {
+    // Check if there's a class indicating the language (e.g., "language-js")
+    const match = /language-(\w+)/.exec(className || '');
+    if (match) {
+      return (
+        <SyntaxHighlighter
+          language={match[1]}
+          style={customStyles}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      );
+    }
+    // Return a regular code tag for inline code or unspecified language blocks
+    return <code className={className} {...props}>{children}</code>;
+  }
+};
+
+const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
+  const isUser = user === 'user';
+  const publicPath = (window as any).publicPath;
+  const userAvatar = `${publicPath}/default_user.jpg`;
+  return (
+    <div className={`message ${isUser ? 'user-message' : 'llm-message'}`}>
+      <div className="image-container">
+        {isUser ? (
+          <img src={userAvatar} alt="user profile" />
+        ) : (
+          <LlmSvgIcon />
+        )}
+      </div>
+      <div className="text-container">
+        <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
+        <ReactMarkdown
+          className="custom-pre"
+          components={renderers}
+        >
+            {payload.content}
+        </ReactMarkdown>
+      </div>
+    </div>
+  );
+};
