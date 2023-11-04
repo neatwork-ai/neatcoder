@@ -110,8 +110,6 @@ pre {
   border-radius: 0.3em;
   overflow: hidden; /* This ensures the child border-radius is respected */
   background-color: black;
-  margin: 8px;
-  padding: 8px;
   overflow-x: auto;
 }
 
@@ -145,6 +143,10 @@ pre.custom-pre {
   background-color: var(--vscode-input-background);
   height: 24px;
   box-sizing: border-box;
+  /* To remove the code-wrapper padding */
+  margin-left: -8px;
+	margin-top: -8px;
+	margin-right: -8px;
 }
 
 .copy-icon {
@@ -235,11 +237,11 @@ pre[class*=language-] {
   overflow: auto;
 }
 
-:not(pre) > code.hljs, :not(pre) > code[class*=language-] {
+/* :not(pre) > code.hljs, :not(pre) > code[class*=language-] {
   border-radius: .3em;
   padding: .1em;
   white-space: normal;
-}
+} */
 
 /* Color variables */
 :root {

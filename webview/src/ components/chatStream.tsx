@@ -55,6 +55,7 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   const userAvatar = `${publicPath}/default_user.jpg`;
   const markdownRef = useRef<HTMLDivElement>(null);
 
+  // TODO: add a code-padding component...
   useEffect(() => {
       // Highlight all code blocks within the markdownRef current element
       markdownRef.current?.querySelectorAll<HTMLElement>(':scope > .custom-pre > pre code').forEach((block) => {
@@ -70,38 +71,31 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
 
         hljs.highlightElement(block as HTMLElement);
 
-        // if (block.dataset.wrapped !== 'yes') {
-        //   const wrapper = document.createElement('div');
-        //   wrapper.className = 'code-wrapper';
+        if (preElement && !preElement.dataset.withHead) {
+          const codeHeader = document.createElement('div');
+          codeHeader.className = 'code-header';
 
-        //   const codeHeader = document.createElement('div');
-        //   codeHeader.className = 'code-header';
+          const langSpan = document.createElement('span');
+          langSpan.className = 'code-language';
+          const lang = block.querySelector('code[class]')?.className || '';
+          langSpan.innerText = lang;
 
-        //   const langSpan = document.createElement('span');
-        //   langSpan.className = 'code-language';
-        //   const lang = block.querySelector('code[class]')?.className || '';
-        //   langSpan.innerText = lang;
+          const copyButton = document.createElement('button');
+          copyButton.className = 'fa-solid fa-copy copy-icon';
+          copyButton.onclick = () => {
+            // Assuming the `copyToClipboard` function takes the text you want to copy as an argument
+            if (block.textContent) {
+                copyToClipboard(block.textContent);
+            }
+          };
 
-        //   const copyButton = document.createElement('button');
-        //   copyButton.className = 'fa-solid fa-copy copy-icon';
-        //   copyButton.onclick = () => {
-        //     // Assuming the `copyToClipboard` function takes the text you want to copy as an argument
-        //     if (block.textContent) {
-        //         copyToClipboard(block.textContent);
-        //     }
-        //   };
+          codeHeader.appendChild(langSpan);
+          codeHeader.appendChild(copyButton);
 
-        //   codeHeader.appendChild(langSpan);
-        //   codeHeader.appendChild(copyButton);
+          preElement.prepend(codeHeader);
 
-        //   wrapper.appendChild(codeHeader);
-        //   block.parentNode?.insertBefore(wrapper, block);
-        //   wrapper.appendChild(block);
-
-        //   // Flag that this block is now wrapped, so no need to
-        //   // repeat this wrapping operation
-        //   block.dataset.wrapped = 'yes';
-        // }
+          preElement.dataset.withHead = "yes";
+        }
       });
 
   }, [payload]); // Re-run the effect when payload changes
