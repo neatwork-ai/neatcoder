@@ -49,9 +49,20 @@ const ChatContainer: React.FC = () => {
               tokenCount += 1;
             } else {
               setMessages((prevMessages) => {
-                let newMessages = [...prevMessages];
-                newMessages[newMessages.length - 1].payload.content += token;
+                // Create a new object for the last message with updated content
+                const lastMessageIndex = prevMessages.length - 1;
+                const updatedLastMessage = {
+                  ...prevMessages[lastMessageIndex],
+                  payload: {
+                    ...prevMessages[lastMessageIndex].payload,
+                    content: prevMessages[lastMessageIndex].payload.content + token
+                  }
+                };
 
+                // Create a new array with all previous messages except the last one
+                const newMessages = prevMessages.slice(0, lastMessageIndex);
+                // Add the updated last message to the array
+                newMessages.push(updatedLastMessage);
                 return newMessages;
               });
             }

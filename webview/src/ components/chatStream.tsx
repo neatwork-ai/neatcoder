@@ -13,11 +13,11 @@ interface ChatStreamProps {
   className?: string;
 }
 
-const ChatStream: React.FC<ChatStreamProps> = ({ messages, className }) => (
-  <div className={className}>
+const ChatStream: React.FC<ChatStreamProps> = ({ messages, className }) => {
+  return (<div className={className}>
     {messages.map((message, idx) => <MessageUi key={idx} {...message} />)}
   </div>
-);
+)};
 
 const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   const isUser = user === 'user';
@@ -25,51 +25,53 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
   const userAvatar = `${publicPath}/default_user.jpg`;
   const [htmlContent, setHtmlContent] = useState('');
   // Typing the ref with HTMLDivElement because the ref will be attached to a div element
-  const preRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Ensure the payload content is present
     if (payload && payload.content) {
       // Convert markdown to HTML
-      const html = marked(payload.content);
+      const rawHtml = marked(payload.content);
+      // Create a virtual DOM element to manipulate
+      const virtualDocument = new DOMParser().parseFromString(rawHtml, 'text/html');
 
       // Set the innerHTML directly on the ref's current element
-      if (preRef.current) {
-        preRef.current.innerHTML = html;
+      // Apply syntax highlighting and other transformations
+      virtualDocument.querySelectorAll('pre').forEach(block => {
 
         // Apply syntax highlighting to all <pre> elements
-        const preElements = preRef.current.querySelectorAll('pre');
-        preElements.forEach((pre) => {
-          hljs.highlightElement(pre);
+        hljs.highlightElement(block as HTMLElement);
 
-          const wrapper = document.createElement('div');
-          wrapper.className = 'code-wrapper';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'code-wrapper';
 
-          const codeHeader = document.createElement('div');
-          codeHeader.className = 'code-header';
+        const codeHeader = document.createElement('div');
+        codeHeader.className = 'code-header';
 
-          const langSpan = document.createElement('span');
-          langSpan.className = 'code-language';
-          const lang = pre.querySelector('code[class]')?.className || '';
-          langSpan.innerText = lang;
+        const langSpan = document.createElement('span');
+        langSpan.className = 'code-language';
+        const lang = block.querySelector('code[class]')?.className || '';
+        langSpan.innerText = lang;
 
-          const copyButton = document.createElement('button');
-          copyButton.className = 'fa-solid fa-copy copy-icon';
-          copyButton.onclick = () => {
-            // Assuming the `copyToClipboard` function takes the text you want to copy as an argument
-            if (pre.textContent) {
-                copyToClipboard(pre.textContent);
-            }
-          };
+        const copyButton = document.createElement('button');
+        copyButton.className = 'fa-solid fa-copy copy-icon';
+        copyButton.onclick = () => {
+          // Assuming the `copyToClipboard` function takes the text you want to copy as an argument
+          if (block.textContent) {
+              copyToClipboard(block.textContent);
+          }
+        };
 
-          codeHeader.appendChild(langSpan);
-          codeHeader.appendChild(copyButton);
+        codeHeader.appendChild(langSpan);
+        codeHeader.appendChild(copyButton);
 
-          wrapper.appendChild(codeHeader);
-          pre.parentNode?.insertBefore(wrapper, pre);
-          wrapper.appendChild(pre);
-        });
-      }
+        wrapper.appendChild(codeHeader);
+        block.parentNode?.insertBefore(wrapper, block);
+        wrapper.appendChild(block);
+      });
+
+      // Set the HTML content to the transformed HTML
+      setHtmlContent(virtualDocument.body.innerHTML);
+
     }
   }, [payload]);
 
@@ -87,7 +89,6 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
         <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
         <div
             className="custom-pre"
-            ref={preRef}
             dangerouslySetInnerHTML={{ __html: htmlContent }}
         />
       </div>
