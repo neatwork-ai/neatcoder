@@ -16,8 +16,11 @@ import { activePanels } from ".";
 import { v4 as uuidv4 } from "uuid";
 import { makeRequest } from "../utils/httpClient";
 import { ChatItem } from "./providers";
+import { ChatOperationQueue } from "./io";
 
 export let panelCounter = 1;
+// Instantiate the operation queue
+const chatOperationQueue = new ChatOperationQueue();
 
 export async function initChat(
   context: vscode.ExtensionContext
@@ -45,7 +48,9 @@ export async function initChat(
   const sessionId = uuidv4();
   const chat = new wasm.Chat(sessionId, "Chat with Neat");
   chat.addModel(modelVersion!);
-  await storeChat(chat);
+
+  // This will add the storeChat operation to the queue to be processed in order.
+  chatOperationQueue.add(() => storeChat(chat));
 
   // Setup event listeners and corresponding handlers
   panel.webview.onDidReceiveMessage(
@@ -128,7 +133,7 @@ const setupWebviewSockets = async (
       // Now, when we call buildOpenAIRequest, we pass along the
       // panel so it knows which panel sent the message
       chat.setMessages(message.msgs); // TODO: Move to addMessage to reduce communication overhead
-      await storeChat(chat);
+      chatOperationQueue.add(() => storeChat(chat));
       const msgs: Array<wasm.Message> = message.msgs;
       const isFirst = msgs.length === 1 ? true : false;
 
@@ -136,7 +141,7 @@ const setupWebviewSockets = async (
 
       if (isFirst) {
         await chat.setTitle(makeRequest);
-        await storeChat(chat);
+        chatOperationQueue.add(() => storeChat(chat));
 
         // Change the title in the config
         let config = getOrInitConfig();
@@ -200,7 +205,7 @@ const setupWebviewSockets = async (
       console.log(`Messages: ${JSON.stringify(message.msgs)}`);
       // Store when GPT answer is complete
       chat.setMessages(message.msgs); // TODO: Move to addMessage to reduce communication overhead
-      await storeChat(chat);
+      chatOperationQueue.add(() => storeChat(chat));
       break;
   }
 };
