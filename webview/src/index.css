@@ -143,10 +143,6 @@ pre.custom-pre {
   background-color: var(--vscode-input-background);
   height: 24px;
   box-sizing: border-box;
-  /* To remove the code-wrapper padding */
-  margin-left: -8px;
-	margin-top: -8px;
-	margin-right: -8px;
 }
 
 .copy-icon {
