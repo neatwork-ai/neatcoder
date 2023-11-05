@@ -16,10 +16,10 @@ h1 {
 }
 
 /* Inline Code Style */
-code {
+:not(pre) > code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
-  color: var(--vscode-activityBarBadge-background) !important;
+  color: var(--vscode-activityBarBadge-background);
   background-color: rgb(240, 240, 240, 0.2);
   border-radius: 3px;
   font-size: 85%;
@@ -81,7 +81,7 @@ code {
   width: 100%;
   max-width: 100%;
   word-wrap: break-word;
-  overflow-x: hidden; /* Prevents horizontal scrolling */
+  overflow: hidden; /* Prevents horizontal scrolling */
 }
 
 .text-container p {
@@ -110,7 +110,7 @@ pre {
   border-radius: 0.3em;
   overflow: hidden; /* This ensures the child border-radius is respected */
   background-color: black;
-  margin: 8px;
+  overflow-x: auto;
 }
 
 .text-container > * { /* Apply this to all direct children of .chatStream */
@@ -167,7 +167,12 @@ button.copy-icon {
 .hljs {
   overflow-x: auto;     /* Horizontal scrolling, only if necessary */
   box-sizing: border-box;
-  margin: 8px;
+  display: block;
+	padding: 10px;
+}
+
+.markdown-wrapper {
+  width: 100%;
 }
 
 .input-wrapper {
@@ -234,11 +239,11 @@ pre[class*=language-] {
   overflow: auto;
 }
 
-:not(pre) > code.hljs, :not(pre) > code[class*=language-] {
+/* :not(pre) > code.hljs, :not(pre) > code[class*=language-] {
   border-radius: .3em;
   padding: .1em;
   white-space: normal;
-}
+} */
 
 /* Color variables */
 :root {

@@ -1,12 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { CSSProperties, useEffect, useRef, useState } from 'react';
 import { LlmSvgIcon } from './llmAvatar';
 import { Message } from '../../wasm/neatcoderInterface';
-import { marked } from 'marked';
 import hljs from './codeBlockStyle';
-
-const renderer = new marked.Renderer();
-
-marked.setOptions({ renderer });
+import ReactMarkdown from 'react-markdown';
 
 interface ChatStreamProps {
   messages: Message[];
@@ -18,83 +14,6 @@ const ChatStream: React.FC<ChatStreamProps> = ({ messages, className }) => {
     {messages.map((message, idx) => <MessageUi key={idx} {...message} />)}
   </div>
 )};
-
-const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
-  const isUser = user === 'user';
-  const publicPath = (window as any).publicPath;
-  const userAvatar = `${publicPath}/default_user.jpg`;
-  const [htmlContent, setHtmlContent] = useState('');
-  // Typing the ref with HTMLDivElement because the ref will be attached to a div element
-
-  useEffect(() => {
-    // Ensure the payload content is present
-    if (payload && payload.content) {
-      // Convert markdown to HTML
-      const rawHtml = marked(payload.content);
-      // Create a virtual DOM element to manipulate
-      const virtualDocument = new DOMParser().parseFromString(rawHtml, 'text/html');
-
-      // Set the innerHTML directly on the ref's current element
-      // Apply syntax highlighting and other transformations
-      virtualDocument.querySelectorAll('pre').forEach(block => {
-
-        // Apply syntax highlighting to all <pre> elements
-        hljs.highlightElement(block as HTMLElement);
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'code-wrapper';
-
-        const codeHeader = document.createElement('div');
-        codeHeader.className = 'code-header';
-
-        const langSpan = document.createElement('span');
-        langSpan.className = 'code-language';
-        const lang = block.querySelector('code[class]')?.className || '';
-        langSpan.innerText = lang;
-
-        const copyButton = document.createElement('button');
-        copyButton.className = 'fa-solid fa-copy copy-icon';
-        copyButton.onclick = () => {
-          // Assuming the `copyToClipboard` function takes the text you want to copy as an argument
-          if (block.textContent) {
-              copyToClipboard(block.textContent);
-          }
-        };
-
-        codeHeader.appendChild(langSpan);
-        codeHeader.appendChild(copyButton);
-
-        wrapper.appendChild(codeHeader);
-        block.parentNode?.insertBefore(wrapper, block);
-        wrapper.appendChild(block);
-      });
-
-      // Set the HTML content to the transformed HTML
-      setHtmlContent(virtualDocument.body.innerHTML);
-
-    }
-  }, [payload]);
-
-  return (
-    <div className={`message ${isUser ? 'user-message' : 'llm-message'}`}>
-      <div className="image-container">
-        {isUser ? (
-          <img src={userAvatar} alt="user profile" />
-        ) : (
-          // Replace LlmSvgIcon with actual SVG or component
-          <LlmSvgIcon />
-        )}
-      </div>
-      <div className="text-container">
-        <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
-        <div
-            className="custom-pre"
-            dangerouslySetInnerHTML={{ __html: htmlContent }}
-        />
-      </div>
-    </div>
-  );
-};
 
 export default ChatStream;
 
@@ -129,3 +48,77 @@ function copyToClipboard(text: string) {
     document.body.removeChild(textarea);
   }
 }
+
+const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
+  const isUser = user === 'user';
+  const publicPath = (window as any).publicPath;
+  const userAvatar = `${publicPath}/default_user.jpg`;
+  const markdownRef = useRef<HTMLDivElement>(null);
+
+  // TODO: add a code-padding component...
+  useEffect(() => {
+      // Highlight all code blocks within the markdownRef current element
+      markdownRef.current?.querySelectorAll<HTMLElement>(':scope > .custom-pre > pre code').forEach((block) => {
+        // Assuming codeElement is the <code> inside the <pre>
+        // Add 'code-wrapper' class to the parent <pre> of this <code>
+        const preElement = block.parentElement;
+        if (preElement) {
+          preElement.classList.add('code-wrapper');
+        }
+
+        // Remove the attribute to force re-highlighting
+        delete block.dataset.highlighted;
+
+        hljs.highlightElement(block as HTMLElement);
+
+        if (preElement && !preElement.dataset.withHead) {
+          const codeHeader = document.createElement('div');
+          codeHeader.className = 'code-header';
+
+          const langSpan = document.createElement('span');
+          langSpan.className = 'code-language';
+          const lang = block.querySelector('code[class]')?.className || '';
+          langSpan.innerText = lang;
+
+          const copyButton = document.createElement('button');
+          copyButton.className = 'fa-solid fa-copy copy-icon';
+          copyButton.onclick = () => {
+            // Assuming the `copyToClipboard` function takes the text you want to copy as an argument
+            if (block.textContent) {
+                copyToClipboard(block.textContent);
+            }
+          };
+
+          codeHeader.appendChild(langSpan);
+          codeHeader.appendChild(copyButton);
+
+          preElement.prepend(codeHeader);
+
+          preElement.dataset.withHead = "yes";
+        }
+      });
+
+  }, [payload]); // Re-run the effect when payload changes
+
+  return (
+    <div className={`message ${isUser ? 'user-message' : 'llm-message'}`}>
+      <div className="image-container">
+        {isUser ? (
+          <img src={userAvatar} alt="user profile" />
+        ) : (
+          <LlmSvgIcon />
+        )}
+      </div>
+      <div className="text-container">
+        <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
+        <div className="markdown-wrapper" ref={markdownRef}>
+          <ReactMarkdown
+            className="custom-pre"
+          >
+              {payload.content}
+          </ReactMarkdown>
+        </div>
+      </div>
+    </div>
+  );
+};
