@@ -22,7 +22,7 @@ import {
   TasksCompletedProvider,
 } from "./taskPool";
 import { initCodeBase, appDataManager, setupDotNeatWatcher } from "./core";
-import { getOrSetApiKey, initStatusBar, initLogger, logger } from "./utils";
+import { initStatusBar, initLogger, logger } from "./utils";
 import { ChatProvider, initChat, setupChatWatcher } from "./chat";
 import { getOrSetModelVersion, setModelVersion } from "./utils/utils";
 import { ChatItem } from "./chat/providers";
@@ -45,7 +45,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
   initStatusBar(context);
   initLogger(context);
-  getOrSetApiKey();
 
   // Create the output channel for logging
   logger.appendLine("[INFO] Extension Name: Neatcoder");
@@ -64,9 +63,9 @@ export async function activate(context: vscode.ExtensionContext) {
   // Read or Initialize Application state
 
   let appManager = new appDataManager(jobQueueProvider, auditTrailProvider);
-  let llmParams = await getLLMParams();
+  // let llmParams = await getLLMParams();
 
-  logger.appendLine("[INFO] Extension Activated. llmParams: " + llmParams);
+  // logger.appendLine("[INFO] Extension Activated. llmParams: " + llmParams);
 
   // === Setup File Watchers ===
 

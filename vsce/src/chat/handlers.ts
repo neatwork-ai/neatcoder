@@ -5,11 +5,13 @@ import * as https from "https";
 import * as url from "url";
 import { MessageBuffer } from "../utils/httpClient";
 
-export function buildRequest(
+export async function buildRequest(
   msgs: Array<wasm.Message>,
   stream: boolean
-): [any, any] {
-  const apiKey = getOrSetApiKey();
+): Promise<[any, any]> {
+  console.log("GOING FOR IT");
+  const apiKey = await getOrSetApiKey();
+  console.log("Skipping API KEY");
 
   try {
     console.log("Messages: " + JSON.stringify(msgs.map((msg) => msg.payload)));
@@ -31,7 +33,7 @@ export async function promptLLM(
   const msgs: Array<wasm.Message> = message.msgs;
   const stream = message.stream;
 
-  const [apiKey, body] = buildRequest(msgs, stream);
+  const [apiKey, body] = await buildRequest(msgs, stream);
 
   return new Promise((resolve, reject) => {
     let messageBuffer = new MessageBuffer();

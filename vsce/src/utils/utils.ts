@@ -230,30 +230,48 @@ export function getFilename(filepath: string): string {
   return parts[parts.length - 1];
 }
 
-export function getOrSetApiKey(): any {
-  let config = vscode.workspace.getConfiguration("extension");
-  let apiKey = config.get("apiKey");
+export function getOrSetApiKey(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    let config = vscode.workspace.getConfiguration("extension");
+    let apiKey = config.get("apiKey");
 
-  if (!apiKey) {
-    vscode.window
-      .showInputBox({
-        prompt: "Please enter your API key",
-        ignoreFocusOut: true,
-      })
-      .then((value) => {
-        if (value) {
-          config.update("apiKey", value, vscode.ConfigurationTarget.Global);
-          vscode.window.showInformationMessage("API key saved!");
-        } else {
-          // Handle the case where the input box was dismissed without entering a value
-          vscode.window.showErrorMessage(
-            "API key is required to use this extension."
-          );
-        }
-      });
-  }
-
-  return apiKey;
+    if (apiKey) {
+      // If the API key is already set, resolve the Promise immediately.
+      resolve(apiKey);
+    } else {
+      // Show the input box to the user to enter the API key.
+      vscode.window
+        .showInputBox({
+          prompt: "Please enter your API key",
+          ignoreFocusOut: true,
+        })
+        .then((value) => {
+          if (value) {
+            // Update the configuration with the new API key.
+            config
+              .update("apiKey", value, vscode.ConfigurationTarget.Global)
+              .then(
+                () => {
+                  vscode.window.showInformationMessage("API key saved!");
+                  resolve(value); // Resolve the Promise with the new API key.
+                },
+                (error) => {
+                  vscode.window.showErrorMessage(
+                    `Failed to save API key: ${error}`
+                  );
+                  reject(error); // Reject the Promise if there was an error saving the API key.
+                }
+              );
+          } else {
+            // Handle the case where the input box was dismissed without entering a value.
+            vscode.window.showErrorMessage(
+              "API key is required to use this extension."
+            );
+            reject("API key not provided."); // Reject the Promise as no API key was provided.
+          }
+        });
+    }
+  });
 }
 
 export async function getOrSetModelVersion(): Promise<wasm.OpenAIModels | null> {
@@ -263,7 +281,10 @@ export async function getOrSetModelVersion(): Promise<wasm.OpenAIModels | null> 
   if (!modelVersion) {
     const value = await vscode.window.showQuickPick(
       ["gpt-3.5-turbo-16k", "gpt-4"],
-      { canPickMany: false }
+      {
+        canPickMany: false,
+        placeHolder: "Select an OpenAI model", // This is the placeholder text
+      }
     );
     if (value) {
       await config.update(
