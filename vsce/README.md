@@ -2,7 +2,7 @@
 
 Turn your IDE into an AI Software Engineer with Neatcoder 🧞‍♂️
 
-Neatwork AI enhances VS Code by integrating advanced AI capabilities. It provides you the ability to dynamically scaffold entire codebases from a simple project description. Given that most softwares interact with other softwares, Neatwork AI allows you to make its AI aware of external interfaces the software ought to communicate with.
+Neatwork AI enhances VS Code by integrating advanced AI capabilities. It provides you with the ability to dynamically scaffold entire codebases from a simple project description. Given that most software interacts with other software, Neatwork AI allows you to make its AI aware of external interfaces the software ought to communicate with.
 
 ## Features
 
@@ -22,13 +22,13 @@ To start a chat, click `⌘ + ⇧ + P` or (`CTRL + ⇧ + P` in Linux/Windows) an
 
 2. **Manage your chats:**
 
-You can also manage your chats directly on the side view as seen below.
+You can also manage your chats directly in the side view, as seen below.
 
 ![Manage Chat](assets/demos/open_close_chat.gif)
 
 2. **Tip: Rearrange  the Chats view:**
 
-A tip: If you like to use the file system in your side bar, you can drag your chat list to the file explorer view as seen below.
+If you like to use the file system in your side bar, you can drag your chat list to the file explorer view, as seen below.
 
 ![Rearrange ChatView](assets/demos/rearrange_chat_view.gif)
 
@@ -46,7 +46,7 @@ Whether you're dealing with a database, an API, or any other external system, sp
 
 2. **Describe Your Project Specification:**
 
-Choose a Programming Language, provide a detailed description or specification of your project to let Neatcoder understand its structure, features, and requirements.
+Choose a programming language and provide a detailed description or specification of your project to let Neatcoder understand its structure, features, and requirements.
 
 **Result:** Once done, Neatcoder not only scaffolds the entire codebase for you but also adds code streaming tasks to the task pool, ensuring you have a head-start in the development phase.
 
@@ -56,11 +56,11 @@ You can also access this feature via `Cmd+Shift+P` and write "Init Codebase".
 
 ### Code Streaming
 
-As tasks are added to the task pool, you will be able to run them and the Neatcoder will begin to write the code.
+As tasks are added to the task pool, you will be able to run them, and the Neatcoder will begin to write the code.
 
 ![Streaming Code](assets/demos/streaming.gif)
 
-For enhanced productivity you can also stream in the background while you write your own code.
+For enhanced productivity, you can also stream in the background while you write your own code.
 
 ![Background Streaming](assets/demos/background_streaming.gif)
 
