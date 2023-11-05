@@ -1,0 +1,286 @@
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* To prevent double scroll bars */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'Inter'
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1 {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Inline Code Style */
+:not(pre) > code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+  color: var(--vscode-activityBarBadge-background);
+  background-color: rgb(240, 240, 240, 0.2);
+  border-radius: 3px;
+  font-size: 85%;
+  padding: 1px 4px;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  justify-content: space-between;
+}
+
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: transparent;
+  overflow: hidden;
+}
+
+.chatStream {
+    flex-grow: 1;
+    overflow-y: auto;  /* to allow scrolling if the messages exceed the container's height */
+    overflow-x: hidden; /* Prevents horizontal scrolling */
+    max-width: 100%;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.message, .message * {
+  box-sizing: border-box;
+}
+
+.image-container {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  margin-right: 10px; /* Adjust as needed for spacing between image and text */
+}
+
+.image-container svg, .image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10%; /* Optional, if you want circular images */
+}
+
+.text-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow: hidden; /* Prevents horizontal scrolling */
+}
+
+.text-container p {
+  margin: 0;
+}
+
+.user-name {
+  font-weight: bold;
+  margin-bottom: 1px; /* Adjust for spacing between name and message text */
+}
+
+.user-message .user-name {
+  color: var(--vscode-activityBarBadge-background); /* Optional: Color for the user's name */
+}
+
+.llm-message .user-name {
+  color: var(--vscode-activityBarBadge-background); /* Optional: Color for the LLM's name */
+}
+
+pre {
+  width: 100% !important; /* ensure the block doesn't grow beyond its container */
+  max-width: 100% !important;
+}
+
+.code-wrapper {
+  border-radius: 0.3em;
+  overflow: hidden; /* This ensures the child border-radius is respected */
+  background-color: black;
+  overflow-x: auto;
+}
+
+.text-container > * { /* Apply this to all direct children of .chatStream */
+  max-width: 100%;
+  word-wrap: break-word; /* Ensures words do not overflow */
+  overflow-wrap: break-word; /* Ensures overflow text is broken up */
+}
+
+.custom-pre > * { /* Apply this to all direct children of .chatStream */
+  word-wrap: break-word; /* Ensures words do not overflow */
+  overflow-wrap: break-word; /* Ensures overflow text is broken up */
+}
+
+pre.custom-pre {
+  font-family: 'Inter';
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap !important;
+  border: none;
+  background: none;
+  vertical-align: middle;
+  max-width: 100%;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background-color: var(--vscode-input-background);
+  height: 24px;
+  box-sizing: border-box;
+}
+
+.copy-icon {
+  cursor: pointer;
+  font-size: 12px;
+  color: white; /* Set the default color to white */
+  background-color: transparent;
+  transition: color 0.2s ease; /* Transition for the color property */
+}
+
+/* To remove additional default styling that might be causing the outdated appearance */
+button.copy-icon {
+  background-color: transparent;
+  border: none;
+  box-shadow: none; /* Remove box shadows if any */
+}
+
+.copy-icon:active {
+  color: var(--vscode-activityBarBadge-background);; /* Temporarily change the color to blue when active (clicked) */
+}
+
+.hljs {
+  overflow-x: auto;     /* Horizontal scrolling, only if necessary */
+  box-sizing: border-box;
+  display: block;
+	padding: 10px;
+}
+
+.markdown-wrapper {
+  width: 100%;
+}
+
+.input-wrapper {
+  padding: 5px 10px;
+  margin: 10px;
+}
+
+/* Remove border around the toolbar */
+.ql-toolbar {
+  border: none !important;  /* Use !important to ensure override */
+  height: 25px !important;
+  display: flex !important;
+  align-items: center !important;  /* This will vertically center the items */
+}
+
+.ql-container-decorator {
+  border: none !important;
+  padding: 0 !important; /* Override Quill's default padding */
+  height: auto !important;
+  background-color: var(--vscode-input-background);
+  border-radius: 10px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  max-height: 250px;
+  overflow-y: auto;  /* Vertical scrolling */
+}
+
+/* Remove border around the editor */
+.ql-container {
+  border: none !important;
+  padding: 0 !important; /* Override Quill's default padding */
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 35px !important; /* Add margin to the right */
+  min-height: 10px !important;  /* Adjust this value as needed */
+  height: auto !important;
+}
+
+/* Default state */
+button i.fa,
+button i.fas,
+.ql-picker-label i.fa,
+.ql-picker-label i.fas {
+  color: white;
+}
+
+/* Hover state */
+button:hover i.fa,
+button:hover i.fas,
+.ql-picker-label:hover i.fa,
+.ql-picker-label:hover i.fas {
+  color: var(--vscode-activityBarBadge-background);
+}
+
+/* Active state */
+.ql-active i.fa,
+.ql-active i.fas {
+  color: var(--vscode-activityBarBadge-background);
+}
+
+/* Base styling */
+pre[class*=language-] {
+  border-radius: .3em;
+  overflow: auto;
+}
+
+/* :not(pre) > code.hljs, :not(pre) > code[class*=language-] {
+  border-radius: .3em;
+  padding: .1em;
+  white-space: normal;
+} */
+
+/* Color variables */
+:root {
+  --hljs-comment: hsla(0, 0%, 100%, .5);
+  --hljs-built-in: #e9950c;
+  --hljs-keyword: #2e95d3;
+  --hljs-string: #00a67d;
+  --hljs-variable: #df3079;
+  --hljs-title: #f22c3d;
+}
+
+/* Styles based on the constructs */
+.hljs-comment {
+  color: var(--hljs-comment) !important;
+}
+
+.hljs-meta {
+  color: hsla(0, 0%, 100%, .6) !important;
+}
+
+.hljs-built_in, .hljs-class .hljs-title {
+  color: var(--hljs-built-in) !important;
+}
+
+.hljs-doctag, .hljs-formula, .hljs-keyword, .hljs-literal {
+  color: var(--hljs-keyword) !important;
+}
+
+.hljs-addition, .hljs-attribute, .hljs-meta-string, .hljs-regexp, .hljs-string {
+  color: var(--hljs-string) !important;
+}
+
+.hljs-attr, .hljs-number, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-pseudo, .hljs-template-variable, .hljs-type, .hljs-variable {
+  color: var(--hljs-variable) !important;
+}
+
+.hljs-bullet, .hljs-link, .hljs-selector-id, .hljs-symbol, .hljs-title {
+  color: var(--hljs-title) !important;
+}
+

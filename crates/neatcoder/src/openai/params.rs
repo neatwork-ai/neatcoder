@@ -20,8 +20,14 @@ pub enum OpenAIModels {
     Gpt35Turbo16k,
 }
 
+impl Default for OpenAIModels {
+    fn default() -> Self {
+        OpenAIModels::Gpt35Turbo16k
+    }
+}
+
 #[wasm_bindgen]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct OpenAIParams {
     pub model: OpenAIModels,
     // TODO: THIS SHOULD BE Scale02
@@ -162,6 +168,12 @@ impl OpenAIParams {
     #[wasm_bindgen(js_name = topP)]
     pub fn top_p(mut self, top_p: f64) -> Self {
         self.top_p = Some(Scale01::new(top_p).expect("Invalid top_p value"));
+        self
+    }
+
+    #[wasm_bindgen(js_name = maxTokens)]
+    pub fn max_tokens(mut self, max_tokens: u64) -> Self {
+        self.max_tokens = Some(max_tokens);
         self
     }
 

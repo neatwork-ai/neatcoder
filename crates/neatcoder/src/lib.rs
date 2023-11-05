@@ -1,4 +1,5 @@
-use js_sys::Reflect;
+use chrono::{DateTime, Utc};
+use js_sys::{Date as IDate, Reflect};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_wasm_bindgen::to_value;
@@ -7,19 +8,13 @@ use std::hash::Hash;
 use utils::log_err;
 use wasm_bindgen::{JsCast, JsValue};
 
-// Public modules declaration
 pub mod consts;
-///< Constants used throughout the application.
 pub mod endpoints;
-///< internal API endpoint definitions.
 pub mod models;
-///< Data models used in the application.
 pub mod openai;
-///< Client for interacting with the OpenAI API.
 pub mod prelude;
-///< Re-exports commonly used items.
+pub mod typescript;
 pub mod utils;
-///< Contains utility functions and helpers.
 
 /// Type alias for JavaScript errors represented as JsValue
 pub type JsError = JsValue;
@@ -334,5 +329,42 @@ where
             log_err(&error_msg);
             JsValue::from_str(&error_msg)
         })
+    }
+}
+
+impl WasmType<IDate> for DateTime<Utc> {
+    type RustType = DateTime<Utc>;
+
+    fn to_extern(rust_type: Self::RustType) -> Result<IDate, JsError> {
+        // Convert the Rust DateTime<Utc> to a string
+        let iso_string = rust_type.to_rfc3339();
+        // Create a new JavaScript Date object from the string
+        let js_date = js_sys::Date::new(&JsValue::from_str(&iso_string));
+
+        // Check if the conversion was successful
+        if js_date.is_instance_of::<js_sys::Date>() {
+            Ok(js_date)
+        } else {
+            Err(JsError::from(
+                "Failed to create JavaScript Date object.".to_owned(),
+            ))
+        }
+    }
+
+    fn from_extern(extern_type: IDate) -> Result<Self::RustType, JsError> {
+        // Ensure we have a Date object
+        if let Some(date) = extern_type.dyn_into::<js_sys::Date>().ok() {
+            // Convert the JavaScript Date object to an ISO string
+            let iso_string =
+                date.to_iso_string().as_string().unwrap_or_default();
+            // Parse the ISO string into a Rust DateTime<Utc>
+            DateTime::parse_from_rfc3339(&iso_string)
+                .map(|dt| dt.with_timezone(&Utc))
+                .map_err(|e| JsError::from(e.to_string()))
+        } else {
+            Err(JsError::from(
+                "Input JsValue is not a Date object.".to_owned(),
+            ))
+        }
     }
 }
