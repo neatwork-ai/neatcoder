@@ -171,6 +171,8 @@ button.copy-icon {
 .hljs {
   overflow-x: auto;     /* Horizontal scrolling, only if necessary */
   box-sizing: border-box;
+  display: block;
+	padding: 10px;
 }
 
 .input-wrapper {
