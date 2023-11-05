@@ -20,7 +20,7 @@ pub async fn write_json(
     let mut retries = 3;
 
     loop {
-        log("[INFO] Prompting the LLM...");
+        log("[INFO] Prompting the LLM..."); // TODO: remove this log in the next release
 
         let chat =
             chat_raw(request_callback, ai_params, prompts, &[], &[]).await?;

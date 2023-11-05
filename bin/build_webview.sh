@@ -18,6 +18,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Move the pkg directory to ../vsce
+mv build ../vsce/webview/
+
 cd ../
 
 echo "Compilation successful!"
