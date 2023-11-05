@@ -75,6 +75,19 @@ For enhanced productivity, you can also stream in the background while you write
 
 After installation, open the command palette (`Cmd+Shift+P` on MacOS or `CTRL + Shift + P` on Linux/Windows) and type "Neatcoder" to access its features.
 
+## Data Policy in a Nutshell
+
+TLDR:
+
+1. In relation to your codebase and chats:
+   1. Are solely stored locally;
+   2. We do not store nor have access to them.
+2. We collect analytics to learn how users are using the extension, for the purpose of improving the product
+3. The data policy might change in future versions
+
+You can find the full policy at [https://www.neatwork.ai/privacy](https://www.neatwork.ai/privacy)
+
+
 ## Feedback and Contributions
 
 Your feedback is invaluable in making Neatcoder even better! Please report any issues or suggestions on our [Neatcoder Issues](https://github.com/neatwork-ai/neatcoder-issues).
