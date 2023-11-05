@@ -175,6 +175,10 @@ button.copy-icon {
 	padding: 10px;
 }
 
+.markdown-wrapper {
+  width: 100%;
+}
+
 .input-wrapper {
   padding: 5px 10px;
   margin: 10px;

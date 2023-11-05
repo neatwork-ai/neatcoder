@@ -111,7 +111,7 @@ const MessageUi: React.FC<Message> = ({ user, ts, payload }) => {
       </div>
       <div className="text-container">
         <span className="user-name">{isUser ? 'User' : 'Neatcoder'}</span>
-        <div ref={markdownRef}>
+        <div className="markdown-wrapper" ref={markdownRef}>
           <ReactMarkdown
             className="custom-pre"
           >
