@@ -18,6 +18,8 @@ pub enum OpenAIModels {
     Gpt4,
     Gpt35Turbo,
     Gpt35Turbo16k,
+    Gpt35Turbo1106,
+    Gpt41106Preview,
 }
 
 impl Default for OpenAIModels {
@@ -223,6 +225,8 @@ impl OpenAIModels {
             "gpt-4" => OpenAIModels::Gpt4,
             "gpt-3.5-turbo" => OpenAIModels::Gpt35Turbo,
             "gpt-3.5-turbo-16k" => OpenAIModels::Gpt35Turbo16k,
+            "gpt-3.5-turbo-1106" => OpenAIModels::Gpt35Turbo1106,
+            "gpt-4-1106-preview" => OpenAIModels::Gpt41106Preview,
             _ => panic!("Invalid model {}", model),
         };
 
@@ -235,6 +239,8 @@ impl OpenAIModels {
             OpenAIModels::Gpt4 => String::from("gpt-4"),
             OpenAIModels::Gpt35Turbo => String::from("gpt-3.5-turbo"),
             OpenAIModels::Gpt35Turbo16k => String::from("gpt-3.5-turbo-16k"),
+            OpenAIModels::Gpt35Turbo1106 => String::from("gpt-3.5-turbo-1106"),
+            OpenAIModels::Gpt41106Preview => String::from("gpt-4-1106-preview"),
         }
     }
 }

@@ -280,7 +280,7 @@ export async function getOrSetModelVersion(): Promise<wasm.OpenAIModels | null> 
 
   if (!modelVersion) {
     const value = await vscode.window.showQuickPick(
-      ["gpt-3.5-turbo-16k", "gpt-4"],
+      ["gpt-3.5-turbo-1106", "gpt-4-1106-preview"],
       {
         canPickMany: false,
         placeHolder: "Select an OpenAI model", // This is the placeholder text
@@ -310,7 +310,7 @@ export async function setModelVersion() {
   let config = vscode.workspace.getConfiguration("extension");
 
   const value = await vscode.window.showQuickPick(
-    ["gpt-3.5-turbo-16k", "gpt-4"],
+    ["gpt-3.5-turbo-1106", "gpt-4-1106-preview"],
     {
       canPickMany: false,
       placeHolder: "Select an OpenAI model", // This is the placeholder text
@@ -338,6 +338,10 @@ export function fromModelVersionToEnum(
       return wasm.OpenAIModels.Gpt35Turbo;
     case "gpt-3.5-turbo-16k":
       return wasm.OpenAIModels.Gpt35Turbo16k;
+    case "gpt-3.5-turbo-1106":
+      return wasm.OpenAIModels.Gpt35Turbo1106;
+    case "gpt-4-1106-preview":
+      return wasm.OpenAIModels.Gpt41106Preview;
     default:
       return null;
   }
