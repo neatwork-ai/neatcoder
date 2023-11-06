@@ -76,6 +76,10 @@ def build():
     # Building WebView
     run_command("npm install", working_dir=webview_dir)
     run_command("npm run build", working_dir=webview_dir)
+    dest_webview_build_dir = os.path.join(vsce_dir, "webview", "build")
+    if os.path.exists(dest_webview_build_dir):
+        shutil.rmtree(dest_webview_build_dir)
+    move(os.path.join(webview_dir, "build"), dest_webview_build_dir)
 
     # Building Client
     run_command("yarn install", working_dir=vsce_dir)
