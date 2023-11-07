@@ -4,6 +4,15 @@ All notable changes to the "neatcoder" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.2.3] - 07/11/2023
+
+### Added
+- New Open AI models `gpt-3.5-turbo-1106` and `gpt-4-1106-preview` now available
+
+### Fixed
+- Fix openChat command webview build URI
+- Fix: Chat view works with both gpt3 and gpt4
+
 ## [0.2.2] - 05/11/2023
 
 ### Fixed
