@@ -2,7 +2,7 @@
   "name": "neatcoder",
   "displayName": "Neatwork AI - GPT4 on Steroids",
   "description": "Turn your IDE into an AI Sofware engineer.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "NeatworkAi",
   "repository": {
     "url": "https://github.com/neatwork-ai/neatcoder-issues.git",

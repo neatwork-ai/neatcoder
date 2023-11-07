@@ -24,7 +24,7 @@ let isCodeBlockEnded = false;
  * @return {Promise<object>} - A promise that resolves to the response object from the OpenAI API.
  */
 export async function makeRequest(body: string): Promise<object> {
-  const apiKey = getOrSetApiKey();
+  const apiKey = await getOrSetApiKey();
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -61,6 +61,7 @@ export async function makeStreamingRequest(
   activeTextDocument: TextDocument
 ): Promise<void> {
   cleanup();
+  const apiKey = await getOrSetApiKey();
 
   return new Promise((resolve, reject) => {
     // let responseLog: string[] = []; // TODO: Only debug
@@ -68,7 +69,6 @@ export async function makeStreamingRequest(
 
     let messageBuffer = new MessageBuffer();
 
-    const apiKey = getOrSetApiKey();
     try {
       const urlString = "https://api.openai.com/v1/chat/completions";
       const parsedUrl = url.parse(urlString);

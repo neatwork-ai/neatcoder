@@ -6,6 +6,7 @@ import {
   getChatById,
   getOrCreateConfigPath,
   getOrInitConfig,
+  getOrSetApiKey,
   getOrSetModelVersion,
   getRoot,
   storeChat,
@@ -136,6 +137,8 @@ const setupWebviewSockets = async (
       chatOperationQueue.add(() => storeChat(chat));
       const msgs: Array<wasm.Message> = message.msgs;
       const isFirst = msgs.length === 1 ? true : false;
+
+      await getOrSetApiKey();
 
       promptLLM(panel, message);
 

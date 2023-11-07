@@ -2,7 +2,7 @@
 
 Turn your IDE into an AI Software Engineer with Neatcoder 🧞‍♂️
 
-Neatwork AI enhances VS Code by integrating advanced AI capabilities. It provides you with the ability to dynamically scaffold entire codebases from a simple project description. Given that most software interacts with other software, Neatwork AI allows you to make its AI aware of external interfaces the software ought to communicate with.
+Neatwork AI enhances VS Code by integrating advanced AI capabilities. It provides you with the ability to dynamically scaffold entire codebases from a simple project description. Given that most software interacts with other software, Neatwork AI allows you to make its AI aware of external interfaces, such as data models from your Databases or endpoints from your APIs.
 
 ## Features
 
@@ -83,7 +83,7 @@ TLDR:
    1. Are solely stored locally;
    2. We do not store nor have access to them.
 2. We collect analytics to learn how users are using the extension, for the purpose of improving the product
-3. The data policy might change in future versions
+3. The data policy might change in future versions as the product evolves
 
 You can find the full policy at [https://www.neatwork.ai/privacy](https://www.neatwork.ai/privacy)
 
