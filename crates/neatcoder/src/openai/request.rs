@@ -11,6 +11,7 @@ use wasm_bindgen_futures::JsFuture;
 #[wasm_bindgen(js_name = requestBody)]
 pub fn request_body_(
     msgs: IOpenAIMsg,
+    job: OpenAIParams,
     stream: bool,
 ) -> Result<JsValue, JsError> {
     let msgs: Vec<OpenAIMsg> = Vec::from_extern(msgs).map_err(|e| {
@@ -20,7 +21,7 @@ pub fn request_body_(
         ))
     })?;
 
-    let job = OpenAIParams::default();
+    // let job = OpenAIParams::default();
 
     let mut data = json!({
         "model": job.model.as_string(),

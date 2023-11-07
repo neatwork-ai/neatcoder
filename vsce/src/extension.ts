@@ -24,7 +24,11 @@ import {
 import { initCodeBase, appDataManager, setupDotNeatWatcher } from "./core";
 import { initStatusBar, initLogger, logger } from "./utils";
 import { ChatProvider, initChat, setupChatWatcher } from "./chat";
-import { getOrSetModelVersion, setModelVersion } from "./utils/utils";
+import {
+  getLLMParams,
+  getOrSetModelVersion,
+  setModelVersion,
+} from "./utils/utils";
 import { ChatItem } from "./chat/providers";
 import { openChat, removeChat } from "./chat/commands";
 import MixpanelHelper from "./utils/mixpanelHelper";
@@ -224,17 +228,6 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     )
   );
-}
-
-async function getLLMParams(): Promise<wasm.OpenAIParams> {
-  let modelVersion = await getOrSetModelVersion();
-  if (modelVersion === null) {
-    modelVersion = wasm.OpenAIModels.Gpt4;
-    vscode.window.showErrorMessage(
-      "Invalid model version, defaulting to Gpt4."
-    );
-  }
-  return wasm.OpenAIParams.empty(modelVersion);
 }
 
 // This method is called when the extension is deactivated
