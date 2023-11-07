@@ -10,7 +10,7 @@ export async function buildRequest(
   msgs: Array<wasm.Message>,
   stream: boolean
 ): Promise<[any, any]> {
-  const apiKey = await getOrSetApiKey();
+  //const apiKey = await getOrSetApiKey();
 
   try {
     console.log("Messages: " + JSON.stringify(msgs.map((msg) => msg.payload)));
@@ -21,7 +21,7 @@ export async function buildRequest(
       llmParams,
       stream
     );
-    return [apiKey, body];
+    return ["", body];
   } catch (err) {
     console.error(`Failed to build request: ${err}`);
     throw new Error((err as Error).message);
@@ -41,7 +41,7 @@ export async function promptLLM(
     let messageBuffer = new MessageBuffer();
 
     try {
-      const urlString = "https://api.openai.com/v1/chat/completions";
+      const urlString = "https://openai-proxy-66mt7edr2a-ew.a.run.app/chat";
       const parsedUrl = url.parse(urlString);
 
       const options = {
@@ -49,7 +49,7 @@ export async function promptLLM(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+        //  Authorization: `Bearer ${apiKey}`,
         },
       };
 

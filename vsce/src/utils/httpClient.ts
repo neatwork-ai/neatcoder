@@ -24,7 +24,7 @@ let isCodeBlockEnded = false;
  * @return {Promise<object>} - A promise that resolves to the response object from the OpenAI API.
  */
 export async function makeRequest(body: string): Promise<object> {
-  const apiKey = await getOrSetApiKey();
+ // const apiKey = await getOrSetApiKey();
 
   try {
     const response = await fetch("https://openai-proxy-66mt7edr2a-ew.a.run.app/chat", {
