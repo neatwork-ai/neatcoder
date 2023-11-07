@@ -24,14 +24,14 @@ let isCodeBlockEnded = false;
  * @return {Promise<object>} - A promise that resolves to the response object from the OpenAI API.
  */
 export async function makeRequest(body: string): Promise<object> {
-  const apiKey = await getOrSetApiKey();
+ // const apiKey = await getOrSetApiKey();
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://openai-proxy-66mt7edr2a-ew.a.run.app/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+       // Authorization: `Bearer ${apiKey}`,
       },
       body,
     });
@@ -61,7 +61,7 @@ export async function makeStreamingRequest(
   activeTextDocument: TextDocument
 ): Promise<void> {
   cleanup();
-  const apiKey = await getOrSetApiKey();
+  //const apiKey = await getOrSetApiKey();
 
   return new Promise((resolve, reject) => {
     // let responseLog: string[] = []; // TODO: Only debug
@@ -70,7 +70,7 @@ export async function makeStreamingRequest(
     let messageBuffer = new MessageBuffer();
 
     try {
-      const urlString = "https://api.openai.com/v1/chat/completions";
+      const urlString = "https://openai-proxy-66mt7edr2a-ew.a.run.app/chat";
       const parsedUrl = url.parse(urlString);
 
       const options = {
@@ -78,7 +78,7 @@ export async function makeStreamingRequest(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          //Authorization: `Bearer ${apiKey}`,
         },
       };
 

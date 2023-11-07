@@ -176,7 +176,9 @@ impl Model {
     pub fn new(id: String) -> Model {
         Self {
             id,
-            uri: String::from("https://api.openai.com/v1/chat/completions"),
+            uri: String::from(
+                "https://openai-proxy-66mt7edr2a-ew.a.run.app/chat",
+            ),
             interface: String::from("OpenAI"),
         }
     }

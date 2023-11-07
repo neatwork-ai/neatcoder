@@ -43,7 +43,8 @@ export async function initChat(
     path.join(context.extensionPath, "assets", "robot-32-30.png")
   );
 
-  let modelVersion = await getOrSetModelVersion();
+  const modelVersion = await getOrSetModelVersion();
+  console.log(`Model version: ${modelVersion}`);
   const sessionId = uuidv4();
   const chat = new wasm.Chat(sessionId, "Chat with Neat");
   chat.addModel(modelVersion!);
@@ -134,7 +135,7 @@ const setupWebviewSockets = async (
       const msgs: Array<wasm.Message> = message.msgs;
       const isFirst = msgs.length === 1 ? true : false;
 
-      await getOrSetApiKey();
+      //await getOrSetApiKey();
 
       promptLLM(panel, message);
 
