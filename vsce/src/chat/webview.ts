@@ -14,7 +14,6 @@ export function setWebviewContent(
   let content = fs.readFileSync(entryHtml, "utf8");
 
   // Use asWebviewUri to get the correct URI for the assets
-  console.log("a");
   content = content.replace(/src="\/static\/js\/(.*?)"/g, (match, filename) => {
     const scriptSrc = panel.webview.asWebviewUri(
       vscode.Uri.file(path.join(reactBuildPath, "static", "js", filename))
@@ -22,7 +21,6 @@ export function setWebviewContent(
     return `src="${scriptSrc}"`;
   });
 
-  console.log("b");
   content = content.replace(
     /href="\/static\/css\/(.*?)"/g,
     (match, filename) => {
@@ -33,11 +31,8 @@ export function setWebviewContent(
     }
   );
 
-  console.log("c");
   const publicPath = vscode.Uri.file(reactBuildPath);
-  console.log("d");
   const webviewPath = panel.webview.asWebviewUri(publicPath);
-  console.log("e");
 
   // Injecting the public path
   const inlineScript = `<script>window.publicPath = "${webviewPath.toString()}";</script>`;
@@ -45,7 +40,6 @@ export function setWebviewContent(
     '<script id="pathInjection"></script>',
     inlineScript
   );
-  console.log("f");
 
   if (chatHistory) {
     const historyScript = `<script>window.initialChatHistory = ${JSON.stringify(
@@ -59,5 +53,4 @@ export function setWebviewContent(
   }
 
   panel.webview.html = content;
-  console.log("g");
 }

@@ -4,19 +4,21 @@ import * as wasm from "../../pkg/neatcoder";
 import * as https from "https";
 import * as url from "url";
 import { MessageBuffer } from "../utils/httpClient";
+import { getLLMParams } from "../utils/utils";
 
 export async function buildRequest(
   msgs: Array<wasm.Message>,
   stream: boolean
 ): Promise<[any, any]> {
-  console.log("GOING FOR IT");
   const apiKey = await getOrSetApiKey();
-  console.log("Skipping API KEY");
 
   try {
     console.log("Messages: " + JSON.stringify(msgs.map((msg) => msg.payload)));
+    let llmParams = await getLLMParams();
+
     const body = wasm.requestBody(
       msgs.map((msg) => msg.payload),
+      llmParams,
       stream
     );
     return [apiKey, body];

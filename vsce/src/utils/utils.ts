@@ -397,3 +397,14 @@ export async function storeChat(chat: wasm.Chat): Promise<void> {
     throw new Error(`Failed to store chat to ${name}.json: ${err}`);
   }
 }
+
+export async function getLLMParams(): Promise<wasm.OpenAIParams> {
+  let modelVersion = await getOrSetModelVersion();
+  if (modelVersion === null) {
+    modelVersion = wasm.OpenAIModels.Gpt4;
+    vscode.window.showErrorMessage(
+      "Invalid model version, defaulting to Gpt4."
+    );
+  }
+  return wasm.OpenAIParams.empty(modelVersion);
+}
