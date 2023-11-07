@@ -279,13 +279,14 @@ export async function getOrSetModelVersion(): Promise<wasm.OpenAIModels | null> 
   let modelVersion = config.get("modelVersion") as string;
 
   if (!modelVersion) {
-    const value = await vscode.window.showQuickPick(
-      ["gpt-3.5-turbo-1106", "gpt-4-1106-preview"],
-      {
-        canPickMany: false,
-        placeHolder: "Select an OpenAI model", // This is the placeholder text
-      }
-    );
+    const value = "gpt-4-1106-preview";
+    // const value = await vscode.window.showQuickPick(
+    //   ["gpt-3.5-turbo-1106", "gpt-4-1106-preview"],
+    //   {
+    //     canPickMany: false,
+    //     placeHolder: "Select an OpenAI model", // This is the placeholder text
+    //   }
+    // );
     if (value) {
       await config.update(
         "modelVersion",
