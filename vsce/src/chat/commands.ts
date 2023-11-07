@@ -34,9 +34,7 @@ export async function initChat(
       enableScripts: true,
       retainContextWhenHidden: true,
       localResourceRoots: [
-        vscode.Uri.file(
-          path.join(context.extensionPath, "..", "webview", "build")
-        ),
+        vscode.Uri.file(path.join(context.extensionPath, "webview", "build")),
       ],
     }
   );
@@ -63,7 +61,9 @@ export async function initChat(
   );
 
   setWebviewContent(panel, context);
+  console.log("hahaha");
   activePanels.set(panelCounter, panel);
+  console.log("ebebebeb");
   panelCounter++;
 
   panel.onDidDispose(() => {

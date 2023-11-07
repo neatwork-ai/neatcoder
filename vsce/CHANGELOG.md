@@ -4,6 +4,11 @@ All notable changes to the "neatcoder" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.2.2] - 05/11/2023
+
+### Fixed
+- Hotfix: Include Webview build
+
 ## [0.2.1] - 05/11/2023
 
 ### Changed

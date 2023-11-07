@@ -2,7 +2,7 @@
   "name": "neatcoder",
   "displayName": "Neatwork AI - GPT4 on Steroids",
   "description": "Turn your IDE into an AI Sofware engineer.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "NeatworkAi",
   "repository": {
     "url": "https://github.com/neatwork-ai/neatcoder-issues.git",
@@ -225,6 +225,9 @@
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"
   },
+  "files": [
+    "webview/build/"
+  ],
   "devDependencies": {
     "@types/chai": "^4.3.6",
     "@types/eventsource": "^1.1.11",
