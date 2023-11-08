@@ -280,7 +280,12 @@ export async function getOrSetModelVersion(): Promise<wasm.OpenAIModels | null> 
 
   if (!modelVersion) {
     const value = await vscode.window.showQuickPick(
-      ["gpt-3.5-turbo-1106", "gpt-4-1106-preview"],
+      [
+        "gpt-3.5-turbo-1106",
+        "gpt-4-1106-preview",
+        "gpt-3.5-turbo-16k",
+        "gpt-4",
+      ],
       {
         canPickMany: false,
         placeHolder: "Select an OpenAI model", // This is the placeholder text
@@ -306,11 +311,12 @@ export async function getOrSetModelVersion(): Promise<wasm.OpenAIModels | null> 
   return fromModelVersionToEnum(modelVersion);
 }
 
+// TODO: Remove dulplicated logic...
 export async function setModelVersion() {
   let config = vscode.workspace.getConfiguration("extension");
 
   const value = await vscode.window.showQuickPick(
-    ["gpt-3.5-turbo-1106", "gpt-4-1106-preview"],
+    ["gpt-3.5-turbo-1106", "gpt-4-1106-preview", "gpt-3.5-turbo-16k", "gpt-4"],
     {
       canPickMany: false,
       placeHolder: "Select an OpenAI model", // This is the placeholder text
