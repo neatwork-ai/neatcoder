@@ -15,3 +15,5 @@ pub const CONFIG_FILES: [&str; 9] = [
     "Package.swift", // Swift
     ".gitignore",
 ];
+
+pub const BASE_BETA_URL: &str = "https://api.openai.com/v1/beta";

@@ -1,6 +1,9 @@
 use anyhow::Result;
-use serde::Serialize;
-use std::collections::HashMap;
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer, Serialize,
+};
+use std::{collections::HashMap, fmt};
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
@@ -242,6 +245,43 @@ impl OpenAIModels {
             OpenAIModels::Gpt35Turbo1106 => String::from("gpt-3.5-turbo-1106"),
             OpenAIModels::Gpt41106Preview => String::from("gpt-4-1106-preview"),
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for OpenAIModels {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct OpenAIModelsVisitor;
+
+        impl<'de> Visitor<'de> for OpenAIModelsVisitor {
+            type Value = OpenAIModels;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a string representing an OpenAI model")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<OpenAIModels, E>
+            where
+                E: de::Error,
+            {
+                match value {
+                    "gpt-4-32k" => Ok(OpenAIModels::Gpt432k),
+                    "gpt-4" => Ok(OpenAIModels::Gpt4),
+                    "gpt-3.5-turbo" => Ok(OpenAIModels::Gpt35Turbo),
+                    "gpt-3.5-turbo-16k" => Ok(OpenAIModels::Gpt35Turbo16k),
+                    "gpt-3.5-turbo-1106" => Ok(OpenAIModels::Gpt35Turbo1106),
+                    "gpt-4-1106-preview" => Ok(OpenAIModels::Gpt41106Preview),
+                    _ => Err(E::custom(format!(
+                        "unexpected OpenAI model: {}",
+                        value
+                    ))),
+                }
+            }
+        }
+
+        deserializer.deserialize_str(OpenAIModelsVisitor)
     }
 }
 

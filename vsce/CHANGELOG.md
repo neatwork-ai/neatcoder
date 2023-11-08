@@ -4,6 +4,14 @@ All notable changes to the "neatcoder" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.2.4] - 08/11/2023
+
+### Changed
+- Reinstated classic Open AI models `gpt-3.5` and `gpt-4` models
+
+### Fixed
+- Chat http request error handling
+
 ## [0.2.3] - 07/11/2023
 
 ### Added
