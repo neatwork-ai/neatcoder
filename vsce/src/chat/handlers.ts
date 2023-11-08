@@ -57,7 +57,7 @@ export async function promptLLM(
 
       const req = https.request(options, async (res) => {
         console.log(`STATUS: ${res.statusCode}`);
-        if (res.statusCode !== 202) {
+        if (!(res.statusCode === 202 || res.statusCode === 200)) {
           const statusMessage =
             http.STATUS_CODES[res.statusCode!] || "Unknown status code";
 

@@ -4,6 +4,11 @@ All notable changes to the "neatcoder" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.2.5] - 08/11/2023
+
+### Fixed
+- Fixed regression introduced in error handling (http error false positive)
+
 ## [0.2.4] - 08/11/2023
 
 ### Changed
