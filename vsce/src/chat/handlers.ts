@@ -1,7 +1,9 @@
 import * as vscode from "vscode";
+import { window } from "vscode";
 import { getOrSetApiKey } from "../utils";
 import * as wasm from "../../pkg/neatcoder";
 import * as https from "https";
+import * as http from "http";
 import * as url from "url";
 import { MessageBuffer } from "../utils/httpClient";
 import { getLLMParams } from "../utils/utils";
@@ -55,6 +57,22 @@ export async function promptLLM(
 
       const req = https.request(options, async (res) => {
         console.log(`STATUS: ${res.statusCode}`);
+        if (res.statusCode !== 202) {
+          const statusMessage =
+            http.STATUS_CODES[res.statusCode!] || "Unknown status code";
+
+          console.log(`STATUS: ${res.statusCode} ${statusMessage}`);
+          // Here the use of `window` and `webviewPanel` assumes this is within a VS Code extension
+          window.showErrorMessage(
+            `HTTP error: STATUS: ${res.statusCode} ${statusMessage}`
+          );
+
+          reject(
+            new Error(`HTTP error: STATUS: ${res.statusCode} ${statusMessage}`)
+          );
+          return; // Stop further processing
+        }
+
         res.setEncoding("utf8");
         res.pause();
 
