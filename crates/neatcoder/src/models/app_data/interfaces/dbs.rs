@@ -1,17 +1,17 @@
 use super::{AsContext, SchemaFile};
-use crate::{
-    openai::msg::{GptRole, OpenAIMsg},
-    typescript::ISchemas,
-    JsError, WasmType,
-};
+use crate::typescript::ISchemas;
 use anyhow::Result;
 use js_sys::JsString;
+use oai::models::{
+    message::wasm::MessageWasm as AiMessage, role::Role as GptRole,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     fmt::{self, Display},
 };
 use wasm_bindgen::prelude::wasm_bindgen;
+use wasmer::{JsError, WasmType};
 
 /// Struct documenting a Database/DataWarehouse interface. This refers to Database
 /// storage solutions or to more classic Data Warehousing solutions such as
@@ -232,7 +232,7 @@ pub enum DbType {
 }
 
 impl AsContext for Database {
-    fn add_context(&self, msg_sequence: &mut Vec<OpenAIMsg>) -> Result<()> {
+    fn add_context(&self, msg_sequence: &mut Vec<AiMessage>) -> Result<()> {
         let mut main_prompt = format!(
             "
 Have in consideration the following {} Database:
@@ -252,20 +252,14 @@ Have in consideration the following {} Database:
                 format!("{}\n{} {}", main_prompt, "- database host:", host);
         }
 
-        msg_sequence.push(OpenAIMsg {
-            role: GptRole::User,
-            content: main_prompt,
-        });
+        msg_sequence.push(AiMessage::new(GptRole::User, main_prompt));
 
         for (schema_name, schema) in self.schemas.iter() {
             let prompt = format!("
 Consider the following schema as part of the {} database. It's called `{}` and the schema is:\n```\n{}```
             ", self.name, schema_name, schema);
 
-            msg_sequence.push(OpenAIMsg {
-                role: GptRole::User,
-                content: prompt,
-            });
+            msg_sequence.push(AiMessage::new(GptRole::User, prompt));
         }
 
         Ok(())

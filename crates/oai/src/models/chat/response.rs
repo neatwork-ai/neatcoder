@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use super::msg::OpenAIMsg;
+use crate::models::message::Message;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ApiResponse {
     pub headers: ResponseHeaders,
-    pub body: ResponseBody,
+    pub body: ChatResponse,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,7 +35,7 @@ pub struct ResponseHeaders {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ResponseBody {
+pub struct ChatResponse {
     pub id: String,
     pub object: String,
     pub created: i64,
@@ -47,7 +47,7 @@ pub struct ResponseBody {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Choice {
     pub index: i32,
-    pub message: OpenAIMsg,
+    pub message: Message,
     pub finish_reason: String,
 }
 

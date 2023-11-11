@@ -1,40 +1,15 @@
 use anyhow::Result;
-use serde::{
-    de::{self, Visitor},
-    Deserialize, Deserializer, Serialize,
-};
-use std::{collections::HashMap, fmt};
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use serde::Serialize;
+use std::collections::HashMap;
 
 use crate::{
-    openai::utils::{BoundedFloat, Range100s},
-    utils::jsvalue_to_hmap,
-    JsError,
+    models::Models,
+    utils::{Bounded, BoundedFloat, Scale01, Scale100s, Scale22},
 };
 
-use super::utils::{Bounded, Scale01, Scale100s, Scale22};
-
-#[wasm_bindgen]
-#[derive(Debug, Serialize, Clone, Copy)]
-pub enum OpenAIModels {
-    Gpt432k,
-    Gpt4,
-    Gpt35Turbo,
-    Gpt35Turbo16k,
-    Gpt35Turbo1106,
-    Gpt41106Preview,
-}
-
-impl Default for OpenAIModels {
-    fn default() -> Self {
-        OpenAIModels::Gpt35Turbo16k
-    }
-}
-
-#[wasm_bindgen]
 #[derive(Debug, Serialize, Clone)]
-pub struct OpenAIParams {
-    pub model: OpenAIModels,
+pub struct ChatParams {
+    pub model: Models,
     // TODO: THIS SHOULD BE Scale02
     /// Temperature is used to control the randomness or creativity
     /// of the model's output. Temperature is a parameter that affects
@@ -55,7 +30,7 @@ pub struct OpenAIParams {
     /// narrower range of high-probability words. This leads to
     /// more focused and deterministic output, with fewer alternatives
     /// and reduced randomness.
-    pub(crate) top_p: Option<Scale01>, // TODO: Add getter
+    pub top_p: Option<Scale01>, // TODO: Add getter
     /// The frequency penalty parameter helps reduce the repetition of words
     /// or sentences within the generated text. It is a float value ranging
     /// from -2.0 to 2.0, which is subtracted to the logarithmic probability of a
@@ -65,7 +40,7 @@ pub struct OpenAIParams {
     ///
     /// In the official documentation:
     /// https://platform.openai.com/docs/api-reference/chat/create#chat/create-frequency_penalty
-    pub(crate) frequency_penalty: Option<Scale22>, // TODO: Add getter
+    pub frequency_penalty: Option<Scale22>, // TODO: Add getter
     /// The presence penalty parameter stears how the model penalizes new tokens
     /// based on whether they have appeared (hence presense) in the text so far.
     ///
@@ -74,7 +49,7 @@ pub struct OpenAIParams {
     ///
     /// In the official documentation:
     /// https://platform.openai.com/docs/api-reference/chat/create#chat/create-presence_penalty
-    pub(crate) presence_penalty: Option<Scale22>, // TODO: Add getter
+    pub presence_penalty: Option<Scale22>, // TODO: Add getter
     /// How many chat completion choices to generate for each input message.
     pub n: Option<u64>,
     /// Whether to stream back partial progress. If set, tokens will be sent as
@@ -90,18 +65,16 @@ pub struct OpenAIParams {
     /// between -1 and 1 should decrease or increase likelihood of selection;
     /// values like -100 or 100 should result in a ban or exclusive selection
     /// of the relevant token.
-    pub(crate) logit_bias: HashMap<String, Scale100s>, // TODO: Add getter
+    pub logit_bias: HashMap<String, Scale100s>, // TODO: Add getter
     /// A unique identifier representing the end-user, which can help OpenAI
     /// to monitor and detect abuse. You can read more at:
     /// https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids
-    pub(crate) user: Option<String>,
+    pub user: Option<String>,
 }
 
-#[wasm_bindgen]
-impl OpenAIParams {
-    #[wasm_bindgen(constructor)]
+impl ChatParams {
     pub fn new(
-        model: OpenAIModels,
+        model: Models,
         temperature: Option<f64>,
         max_tokens: Option<u64>,
         top_p: Option<f64>,
@@ -109,35 +82,27 @@ impl OpenAIParams {
         presence_penalty: Option<f64>,
         n: Option<u64>,
         stream: bool,
-        logit_bias: JsValue,
+        logit_bias: HashMap<String, Scale100s>,
         user: Option<String>,
-    ) -> Result<OpenAIParams, JsValue> {
+    ) -> Result<ChatParams> {
         let top_p = match top_p {
-            Some(top_p) => Some(
-                BoundedFloat::new(top_p)
-                    .map_err(|e| JsError::from_str(&e.to_string()))?,
-            ),
+            Some(top_p) => Some(BoundedFloat::new(top_p)?),
             None => None,
         };
 
         let frequency_penalty = match frequency_penalty {
-            Some(frequency_penalty) => Some(
-                BoundedFloat::new(frequency_penalty)
-                    .map_err(|e| JsError::from_str(&e.to_string()))?,
-            ),
+            Some(frequency_penalty) => {
+                Some(BoundedFloat::new(frequency_penalty)?)
+            }
             None => None,
         };
 
         let presence_penalty = match presence_penalty {
-            Some(presence_penalty) => Some(
-                BoundedFloat::new(presence_penalty)
-                    .map_err(|e| JsError::from_str(&e.to_string()))?,
-            ),
+            Some(presence_penalty) => {
+                Some(BoundedFloat::new(presence_penalty)?)
+            }
             None => None,
         };
-
-        let logit_bias =
-            jsvalue_to_hmap::<String, BoundedFloat<Range100s>>(logit_bias)?;
 
         Ok(Self {
             model,
@@ -153,7 +118,7 @@ impl OpenAIParams {
         })
     }
 
-    pub fn empty(model: OpenAIModels) -> Self {
+    pub fn empty(model: Models) -> Self {
         Self {
             model,
             temperature: None,
@@ -170,19 +135,27 @@ impl OpenAIParams {
 
     // === Setter methods with chaining ===
 
-    #[wasm_bindgen(js_name = topP)]
+    pub fn logit_bias(
+        mut self,
+        logit_bias: HashMap<String, Scale100s>,
+    ) -> Result<ChatParams> {
+        self.logit_bias = logit_bias;
+        Ok(self)
+    }
+}
+
+impl ChatParams {
+    // === Setter methods with chaining ===
     pub fn top_p(mut self, top_p: f64) -> Self {
         self.top_p = Some(Scale01::new(top_p).expect("Invalid top_p value"));
         self
     }
 
-    #[wasm_bindgen(js_name = maxTokens)]
     pub fn max_tokens(mut self, max_tokens: u64) -> Self {
         self.max_tokens = Some(max_tokens);
         self
     }
 
-    #[wasm_bindgen(js_name = frequencyPenalty)]
     pub fn frequency_penalty(mut self, frequency_penalty: f64) -> Self {
         self.frequency_penalty = Some(
             Scale22::new(frequency_penalty).expect("Invalid frequency penalty"),
@@ -190,7 +163,6 @@ impl OpenAIParams {
         self
     }
 
-    #[wasm_bindgen(js_name = presencePenalty)]
     pub fn presence_penalty(mut self, presence_penalty: f64) -> Self {
         self.presence_penalty = Some(
             Scale22::new(presence_penalty).expect("Invalid presence penalty"),
@@ -198,97 +170,14 @@ impl OpenAIParams {
         self
     }
 
-    #[wasm_bindgen(js_name = logicBias)]
-    pub fn logit_bias(
-        mut self,
-        logit_bias: JsValue,
-    ) -> Result<OpenAIParams, JsError> {
-        let mut logit_bias = jsvalue_to_hmap::<String, f64>(logit_bias)?;
-
-        let logit_bias = logit_bias
-            .drain()
-            .map(|(key, val)| Ok((key, Scale100s::new(val)?)))
-            .collect::<Result<HashMap<String, Scale100s>>>()
-            .map_err(|e| JsError::from_str(&e.to_string()))?;
-
-        self.logit_bias = logit_bias;
-        Ok(self)
-    }
-
     pub fn user(mut self, user: String) -> Self {
         self.user = Some(user);
         self
     }
-}
 
-impl OpenAIModels {
-    pub fn new(model: String) -> Self {
-        let model = match model.as_str() {
-            "gpt-4-32k" => OpenAIModels::Gpt432k,
-            "gpt-4" => OpenAIModels::Gpt4,
-            "gpt-3.5-turbo" => OpenAIModels::Gpt35Turbo,
-            "gpt-3.5-turbo-16k" => OpenAIModels::Gpt35Turbo16k,
-            "gpt-3.5-turbo-1106" => OpenAIModels::Gpt35Turbo1106,
-            "gpt-4-1106-preview" => OpenAIModels::Gpt41106Preview,
-            _ => panic!("Invalid model {}", model),
-        };
-
-        model
-    }
-
-    pub fn as_string(&self) -> String {
-        match self {
-            OpenAIModels::Gpt432k => String::from("gpt-4-32k"),
-            OpenAIModels::Gpt4 => String::from("gpt-4"),
-            OpenAIModels::Gpt35Turbo => String::from("gpt-3.5-turbo"),
-            OpenAIModels::Gpt35Turbo16k => String::from("gpt-3.5-turbo-16k"),
-            OpenAIModels::Gpt35Turbo1106 => String::from("gpt-3.5-turbo-1106"),
-            OpenAIModels::Gpt41106Preview => String::from("gpt-4-1106-preview"),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for OpenAIModels {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct OpenAIModelsVisitor;
-
-        impl<'de> Visitor<'de> for OpenAIModelsVisitor {
-            type Value = OpenAIModels;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a string representing an OpenAI model")
-            }
-
-            fn visit_str<E>(self, value: &str) -> Result<OpenAIModels, E>
-            where
-                E: de::Error,
-            {
-                match value {
-                    "gpt-4-32k" => Ok(OpenAIModels::Gpt432k),
-                    "gpt-4" => Ok(OpenAIModels::Gpt4),
-                    "gpt-3.5-turbo" => Ok(OpenAIModels::Gpt35Turbo),
-                    "gpt-3.5-turbo-16k" => Ok(OpenAIModels::Gpt35Turbo16k),
-                    "gpt-3.5-turbo-1106" => Ok(OpenAIModels::Gpt35Turbo1106),
-                    "gpt-4-1106-preview" => Ok(OpenAIModels::Gpt41106Preview),
-                    _ => Err(E::custom(format!(
-                        "unexpected OpenAI model: {}",
-                        value
-                    ))),
-                }
-            }
-        }
-
-        deserializer.deserialize_str(OpenAIModelsVisitor)
-    }
-}
-
-impl Default for OpenAIParams {
-    fn default() -> Self {
+    pub fn default_with_model(model: Models) -> Self {
         Self {
-            model: OpenAIModels::Gpt35Turbo,
+            model,
             temperature: None,
             max_tokens: None,
             top_p: None,
@@ -298,6 +187,131 @@ impl Default for OpenAIParams {
             stream: false,
             logit_bias: HashMap::new(),
             user: None,
+        }
+    }
+}
+
+// ==== WASM ====
+
+#[cfg(feature = "wasm")]
+pub mod wasm {
+    use std::ops::{Deref, DerefMut};
+
+    use super::*;
+
+    use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+    use wasmer::{jsvalue_to_hmap, JsError};
+
+    #[wasm_bindgen(js_name = "ChatParams")]
+    pub struct ChatParamsWasm(ChatParams);
+
+    #[wasm_bindgen]
+    impl ChatParamsWasm {
+        #[wasm_bindgen(constructor)]
+        pub fn new(
+            model: Models,
+            temperature: Option<f64>,
+            max_tokens: Option<u64>,
+            top_p: Option<f64>,
+            frequency_penalty: Option<f64>,
+            presence_penalty: Option<f64>,
+            n: Option<u64>,
+            stream: bool,
+            logit_bias: JsValue,
+            user: Option<String>,
+        ) -> Result<ChatParamsWasm, JsError> {
+            let mut logit_bias = jsvalue_to_hmap(logit_bias)?;
+
+            let params = ChatParamsWasm(
+                ChatParams::new(
+                    model,
+                    temperature,
+                    max_tokens,
+                    top_p,
+                    frequency_penalty,
+                    presence_penalty,
+                    n,
+                    stream,
+                    logit_bias,
+                    user,
+                )
+                .map_err(|e| JsError::from_str(&e.to_string()))?,
+            );
+
+            Ok(params)
+        }
+
+        #[wasm_bindgen]
+        pub fn empty(model: Models) -> Self {
+            ChatParamsWasm(ChatParams::empty(model))
+        }
+
+        #[wasm_bindgen(js_name = logitBias)]
+        pub fn logit_bias(
+            mut self,
+            logit_bias: JsValue,
+        ) -> Result<ChatParamsWasm, JsError> {
+            let mut logit_bias = jsvalue_to_hmap(logit_bias)?;
+
+            let logit_bias = logit_bias
+                .drain()
+                .map(|(key, val)| Ok((key, Scale100s::new(val)?)))
+                .collect::<Result<HashMap<String, Scale100s>>>()
+                .map_err(|e| JsError::from_str(&e.to_string()))?;
+
+            self.logit_bias = logit_bias;
+            Ok(self)
+        }
+
+        #[wasm_bindgen(js_name = topP)]
+        pub fn top_p(mut self, top_p: f64) -> Self {
+            self.top_p =
+                Some(Scale01::new(top_p).expect("Invalid top_p value"));
+            self
+        }
+
+        #[wasm_bindgen(js_name = maxTokens)]
+        pub fn max_tokens(mut self, max_tokens: u64) -> Self {
+            self.max_tokens = Some(max_tokens);
+            self
+        }
+
+        #[wasm_bindgen(js_name = frequencyPenalty)]
+        pub fn frequency_penalty(mut self, frequency_penalty: f64) -> Self {
+            self.frequency_penalty = Some(
+                Scale22::new(frequency_penalty)
+                    .expect("Invalid frequency penalty"),
+            );
+            self
+        }
+
+        #[wasm_bindgen(js_name = presencePenalty)]
+        pub fn presence_penalty(mut self, presence_penalty: f64) -> Self {
+            self.presence_penalty = Some(
+                Scale22::new(presence_penalty)
+                    .expect("Invalid presence penalty"),
+            );
+            self
+        }
+    }
+
+    impl AsRef<ChatParams> for ChatParamsWasm {
+        fn as_ref(&self) -> &ChatParams {
+            &self.0
+        }
+    }
+
+    impl Deref for ChatParamsWasm {
+        type Target = ChatParams;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+
+    impl DerefMut for ChatParamsWasm {
+        fn deref_mut(&mut self) -> &mut Self::Target {
+            &mut self.0
         }
     }
 }

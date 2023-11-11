@@ -3,15 +3,14 @@
 //! It provides a `TaskParams` struct that represents parameters of a task,
 //! including the task type and associated inner parameters.
 
-use crate::{
-    endpoints::{scaffold_project::ScaffoldParams, stream_code::CodeGenParams},
-    utils::log,
-    JsError,
+use crate::endpoints::{
+    scaffold_project::ScaffoldParams, stream_code::CodeGenParams,
 };
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::any::Any;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
+use wasmer::{JsError, log};
 
 /// Represents parameters for a task.
 ///

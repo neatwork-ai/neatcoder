@@ -1,63 +1,19 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use js_sys::{Date as IDate, Function, JsString};
+use oai::models::{
+    message::wasm::MessageWasm as AiMessage, Models as AiModels,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 use crate::{
     endpoints::get_chat_title::get_chat_title,
-    openai::{msg::OpenAIMsg, params::OpenAIModels},
     typescript::{IMessages, IModels},
-    JsError, WasmType,
 };
 
-// TODO: Do we need to store all chates in a BTreeMap or just a
-// reference to all chats? We could lazily read the chats as they're opened
-// in the webview as opposed to having all the chats in the BTreeMap on start
-
-// #[wasm_bindgen]
-// #[derive(Debug, Deserialize, Serialize, Clone)]
-// #[serde(rename_all = "camelCase")]
-// pub struct Chats(BTreeMap<String, Chat>);
-
-// #[wasm_bindgen]
-// impl Chats {
-//     #[wasm_bindgen(constructor)]
-//     pub fn new() -> Result<Chats, JsValue> {
-//         Ok(Self(BTreeMap::new()))
-//     }
-
-//     #[wasm_bindgen(js_name = insertChat)]
-//     pub fn insert_chat(&mut self, chat: Chat) {
-//         self.insert(chat.session_id.clone(), chat);
-//     }
-
-//     #[wasm_bindgen(js_name = removeChat)]
-//     pub fn remove_chat(&mut self, chat_id: String) {
-//         self.remove(&chat_id);
-//     }
-// }
-
-// impl AsRef<BTreeMap<String, Chat>> for Chats {
-//     fn as_ref(&self) -> &BTreeMap<String, Chat> {
-//         &self.0
-//     }
-// }
-
-// impl Deref for Chats {
-//     type Target = BTreeMap<String, Chat>;
-
-//     fn deref(&self) -> &Self::Target {
-//         &self.0
-//     }
-// }
-
-// impl DerefMut for Chats {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         &mut self.0
-//     }
-// }
+use wasmer::{JsError, WasmType};
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -139,9 +95,13 @@ impl Chat {
     }
 
     #[wasm_bindgen(js_name = addModel)]
-    pub fn add_model(&mut self, model: OpenAIModels) {
-        let model_id = model.as_string();
-        self.models.insert(model_id.clone(), Model::new(model_id));
+    pub fn add_model(&mut self, model: AiModels) -> Result<(), JsError> {
+        let model_id = model.as_str();
+
+        self.models
+            .insert(model_id.to_string(), Model::new(model_id.to_string()));
+
+        Ok(())
     }
 
     #[wasm_bindgen(js_name = castFromString)]
@@ -203,7 +163,7 @@ impl Model {
 pub struct Message {
     pub(crate) user: String,
     pub(crate) ts: DateTime<Utc>,
-    pub(crate) payload: OpenAIMsg,
+    pub(crate) payload: AiMessage,
 }
 
 #[wasm_bindgen]
@@ -212,7 +172,7 @@ impl Message {
     pub fn new(
         user: String,
         ts: IDate,
-        payload: OpenAIMsg,
+        payload: AiMessage,
     ) -> Result<Message, JsValue> {
         let datetime = DateTime::from_extern(ts.into())?;
         Ok(Self {
@@ -233,7 +193,7 @@ impl Message {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn payload(&self) -> OpenAIMsg {
+    pub fn payload(&self) -> AiMessage {
         self.payload.clone()
     }
 }

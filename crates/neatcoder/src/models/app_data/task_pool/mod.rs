@@ -5,14 +5,12 @@
 pub mod task;
 pub mod task_params;
 use self::{task::Task, task_params::TaskParams};
-use crate::{
-    typescript::{IOrder, ITasks},
-    JsError, WasmType,
-};
+use crate::typescript::{IOrder, ITasks};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, VecDeque};
 use wasm_bindgen::prelude::wasm_bindgen;
+use wasmer::{JsError, WasmType};
 
 /// Represents a pool of tasks.
 ///

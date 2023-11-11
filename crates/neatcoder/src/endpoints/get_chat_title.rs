@@ -1,10 +1,12 @@
 use anyhow::{anyhow, Result};
 use js_sys::Function;
-
-use crate::openai::{
-    msg::{GptRole, OpenAIMsg},
-    params::{OpenAIModels, OpenAIParams},
-    request::chat_raw,
+use oai::models::{
+    chat::{
+        params::wasm::ChatParamsWasm as ChatParams, request::wasm::chat_raw,
+    },
+    message::wasm::MessageWasm as AiMessage,
+    role::Role as GptRole,
+    Models as AiModels,
 };
 
 pub async fn get_chat_title(
@@ -13,16 +15,13 @@ pub async fn get_chat_title(
 ) -> Result<String> {
     let mut prompts = Vec::new();
 
-    prompts.push(OpenAIMsg {
-        role: GptRole::System,
-        content: String::from(
-            "
+    prompts.push(AiMessage::new(GptRole::System, String::from(
+        "
 - Context: Briefly describe the key topics or themes of the chat.
 - Title Specifications: The title should be concise, and not exceed 6 words. It should reflect the tone of the chat (e.g., professional, casual, informative, provocative, etc.).
 - Output: Provide a title that encapsulates the main focus of the chat.
-            ",
-        ),
-    });
+        ",
+    )));
 
     let main_prompt = format!(
         "
@@ -33,15 +32,11 @@ The title of the prompt is:",
         msg
     );
 
-    prompts.push(OpenAIMsg {
-        role: GptRole::User,
-        content: main_prompt,
-    });
+    prompts.push(AiMessage::new(GptRole::User, main_prompt));
 
-    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
+    let prompts = prompts.iter().map(|x| x).collect::<Vec<&AiMessage>>();
 
-    let ai_params =
-        OpenAIParams::empty(OpenAIModels::Gpt35Turbo).max_tokens(15);
+    let ai_params = ChatParams::empty(AiModels::Gpt35Turbo).max_tokens(15);
 
     let chat =
         chat_raw(request_callback, &ai_params, &prompts, &[], &[]).await?;

@@ -1,0 +1,35 @@
+[package]
+name = "oai"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["lib", "cdylib"]
+
+[features]
+default = ["reqwest", "futures", "bytes", "tokio"]
+wasm = ["wasm-bindgen-futures", "serde-wasm-bindgen", "web-sys", "wasm-bindgen", "js-sys", "wasmer"]
+
+[dependencies]
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+wasm-bindgen-futures = { version = "0.4.37", optional = true }
+serde-wasm-bindgen = { version = "0.5.0", optional = true }
+web-sys = { version = "0.3", features = ['console'], optional = true }
+
+reqwest = { version = "0.11", features = ["json", "stream"], optional = true}
+futures = { version = "0.3.29", optional = true }
+bytes = { version = "1.5.0", optional = true }
+tokio = { version = "1.34.0", optional = true }
+wasmer = { path = "../wasmer", optional = true }
+
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
