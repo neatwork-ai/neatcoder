@@ -3,7 +3,7 @@ pub mod message;
 pub mod role;
 
 use ::anyhow::Result;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::wasm_bindgen;

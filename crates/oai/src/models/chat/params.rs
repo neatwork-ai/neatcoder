@@ -220,7 +220,7 @@ pub mod wasm {
             logit_bias: JsValue,
             user: Option<String>,
         ) -> Result<ChatParamsWasm, JsError> {
-            let mut logit_bias = jsvalue_to_hmap(logit_bias)?;
+            let logit_bias = jsvalue_to_hmap(logit_bias)?;
 
             let params = ChatParamsWasm(
                 ChatParams::new(

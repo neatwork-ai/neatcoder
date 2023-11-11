@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 parser = { path = "../parser" }
-oai = { path = "../oai", features = ["wasm"] }
+oai = { path = "../oai", default-features = false, features = ["wasm"] }
 wasmer = { path = "../wasmer" }
 
 anyhow = "1.0"
