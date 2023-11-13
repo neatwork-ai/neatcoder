@@ -4,7 +4,7 @@ use js_sys::Function;
 use oai::models::chat::{
     params::wasm::ChatParamsWasm as ChatParams, request::wasm::chat_raw,
 };
-use oai::models::message::wasm::MessageWasm as GptMessage;
+use oai::models::message::wasm::GptMessageWasm as GptMessage;
 use parser::parser::json::AsJson;
 use serde_json::Value;
 use wasmer::log;

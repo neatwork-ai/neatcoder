@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::models::message::Message;
+use crate::models::message::GptMessage;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ApiResponse {
@@ -47,7 +47,7 @@ pub struct ChatResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Choice {
     pub index: i32,
-    pub message: Message,
+    pub message: GptMessage,
     pub finish_reason: String,
 }
 

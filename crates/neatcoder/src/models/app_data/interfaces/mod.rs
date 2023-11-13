@@ -5,7 +5,7 @@ pub mod storage;
 use self::{apis::Api, dbs::Database, storage::Storage};
 use crate::typescript::ISchemas;
 use anyhow::{anyhow, Result};
-use oai::models::message::wasm::MessageWasm as AiMessage;
+use oai::models::message::wasm::GptMessageWasm as GptMessage;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
@@ -171,11 +171,11 @@ pub type SchemaFile = String;
 
 /// Trait that injects the context of interfaces onto the LLM Message Sequence.
 pub trait AsContext {
-    fn add_context(&self, msg_sequence: &mut Vec<AiMessage>) -> Result<()>;
+    fn add_context(&self, msg_sequence: &mut Vec<GptMessage>) -> Result<()>;
 }
 
 impl AsContext for Interface {
-    fn add_context(&self, msg_sequence: &mut Vec<AiMessage>) -> Result<()> {
+    fn add_context(&self, msg_sequence: &mut Vec<GptMessage>) -> Result<()> {
         match self.interface_type {
             InterfaceType::Database => self
                 .inner

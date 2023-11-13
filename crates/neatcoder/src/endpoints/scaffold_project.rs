@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use js_sys::{Function, JsString};
 use oai::models::{
     chat::params::wasm::ChatParamsWasm as ChatParams,
-    message::wasm::MessageWasm as AiMessage, role::Role as GptRole,
+    message::wasm::GptMessageWasm as GptMessage, role::Role as GptRole,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -47,7 +47,7 @@ pub async fn scaffold_project(
 ) -> Result<(Value, Files)> {
     let mut prompts = Vec::new();
 
-    prompts.push(AiMessage::new(GptRole::System,format!(
+    prompts.push(GptMessage::new(GptRole::System,format!(
             "You are a software engineer who is specialised in building software in {}.", language.name()
         ),
     ));
@@ -61,9 +61,9 @@ Based on the information provided write the project's folder structure, starting
 
 Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json", language.name(), client_params.specs);
 
-    prompts.push(AiMessage::new(GptRole::User, main_prompt));
+    prompts.push(GptMessage::new(GptRole::User, main_prompt));
 
-    let prompts = prompts.iter().map(|x| x).collect::<Vec<&AiMessage>>();
+    let prompts = prompts.iter().map(|x| x).collect::<Vec<&GptMessage>>();
 
     let (_, mut scaffold_json) =
         write_json(&ai_params, &prompts, request_callback).await?;

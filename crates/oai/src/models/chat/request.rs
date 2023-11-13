@@ -4,7 +4,7 @@ use std::ops::Deref;
 
 use crate::models::{
     chat::{params::ChatParams, response::ChatResponse},
-    message::Message,
+    message::GptMessage,
 };
 
 #[cfg(not(feature = "wasm"))]
@@ -110,7 +110,7 @@ pub mod wasm {
     use crate::{
         foreign::IMessages,
         models::{
-            chat::params::wasm::ChatParamsWasm, message::wasm::MessageWasm,
+            chat::params::wasm::ChatParamsWasm, message::wasm::GptMessageWasm,
         },
     };
 
@@ -124,7 +124,7 @@ pub mod wasm {
     pub async fn chat(
         request_callback: &Function,
         ai_params: &ChatParamsWasm,
-        msgs: &[&MessageWasm],
+        msgs: &[&GptMessageWasm],
         funcs: &[&String],
         stop_seq: &[String],
     ) -> Result<String> {
@@ -148,14 +148,14 @@ pub mod wasm {
     pub async fn chat_raw(
         request_callback: &Function,
         ai_params: &ChatParamsWasm,
-        msgs: &[&MessageWasm],
+        msgs: &[&GptMessageWasm],
         funcs: &[&String],
         stop_seq: &[String],
     ) -> Result<ChatResponse> {
-        let msgs: Vec<&Message> =
+        let msgs: Vec<&GptMessage> =
             msgs.iter().map(|&m_wasm| m_wasm.deref()).collect();
 
-        let msg_slice: &[&Message] = &msgs;
+        let msg_slice: &[&GptMessage] = &msgs;
 
         let req_body =
             request_body(ai_params.deref(), msg_slice, funcs, stop_seq, false)?;
@@ -195,12 +195,13 @@ pub mod wasm {
         job: ChatParamsWasm,
         stream: bool,
     ) -> Result<JsValue, JsError> {
-        let msgs: Vec<MessageWasm> = Vec::from_extern(msgs).map_err(|e| {
-            JsValue::from_str(&format!(
-                "Failed to convert msgs to native Wasm type: {:?}",
-                e
-            ))
-        })?;
+        let msgs: Vec<GptMessageWasm> =
+            Vec::from_extern(msgs).map_err(|e| {
+                JsValue::from_str(&format!(
+                    "Failed to convert msgs to native Wasm type: {:?}",
+                    e
+                ))
+            })?;
 
         let mut data = json!({
             "model": job.model.as_str(),
@@ -224,7 +225,7 @@ pub mod wasm {
 
 pub fn request_stream(
     ai_params: impl Deref<Target = ChatParams>,
-    msgs: &[&Message],
+    msgs: &[&GptMessage],
     funcs: &[&String],
     stop_seq: &[String],
 ) -> Result<String> {
@@ -237,7 +238,7 @@ pub fn request_stream(
 
 pub fn request_body(
     job: impl Deref<Target = ChatParams>,
-    msgs: &[&Message],
+    msgs: &[&GptMessage],
     funcs: &[&String],   // TODO: Add to ChatParams
     stop_seq: &[String], // TODO: Add to ChatParams
     stream: bool,

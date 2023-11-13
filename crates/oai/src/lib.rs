@@ -11,7 +11,13 @@ pub mod foreign {
         #[wasm_bindgen(typescript_type = "Record<string, Model>")]
         pub type IModels;
 
-        #[wasm_bindgen(typescript_type = "Array<Message>")]
+        #[wasm_bindgen(typescript_type = "Array<GptMessage>")]
         pub type IMessages;
+    }
+
+    #[wasm_bindgen]
+    extern "C" {
+        #[wasm_bindgen(typescript_type = "Array<GptMessage>")]
+        pub type IGptMessage;
     }
 }

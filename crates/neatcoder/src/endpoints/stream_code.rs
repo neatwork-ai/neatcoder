@@ -4,7 +4,9 @@ use oai::models::{
     chat::{
         params::wasm::ChatParamsWasm as ChatParams, request::request_stream,
     },
-    message::{wasm::MessageWasm as AiMessage, Message as AiMessageInner},
+    message::{
+        wasm::GptMessageWasm as GptMessage, GptMessage as GptMessageInner,
+    },
     role::Role as GptRole,
 };
 use serde::{Deserialize, Serialize};
@@ -72,7 +74,7 @@ pub fn stream_code(
         anyhow!("It seems that the the field `specs` is missing..")
     })?;
 
-    prompts.push(AiMessage::new(
+    prompts.push(GptMessage::new(
         GptRole::System,
         format!(
             "You are a software engineer who is specialised in {}.",
@@ -80,7 +82,7 @@ pub fn stream_code(
         ),
     ));
 
-    prompts.push(AiMessage::new(
+    prompts.push(GptMessage::new(
         GptRole::User,
         String::from(project_description),
     ));
@@ -90,10 +92,10 @@ pub fn stream_code(
             .get(file)
             .ok_or_else(|| anyhow!("Unable to find fild {:?}", file))?;
 
-        prompts.push(AiMessage::new(GptRole::User, code.clone()));
+        prompts.push(GptMessage::new(GptRole::User, code.clone()));
     }
 
-    prompts.push(AiMessage::new(GptRole::User, project_scaffold.to_string()));
+    prompts.push(GptMessage::new(GptRole::User, project_scaffold.to_string()));
 
     let mut main_prompt = format!(
         "
@@ -125,13 +127,13 @@ pub fn stream_code(
         ));
     }
 
-    prompts.push(AiMessage::new(GptRole::User, main_prompt));
+    prompts.push(GptMessage::new(GptRole::User, main_prompt));
 
-    // Assuming prompts is a Vec<&AiMessageWasm>
-    let msgs: Vec<&AiMessageInner> =
+    // Assuming prompts is a Vec<&GptMessageWasm>
+    let msgs: Vec<&GptMessageInner> =
         prompts.iter().map(|m_wasm| (*m_wasm).deref()).collect();
 
-    let prompts_slice: &[&AiMessageInner] = &msgs;
+    let prompts_slice: &[&GptMessageInner] = &msgs;
 
     let request_body =
         request_stream(ai_params.deref(), &prompts_slice, &[], &[])?;

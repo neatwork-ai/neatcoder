@@ -1,17 +1,15 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use js_sys::{Date as IDate, Function, JsString};
-use oai::models::{
-    message::wasm::MessageWasm as AiMessage, Models as AiModels,
+use oai::{
+    foreign::{IMessages, IModels},
+    models::{message::wasm::GptMessageWasm as GptMessage, Models as AiModels},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
-use crate::{
-    endpoints::get_chat_title::get_chat_title,
-    typescript::{IMessages, IModels},
-};
+use crate::endpoints::get_chat_title::get_chat_title;
 
 use wasmer::{JsError, WasmType};
 
@@ -21,8 +19,8 @@ use wasmer::{JsError, WasmType};
 pub struct Chat {
     pub(crate) session_id: String,
     pub(crate) title: String,
-    pub(crate) models: HashMap<String, Model>,
-    pub(crate) messages: Vec<Message>,
+    pub(crate) models: HashMap<String, ModelData>,
+    pub(crate) messages: Vec<MessageData>,
 }
 
 #[wasm_bindgen]
@@ -81,7 +79,7 @@ impl Chat {
     }
 
     #[wasm_bindgen(js_name = addMessage)]
-    pub fn add_message(&mut self, message: Message) {
+    pub fn add_message(&mut self, message: MessageData) {
         self.messages.push(message);
     }
 
@@ -99,7 +97,7 @@ impl Chat {
         let model_id = model.as_str();
 
         self.models
-            .insert(model_id.to_string(), Model::new(model_id.to_string()));
+            .insert(model_id.to_string(), ModelData::new(model_id.to_string()));
 
         Ok(())
     }
@@ -123,17 +121,17 @@ impl Chat {
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Model {
+#[serde(rename_all = "camelCase", rename = "Model")]
+pub struct ModelData {
     pub(crate) id: String,
     pub(crate) uri: String,
     pub(crate) interface: String,
 }
 
 #[wasm_bindgen]
-impl Model {
+impl ModelData {
     #[wasm_bindgen(constructor)]
-    pub fn new(id: String) -> Model {
+    pub fn new(id: String) -> ModelData {
         Self {
             id,
             uri: String::from("https://api.openai.com/v1/chat/completions"),
@@ -159,21 +157,21 @@ impl Model {
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Message {
+#[serde(rename_all = "camelCase", rename = "Message")]
+pub struct MessageData {
     pub(crate) user: String,
     pub(crate) ts: DateTime<Utc>,
-    pub(crate) payload: AiMessage,
+    pub(crate) payload: GptMessage,
 }
 
 #[wasm_bindgen]
-impl Message {
+impl MessageData {
     #[wasm_bindgen(constructor)]
     pub fn new(
         user: String,
         ts: IDate,
-        payload: AiMessage,
-    ) -> Result<Message, JsValue> {
+        payload: GptMessage,
+    ) -> Result<MessageData, JsValue> {
         let datetime = DateTime::from_extern(ts.into())?;
         Ok(Self {
             user,
@@ -193,7 +191,7 @@ impl Message {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn payload(&self) -> AiMessage {
+    pub fn payload(&self) -> GptMessage {
         self.payload.clone()
     }
 }

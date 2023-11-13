@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 use super::role::Role;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Message {
+pub struct GptMessage {
     pub role: Role,
     pub content: String,
 }
 
-impl Message {
+impl GptMessage {
     pub fn user(content: &str) -> Self {
         Self {
             role: Role::User,
@@ -43,17 +43,17 @@ pub mod wasm {
 
     use crate::models::role::Role;
 
-    use super::Message;
+    use super::GptMessage;
 
     #[wasm_bindgen(js_name = "Message")]
     #[derive(Debug, Clone)]
-    pub struct MessageWasm(Message);
+    pub struct GptMessageWasm(GptMessage);
 
     #[wasm_bindgen]
-    impl MessageWasm {
+    impl GptMessageWasm {
         #[wasm_bindgen(constructor)]
         pub fn new(role: Role, content: String) -> Self {
-            Self(Message { role, content })
+            Self(GptMessage { role, content })
         }
 
         #[wasm_bindgen(getter)]
@@ -67,28 +67,28 @@ pub mod wasm {
         }
     }
 
-    impl AsRef<Message> for MessageWasm {
-        fn as_ref(&self) -> &Message {
+    impl AsRef<GptMessage> for GptMessageWasm {
+        fn as_ref(&self) -> &GptMessage {
             &self.0
         }
     }
 
-    impl Deref for MessageWasm {
-        type Target = Message;
+    impl Deref for GptMessageWasm {
+        type Target = GptMessage;
 
         fn deref(&self) -> &Self::Target {
             &self.0
         }
     }
 
-    impl DerefMut for MessageWasm {
+    impl DerefMut for GptMessageWasm {
         fn deref_mut(&mut self) -> &mut Self::Target {
             &mut self.0
         }
     }
 
     // Implement Serialize for MessageWasm by delegating to Message.
-    impl Serialize for MessageWasm {
+    impl Serialize for GptMessageWasm {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -99,13 +99,13 @@ pub mod wasm {
     }
 
     // Implement Deserialize for MessageWasm by delegating to Message.
-    impl<'de> Deserialize<'de> for MessageWasm {
+    impl<'de> Deserialize<'de> for GptMessageWasm {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: Deserializer<'de>,
         {
             // Deserialize as Message and wrap inside MessageWasm.
-            Message::deserialize(deserializer).map(MessageWasm)
+            GptMessage::deserialize(deserializer).map(GptMessageWasm)
         }
     }
 }

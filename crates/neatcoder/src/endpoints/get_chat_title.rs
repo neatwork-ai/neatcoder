@@ -4,7 +4,7 @@ use oai::models::{
     chat::{
         params::wasm::ChatParamsWasm as ChatParams, request::wasm::chat_raw,
     },
-    message::wasm::MessageWasm as AiMessage,
+    message::wasm::GptMessageWasm as GptMessage,
     role::Role as GptRole,
     Models as AiModels,
 };
@@ -15,7 +15,7 @@ pub async fn get_chat_title(
 ) -> Result<String> {
     let mut prompts = Vec::new();
 
-    prompts.push(AiMessage::new(GptRole::System, String::from(
+    prompts.push(GptMessage::new(GptRole::System, String::from(
         "
 - Context: Briefly describe the key topics or themes of the chat.
 - Title Specifications: The title should be concise, and not exceed 6 words. It should reflect the tone of the chat (e.g., professional, casual, informative, provocative, etc.).
@@ -32,9 +32,9 @@ The title of the prompt is:",
         msg
     );
 
-    prompts.push(AiMessage::new(GptRole::User, main_prompt));
+    prompts.push(GptMessage::new(GptRole::User, main_prompt));
 
-    let prompts = prompts.iter().map(|x| x).collect::<Vec<&AiMessage>>();
+    let prompts = prompts.iter().map(|x| x).collect::<Vec<&GptMessage>>();
 
     let ai_params = ChatParams::empty(AiModels::Gpt35Turbo).max_tokens(15);
 
