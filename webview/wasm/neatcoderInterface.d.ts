@@ -13,9 +13,12 @@ export interface AppData {
     taskPool: TaskPool;
 }
 
-export interface Chat {
-    messages: Array<Message>;
-    models: Record<string, Model>;
+export interface ChatParamsWasm {
+}
+
+export interface ChatWasm {
+    messages: Array<MessageDataWasm>;
+    models: Record<string, ModelDataWasm>;
     sessionId: string;
     title: string;
 }
@@ -30,6 +33,11 @@ export interface Database {
     name: string;
     port?: number;
     schemas: Record<string, string>;
+}
+
+export interface GptMessageWasm {
+    content: string;
+    role: string;
 }
 
 export interface Interface {
@@ -50,29 +58,16 @@ export interface Language {
     language: number;
 }
 
-export interface Message {
-    payload: OpenAIMsg;
+export interface MessageDataWasm {
+    payload: GptMessageWasm;
     ts: Date;
     user: string;
 }
 
-export interface Model {
+export interface ModelDataWasm {
     id: string;
     interface: string;
     uri: string;
-}
-
-export interface OpenAIMsg {
-    content: string;
-    role: string;
-}
-
-export interface OpenAIParams {
-    max_tokens?: bigint;
-    model: number;
-    n?: bigint;
-    stream: boolean;
-    temperature?: number;
 }
 
 export interface Pipeline {

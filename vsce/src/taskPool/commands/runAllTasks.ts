@@ -9,8 +9,8 @@ import { appDataManager } from "../../core/appData";
  * @return Promise<void> - A promise that resolves once the job has been initiated.
  */
 export async function runAllTasks(
-  llmParams: wasm.OpenAIParams,
+  llmParams: wasm.ChatParamsWasm,
   appManager: appDataManager
 ): Promise<void> {
-    appManager.runAllTasks(llmParams);
+  appManager.runAllTasks(llmParams);
 }

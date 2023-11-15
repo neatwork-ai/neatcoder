@@ -1,6 +1,6 @@
 import React, { CSSProperties, useEffect, useRef, useState } from 'react';
 import { LlmSvgIcon } from './llmAvatar';
-import { Message } from '../../wasm/neatcoderInterface';
+import { MessageDataWasm as Message } from '../../wasm/neatcoderInterface';
 import hljs from './codeBlockStyle';
 import ReactMarkdown from 'react-markdown';
 

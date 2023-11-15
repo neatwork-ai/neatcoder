@@ -18,7 +18,7 @@ pub mod foreign {
 
     #[wasm_bindgen]
     extern "C" {
-        #[wasm_bindgen(typescript_type = "Array<GptMessage>")]
+        #[wasm_bindgen(typescript_type = "Array<GptMessageWasm>")]
         pub type IGptMessage;
     }
 }

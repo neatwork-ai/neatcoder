@@ -62,3 +62,13 @@ Install VS extension:
 <https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher>
 
 Copy `tasks.json` and `launch.json` from vscode to .vscode folder
+
+
+
+## To compile oai crate
+
+As default native:
+`cargo build`
+
+As a Wasm Lib:
+`cargo build --target wasm32-unknown-unknown --features wasm --no-default-features`

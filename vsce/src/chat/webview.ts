@@ -6,7 +6,7 @@ import * as wasm from "../../pkg/neatcoder";
 export function setWebviewContent(
   panel: vscode.WebviewPanel,
   context: vscode.ExtensionContext,
-  chatHistory?: wasm.Chat
+  chatHistory?: wasm.ChatWasm
 ) {
   const reactBuildPath = path.join(context.extensionPath, "webview/build/"); // Assuming 'webview' is where you copied your build files
   const entryHtml = path.join(reactBuildPath, "index.html");

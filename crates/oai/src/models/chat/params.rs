@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::{
@@ -7,7 +7,7 @@ use crate::{
     utils::{Bounded, BoundedFloat, Scale01, Scale100s, Scale22},
 };
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ChatParams {
     pub model: GptModel,
     // TODO: THIS SHOULD BE Scale02
@@ -195,16 +195,18 @@ impl ChatParams {
 
 #[cfg(feature = "wasm")]
 pub mod wasm {
-    use std::ops::{Deref, DerefMut};
-
     use super::*;
-
+    use derive_more::{AsRef, Deref, DerefMut};
+    use serde::Deserialize;
     use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
     use wasmer::{jsvalue_to_hmap, JsError};
 
-    #[wasm_bindgen(js_name = "ChatParams")]
-    pub struct ChatParamsWasm(ChatParams);
+    #[wasm_bindgen]
+    #[derive(Debug, Deserialize, Serialize, Clone, AsRef, Deref, DerefMut)]
+    #[serde(rename_all = "camelCase", rename = "ChatPArams")]
+    pub struct ChatParamsWasm(pub(crate) ChatParams);
 
+    // TODO: Add getters
     #[wasm_bindgen]
     impl ChatParamsWasm {
         #[wasm_bindgen(constructor)]
@@ -292,26 +294,6 @@ pub mod wasm {
                     .expect("Invalid presence penalty"),
             );
             self
-        }
-    }
-
-    impl AsRef<ChatParams> for ChatParamsWasm {
-        fn as_ref(&self) -> &ChatParams {
-            &self.0
-        }
-    }
-
-    impl Deref for ChatParamsWasm {
-        type Target = ChatParams;
-
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
-
-    impl DerefMut for ChatParamsWasm {
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            &mut self.0
         }
     }
 }

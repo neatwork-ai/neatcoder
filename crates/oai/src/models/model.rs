@@ -39,7 +39,6 @@ impl GptModel {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "camelCase", rename = "Model")]
 pub struct ModelData {
     pub id: String,
     pub uri: String,

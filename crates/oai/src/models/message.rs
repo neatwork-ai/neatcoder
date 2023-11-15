@@ -35,17 +35,14 @@ impl GptMessage {
 
 #[cfg(feature = "wasm")]
 pub mod wasm {
-    use std::ops::{Deref, DerefMut};
-
+    use super::GptMessage;
+    use crate::models::role::Role;
     use js_sys::JsString;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use std::ops::{Deref, DerefMut};
     use wasm_bindgen::prelude::wasm_bindgen;
 
-    use crate::models::role::Role;
-
-    use super::GptMessage;
-
-    #[wasm_bindgen(js_name = "Message")]
+    #[wasm_bindgen]
     #[derive(Debug, Clone)]
     pub struct GptMessageWasm(pub(crate) GptMessage);
 

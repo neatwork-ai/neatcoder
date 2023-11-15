@@ -1,4 +1,4 @@
-import { Message } from "../../wasm/neatcoderInterface";
+import { MessageDataWasm as Message } from "../../wasm/neatcoderInterface";
 import { vscode } from "../App";
 
 export function promptLLM(msgs: Array<Message>, stream: boolean): ReadableStream {

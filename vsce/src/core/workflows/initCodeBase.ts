@@ -17,7 +17,7 @@ import MixpanelHelper from "../../utils/mixpanelHelper";
  * @returns Promise<void> - A promise that resolves once the prompt process has initiated and the user has been notified.
  */
 export async function initCodeBase(
-  llmParams: wasm.OpenAIParams,
+  llmParams: wasm.ChatParamsWasm,
   appManager: appDataManager
 ): Promise<void> {
   {
