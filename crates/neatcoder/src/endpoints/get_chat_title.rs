@@ -5,8 +5,8 @@ use oai::models::{
         params::wasm::ChatParamsWasm as ChatParams, request::wasm::chat_raw,
     },
     message::wasm::GptMessageWasm as GptMessage,
+    model::GptModel,
     role::Role as GptRole,
-    Models as AiModels,
 };
 
 pub async fn get_chat_title(
@@ -36,7 +36,7 @@ The title of the prompt is:",
 
     let prompts = prompts.iter().map(|x| x).collect::<Vec<&GptMessage>>();
 
-    let ai_params = ChatParams::empty(AiModels::Gpt35Turbo).max_tokens(15);
+    let ai_params = ChatParams::empty(GptModel::Gpt35Turbo).max_tokens(15);
 
     let chat =
         chat_raw(request_callback, &ai_params, &prompts, &[], &[]).await?;

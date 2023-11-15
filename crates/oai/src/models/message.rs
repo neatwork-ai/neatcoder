@@ -47,7 +47,7 @@ pub mod wasm {
 
     #[wasm_bindgen(js_name = "Message")]
     #[derive(Debug, Clone)]
-    pub struct GptMessageWasm(GptMessage);
+    pub struct GptMessageWasm(pub(crate) GptMessage);
 
     #[wasm_bindgen]
     impl GptMessageWasm {

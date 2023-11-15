@@ -3,13 +3,13 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 use crate::{
-    models::Models,
+    models::model::GptModel,
     utils::{Bounded, BoundedFloat, Scale01, Scale100s, Scale22},
 };
 
 #[derive(Debug, Serialize, Clone)]
 pub struct ChatParams {
-    pub model: Models,
+    pub model: GptModel,
     // TODO: THIS SHOULD BE Scale02
     /// Temperature is used to control the randomness or creativity
     /// of the model's output. Temperature is a parameter that affects
@@ -74,7 +74,7 @@ pub struct ChatParams {
 
 impl ChatParams {
     pub fn new(
-        model: Models,
+        model: GptModel,
         temperature: Option<f64>,
         max_tokens: Option<u64>,
         top_p: Option<f64>,
@@ -118,7 +118,7 @@ impl ChatParams {
         })
     }
 
-    pub fn empty(model: Models) -> Self {
+    pub fn empty(model: GptModel) -> Self {
         Self {
             model,
             temperature: None,
@@ -175,7 +175,7 @@ impl ChatParams {
         self
     }
 
-    pub fn default_with_model(model: Models) -> Self {
+    pub fn default_with_model(model: GptModel) -> Self {
         Self {
             model,
             temperature: None,
@@ -209,7 +209,7 @@ pub mod wasm {
     impl ChatParamsWasm {
         #[wasm_bindgen(constructor)]
         pub fn new(
-            model: Models,
+            model: GptModel,
             temperature: Option<f64>,
             max_tokens: Option<u64>,
             top_p: Option<f64>,
@@ -242,7 +242,7 @@ pub mod wasm {
         }
 
         #[wasm_bindgen]
-        pub fn empty(model: Models) -> Self {
+        pub fn empty(model: GptModel) -> Self {
             ChatParamsWasm(ChatParams::empty(model))
         }
 

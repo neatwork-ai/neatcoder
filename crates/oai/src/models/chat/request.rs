@@ -9,22 +9,17 @@ use crate::models::{
 
 #[cfg(not(feature = "wasm"))]
 pub mod native {
-    use super::*;
+    use super::{super::Chat, *};
     use bytes::Bytes;
     use futures::Stream;
+    use reqwest::Client;
     use std::{ops::Deref, time::Duration};
 
-    use reqwest::{header::HeaderMap, Client};
-
-    pub struct ChatClient {
-        pub(crate) headers: HeaderMap,
-    }
-
-    impl ChatClient {
+    impl Chat {
         pub async fn chat(
             &self,
             job: impl Deref<Target = ChatParams>,
-            msgs: &[&Message],
+            msgs: &[&GptMessage],
             funcs: &[&String],
             stop_seq: &[String],
         ) -> Result<ChatResponse> {
@@ -57,8 +52,9 @@ pub mod native {
         }
 
         pub async fn chat_stream(
+            &self,
             job: &ChatParams,
-            msgs: &[&Message],
+            msgs: &[&GptMessage],
             funcs: &[&String],
             stop_seq: &[String],
         ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>> {
@@ -75,7 +71,7 @@ pub mod native {
                     Duration::from_secs(5),
                     client
                         .post("https://api.openai.com/v1/chat/completions")
-                        .headers(headers.clone())
+                        .headers(self.headers.clone())
                         .json(&req_body)
                         .send(),
                 )
@@ -108,7 +104,7 @@ pub mod native {
 #[cfg(feature = "wasm")]
 pub mod wasm {
     use crate::{
-        foreign::IMessages,
+        foreign::IGptMessage,
         models::{
             chat::params::wasm::ChatParamsWasm, message::wasm::GptMessageWasm,
         },
@@ -191,7 +187,7 @@ pub mod wasm {
 
     #[wasm_bindgen(js_name = requestBody)]
     pub fn request_body_wasm(
-        msgs: IMessages,
+        msgs: IGptMessage,
         job: ChatParamsWasm,
         stream: bool,
     ) -> Result<JsValue, JsError> {
