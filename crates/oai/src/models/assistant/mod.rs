@@ -24,9 +24,11 @@ pub mod message;
 pub mod run;
 pub mod thread;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct CustomGPT {
+    #[serde(skip)]
     pub(crate) client: Client,
+    #[serde(skip)]
     pub(crate) headers: HeaderMap,
     pub assistants: HashMap<AssistantID, Assistant>,
     pub threads: HashMap<ThreadID, Thread>,
@@ -37,9 +39,7 @@ pub type ThreadID = String;
 pub type FileID = String;
 
 impl CustomGPT {
-    pub fn new() -> Result<Self> {
-        let api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in .env file");
-
+    pub fn new(api_key: String) -> Result<Self> {
         let client = Client::new();
         let headers = get_auth_headers(&api_key)?;
 
@@ -48,6 +48,14 @@ impl CustomGPT {
             headers,
             ..Default::default()
         })
+    }
+
+    pub fn with_api_keys(&mut self, api_key: String) -> Result<()> {
+        let headers = get_auth_headers(&api_key)?;
+
+        self.headers = headers;
+
+        Ok(())
     }
 
     pub async fn create_assistant(
@@ -87,25 +95,37 @@ impl CustomGPT {
         thread_id: &ThreadID,
         content: String,
     ) -> Result<Message> {
-        let thread = self
-            .threads
-            .get(thread_id)
-            .ok_or_else(|| anyhow!(format!("No thread found for ID: {:?}", thread_id)))?;
+        let thread = self.threads.get(thread_id).ok_or_else(|| {
+            anyhow!(format!("No thread found for ID: {:?}", thread_id))
+        })?;
 
-        let message =
-            Thread::add_message_to_thread(&thread, &self.client, &self.headers, content).await?;
+        let message = Thread::add_message_to_thread(
+            &thread,
+            &self.client,
+            &self.headers,
+            content,
+        )
+        .await?;
 
         Ok(message)
     }
 
-    pub async fn run(&self, thread_id: &ThreadID, assistant_id: &AssistantID) -> Result<Run> {
-        let run = Run::run(&self.client, &self.headers, thread_id, assistant_id).await?;
+    pub async fn run(
+        &self,
+        thread_id: &ThreadID,
+        assistant_id: &AssistantID,
+    ) -> Result<Run> {
+        let run =
+            Run::run(&self.client, &self.headers, thread_id, assistant_id)
+                .await?;
 
         Ok(run)
     }
 
     pub async fn get_messages(&self, thread_id: &ThreadID) -> Result<Messages> {
-        let messages = Messages::get_messages(&self.client, &self.headers, thread_id).await?;
+        let messages =
+            Messages::get_messages(&self.client, &self.headers, thread_id)
+                .await?;
 
         Ok(messages)
     }
@@ -199,7 +219,10 @@ impl<'de> Deserialize<'de> for OpenAIModels {
                     "gpt-3.5-turbo-16k" => Ok(OpenAIModels::Gpt35Turbo16k),
                     "gpt-3.5-turbo-1106" => Ok(OpenAIModels::Gpt35Turbo1106),
                     "gpt-4-1106-preview" => Ok(OpenAIModels::Gpt41106Preview),
-                    _ => Err(E::custom(format!("unexpected OpenAI model: {}", value))),
+                    _ => Err(E::custom(format!(
+                        "unexpected OpenAI model: {}",
+                        value
+                    ))),
                 }
             }
         }

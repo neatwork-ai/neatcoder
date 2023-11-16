@@ -8,9 +8,9 @@ use serde_json::json;
 use std::{collections::HashMap, fmt, time::Duration};
 use tokio::time::sleep;
 
+use crate::http::{get_api, post_api};
+
 use super::{assistant::Tool, get_data, AssistantID, OpenAIModels, ThreadID};
-use crate::print_;
-use crate::utils::{get_api, post_api};
 
 #[derive(Deserialize, Debug)]
 pub struct Run {
@@ -54,7 +54,7 @@ impl Run {
 
         let run: Run = serde_json::from_value(response_body)?;
 
-        print_!("Run: {:?}", run);
+        println!("Run: {:?}", run);
 
         Ok(run)
     }
@@ -67,22 +67,28 @@ impl Run {
         thread_id: &ThreadID,
         assistant_id: &AssistantID,
     ) -> Result<Run> {
-        let mut run = Run::create_run(client, headers, thread_id, assistant_id).await?;
+        let mut run =
+            Run::create_run(client, headers, thread_id, assistant_id).await?;
 
         // Poll the run status until it is completed or failed
         while !run.is_completed() && !run.is_failed() {
             sleep(Duration::from_millis(500)).await;
 
-            print_!("Checking in if Run is completed");
+            println!("Checking in if Run is completed");
             run = run.get_run(client, headers, &run.id).await?;
         }
 
-        print_!("Run has been completed.");
+        println!("Run has been completed.");
 
         Ok(run)
     }
 
-    async fn get_run(&self, client: &Client, headers: &HeaderMap, run_id: &str) -> Result<Run> {
+    async fn get_run(
+        &self,
+        client: &Client,
+        headers: &HeaderMap,
+        run_id: &str,
+    ) -> Result<Run> {
         let response_body = get_api(
             client,
             headers,
@@ -164,7 +170,10 @@ impl<'de> Deserialize<'de> for RunStatus {
                     "failed" => Ok(RunStatus::Failed),
                     "completed" => Ok(RunStatus::Completed),
                     "expired" => Ok(RunStatus::Expired),
-                    _ => Err(E::custom(format!("unexpected RunStatus value: {}", value))),
+                    _ => Err(E::custom(format!(
+                        "unexpected RunStatus value: {}",
+                        value
+                    ))),
                 }
             }
         }
@@ -205,8 +214,13 @@ impl<'de> Deserialize<'de> for RunErrStatus {
             {
                 match value {
                     "server_error" => Ok(RunErrStatus::ServerError),
-                    "rate_limit_exceeded" => Ok(RunErrStatus::RateLimitExceeded),
-                    _ => Err(E::custom(format!("unexpected RunErr status: {}", value))),
+                    "rate_limit_exceeded" => {
+                        Ok(RunErrStatus::RateLimitExceeded)
+                    }
+                    _ => Err(E::custom(format!(
+                        "unexpected RunErr status: {}",
+                        value
+                    ))),
                 }
             }
         }

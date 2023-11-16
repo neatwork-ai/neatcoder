@@ -2,6 +2,7 @@ pub mod consts;
 ///< Client for interacting with the OpenAI API.
 pub mod models;
 pub mod utils;
+pub mod http;
 
 #[cfg(feature = "wasm")]
 pub mod foreign {

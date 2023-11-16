@@ -1,19 +1,21 @@
 use anyhow::{anyhow, Result};
-use futures_util::TryStreamExt;
 use reqwest::{header::HeaderMap, Body, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::path::Path;
 
+#[cfg(feature = "default")]
+use futures_util::TryStreamExt;
+#[cfg(feature = "default")]
 use tokio::fs::File as TokioFile;
+#[cfg(feature = "default")]
 use tokio_util::codec::{BytesCodec, FramedRead};
 
 use super::FileID;
-use crate::print_;
 use crate::{
     consts::BASE_BETA_URL,
-    models::get_data,
-    utils::{delete_api, get_api},
+    http::{delete_api, get_api},
+    models::assistant::get_data,
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -43,19 +45,27 @@ impl FilePurpose {
         serde_json::from_str(file_purpose).map_err(Into::into)
     }
 
-    pub fn as_str(&self) -> Result<String> {
-        serde_plain::to_string(self).map_err(Into::into)
+    pub fn as_str(&self) -> &str {
+        match self {
+            FilePurpose::FineTune => "fine-tune",
+            FilePurpose::FineTuneResults => "fine-tune-results",
+            FilePurpose::Assistants => "assistants",
+            FilePurpose::AssistantsOutput => "assistants-output",
+        }
     }
 }
 
 impl AgentFile {
-    pub async fn list_files(client: &Client, headers: &HeaderMap) -> Result<Vec<AgentFile>> {
+    pub async fn list_files(
+        client: &Client,
+        headers: &HeaderMap,
+    ) -> Result<Vec<AgentFile>> {
         let response_body = get_api(client, headers, "files", None).await?;
 
         let files_json = get_data(&response_body)?;
         let files: Vec<AgentFile> = serde_json::from_value(files_json.clone())?;
 
-        print_!("Files: {:?}", files);
+        println!("Files: {:?}", files);
 
         Ok(files)
     }
@@ -66,18 +76,28 @@ impl AgentFile {
         file_path: &Path,
         purpose: FilePurpose,
     ) -> Result<AgentFile> {
-        let file_json = upload_file(client, headers, file_path, &purpose.as_str()?).await?;
+        let file_json =
+            upload_file(client, headers, file_path, purpose.as_str()).await?;
 
         serde_json::from_value(file_json.clone()).map_err(Into::into)
     }
 
-    pub async fn delete_file(client: &Client, headers: &HeaderMap, file_id: &str) -> Result<Value> {
+    pub async fn delete_file(
+        client: &Client,
+        headers: &HeaderMap,
+        file_id: &str,
+    ) -> Result<Value> {
         let payload = json!({
             "file_id": file_id,
         });
 
-        let response_body =
-            delete_api(client, headers, &format!("files/{}", file_id), &payload).await?;
+        let response_body = delete_api(
+            client,
+            headers,
+            &format!("files/{}", file_id),
+            &payload,
+        )
+        .await?;
 
         Ok(response_body)
     }
@@ -103,7 +123,7 @@ impl AgentFile {
 
         let file: AgentFile = serde_json::from_value(file_data.clone())?;
 
-        print_!("File details: {:?}", file);
+        println!("File details: {:?}", file);
 
         Ok(file)
     }
@@ -130,17 +150,18 @@ impl AgentFile {
             let file_string = response.text().await?;
 
             // let json_value = response.json::<Value>().await?;
-            print_!("File content: {:?}", file_string);
+            println!("File content: {:?}", file_string);
 
             Ok(file_string)
         } else {
-            print_!("API Err on route {}", route);
+            println!("API Err on route {}", route);
             // If not successful, perhaps you want to parse it differently or handle the error
             Err(anyhow!(response.status()))
         }
     }
 }
 
+#[cfg(feature = "default")]
 pub async fn upload_file(
     client: &Client,
     headers: &HeaderMap,
@@ -154,8 +175,8 @@ pub async fn upload_file(
     let reader = FramedRead::new(file, BytesCodec::new());
     let stream = reader.map_ok(|bytes| bytes.freeze());
 
-    let part =
-        reqwest::multipart::Part::stream(Body::wrap_stream(stream)).file_name(filename.to_owned());
+    let part = reqwest::multipart::Part::stream(Body::wrap_stream(stream))
+        .file_name(filename.to_owned());
 
     let form = reqwest::multipart::Form::new()
         .text("purpose", purpose.to_string())
@@ -171,7 +192,7 @@ pub async fn upload_file(
 
     if response.status().is_success() {
         let json_value = response.json::<Value>().await?;
-        print_!("JSON Body: {:?}", json_value);
+        println!("JSON Body: {:?}", json_value);
 
         Ok(json_value)
     } else {

@@ -1,4 +1,3 @@
-use crate::print_;
 use anyhow::{anyhow, Result};
 use reqwest::{header::HeaderMap, Client};
 use serde_json::Value;
@@ -11,8 +10,8 @@ pub async fn post_api(
     route: &str,
     payload: &Value,
 ) -> Result<Value> {
-    print_!("CALLING: {}/{}", BASE_BETA_URL, route);
-    print_!("PAYLOAD: {}", payload);
+    println!("CALLING: {}/{}", BASE_BETA_URL, route);
+    println!("PAYLOAD: {}", payload);
 
     let response = client
         .post(&format!("{}/{}", BASE_BETA_URL, route))
@@ -23,11 +22,11 @@ pub async fn post_api(
 
     if response.status().is_success() {
         let json_value = response.json::<Value>().await?;
-        print_!("JSON Body: {:?}", json_value);
+        println!("JSON Body: {:?}", json_value);
 
         Ok(json_value)
     } else {
-        print_!("API Error on route {}", route);
+        println!("API Error on route {}", route);
         // If not successful, perhaps you want to parse it differently or handle the error
         Err(anyhow!(response.status()))
     }
@@ -39,8 +38,8 @@ pub async fn delete_api(
     route: &str,
     payload: &Value,
 ) -> Result<Value> {
-    print_!("CALLING: {}/{}", BASE_BETA_URL, route);
-    print_!("PAYLOAD: {}", payload);
+    println!("CALLING: {}/{}", BASE_BETA_URL, route);
+    println!("PAYLOAD: {}", payload);
 
     let response = client
         .delete(&format!("{}/{}", BASE_BETA_URL, route))
@@ -51,11 +50,11 @@ pub async fn delete_api(
 
     if response.status().is_success() {
         let json_value = response.json::<Value>().await?;
-        print_!("JSON Body: {:?}", json_value);
+        println!("JSON Body: {:?}", json_value);
 
         Ok(json_value)
     } else {
-        print_!("API Error on route {}", route);
+        println!("API Error on route {}", route);
         // If not successful, perhaps you want to parse it differently or handle the error
         Err(anyhow!(response.status()))
     }
@@ -79,34 +78,34 @@ pub async fn get_api(
 
     if response.status().is_success() {
         let json_value = response.json::<Value>().await?;
-        print_!("JSON Body: {:?}", json_value);
+        println!("JSON Body: {:?}", json_value);
 
         Ok(json_value)
     } else {
-        print_!("API Err on route {}", route);
+        println!("API Err on route {}", route);
         // If not successful, perhaps you want to parse it differently or handle the error
         Err(anyhow!(response.status()))
     }
 }
 
-#[macro_export]
-macro_rules! print_ {
-    ($($arg:tt)*) => {
-        {
-            use std::io::Write;
+// #[macro_export]
+// macro_rules! println {
+//     ($($arg:tt)*) => {
+//         {
+//             use std::io::Write;
 
-            // Print to the console
-            println!($($arg)*);
+//             // Print to the console
+//             println!($($arg)*);
 
-            let log_file_name = &$crate::LOG_FILE_NAME;
+//             let log_file_name = &$crate::LOG_FILE_NAME;
 
-            let mut file = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(log_file_name.as_str())
-                .unwrap();
+//             let mut file = std::fs::OpenOptions::new()
+//                 .create(true)
+//                 .append(true)
+//                 .open(log_file_name.as_str())
+//                 .unwrap();
 
-            writeln!(file, $($arg)*).unwrap();
-        }
-    };
-}
+//             writeln!(file, $($arg)*).unwrap();
+//         }
+//     };
+// }

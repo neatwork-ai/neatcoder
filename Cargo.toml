@@ -3,7 +3,8 @@ members = [
     "crates/neatcoder",
     "crates/parser",
     "crates/oai",
-    "crates/wasmer"
+    "crates/wasmer",
+    "crates/gpt-maker"
 ]
 exclude = [
     "examples/projects/*/jobs/codebase",

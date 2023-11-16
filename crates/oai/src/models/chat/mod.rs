@@ -2,7 +2,7 @@ pub mod params;
 pub mod request;
 pub mod response;
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(feature = "default")]
 use reqwest::header::HeaderMap;
 
 #[cfg(feature = "wasm")]
@@ -19,7 +19,7 @@ use std::collections::HashMap;
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Chat {
     #[serde(skip)]
-    #[cfg(not(feature = "wasm"))]
+    #[cfg(feature = "default")]
     pub(crate) headers: HeaderMap,
     pub session_id: String,
     pub title: String,
@@ -36,12 +36,12 @@ pub struct MessageData {
 
 impl Chat {
     pub fn new(
-        #[cfg(not(feature = "wasm"))] headers: HeaderMap,
+        #[cfg(feature = "default")] headers: HeaderMap,
         session_id: String,
         title: String,
     ) -> Chat {
         Self {
-            #[cfg(not(feature = "wasm"))]
+            #[cfg(feature = "default")]
             headers,
             session_id,
             title,
@@ -80,7 +80,7 @@ pub mod wasm {
         pub fn new(session_id: String, title: String) -> ChatWasm {
             // The headers are not used in WASM so it's dummy
             Self(Chat::new(
-                #[cfg(not(feature = "wasm"))]
+                #[cfg(feature = "default")]
                 HeaderMap::new(),
                 session_id,
                 title,

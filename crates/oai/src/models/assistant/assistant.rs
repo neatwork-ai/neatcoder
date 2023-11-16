@@ -7,9 +7,10 @@ use serde::{
 use serde_json::json;
 use std::collections::HashMap;
 
+use crate::http::post_api;
+
 use super::OpenAIModels;
-use crate::print_;
-use crate::utils::post_api;
+// use crate::println;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Assistant {
@@ -77,8 +78,13 @@ impl<'de> Deserialize<'de> for Tool {
         impl<'de> Visitor<'de> for ToolVisitor {
             type Value = Tool;
 
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str(r#"a map with a key "type" representing an OpenAI tool"#)
+            fn expecting(
+                &self,
+                formatter: &mut std::fmt::Formatter,
+            ) -> std::fmt::Result {
+                formatter.write_str(
+                    r#"a map with a key "type" representing an OpenAI tool"#,
+                )
             }
 
             fn visit_map<M>(self, mut map: M) -> Result<Tool, M::Error>
@@ -125,10 +131,11 @@ impl Assistant {
             "model": model.as_string(), // "gpt-4-1106-preview"
         });
 
-        let response_body = post_api(client, headers, "assistants", &payload).await?;
+        let response_body =
+            post_api(client, headers, "assistants", &payload).await?;
         let assistant: Assistant = serde_json::from_value(response_body)?;
 
-        print_!("Assistant: {:?}", assistant);
+        println!("Assistant: {:?}", assistant);
 
         Ok(assistant)
     }

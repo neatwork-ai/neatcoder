@@ -7,7 +7,7 @@ use crate::models::{
     message::GptMessage,
 };
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(feature = "default")]
 pub mod native {
     use super::{super::Chat, *};
     use bytes::Bytes;
@@ -348,7 +348,7 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(not(feature = "wasm"))]
+    #[cfg(feature = "default")]
     #[test]
     fn parse_response() -> Result<()> {
         use crate::models::chat::response::ChatResponse;

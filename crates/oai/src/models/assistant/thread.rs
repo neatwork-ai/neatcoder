@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
 
+use crate::http::post_api;
+
 use super::message::{Message, Messages};
-use crate::print_;
-use crate::utils::post_api;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Thread {
@@ -27,13 +27,17 @@ pub struct ThreadInner {
 }
 
 impl Thread {
-    pub async fn create_thread(client: &Client, headers: &HeaderMap) -> Result<Thread> {
+    pub async fn create_thread(
+        client: &Client,
+        headers: &HeaderMap,
+    ) -> Result<Thread> {
         let payload = json!({});
 
-        let response_body = post_api(client, headers, "threads", &payload).await?;
+        let response_body =
+            post_api(client, headers, "threads", &payload).await?;
         let inner: ThreadInner = serde_json::from_value(response_body)?;
 
-        print_!("Thread: {:?}", inner);
+        println!("Thread: {:?}", inner);
 
         Ok(Thread {
             inner,
@@ -62,7 +66,7 @@ impl Thread {
 
         let message: Message = serde_json::from_value(response_body)?;
 
-        print_!("Message: {:?}", message);
+        println!("Message: {:?}", message);
 
         Ok(message)
     }

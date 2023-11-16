@@ -3,8 +3,7 @@ use reqwest::{header::HeaderMap, Client};
 use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 
-use crate::print_;
-use crate::{models::get_data, utils::get_api};
+use crate::{http::get_api, models::assistant::get_data};
 
 use super::ThreadID;
 
@@ -101,7 +100,7 @@ impl Messages {
 
         let messages: Messages = serde_json::from_value(msgs.clone())?;
 
-        print_!("List of Messages: {:?}", messages);
+        println!("List of Messages: {:?}", messages);
 
         Ok(messages)
     }
