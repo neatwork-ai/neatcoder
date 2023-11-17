@@ -1,5 +1,6 @@
 pub mod cli;
 pub mod io;
+pub mod process;
 pub mod utils;
 
 use anyhow::{anyhow, Result};
@@ -9,12 +10,13 @@ use console::style;
 use dialoguer::Input;
 use dotenv::dotenv;
 use io::{LocalRead, LocalWrite};
-use std::env;
+use openapiv3::OpenAPI;
+use std::{env, fs};
 // use endpoints::*;
 // use io::LocalWrite;
 use oai::models::assistant::assistant::Tool;
 use oai::models::assistant::CustomGPT;
-use utils::get_dialoguer_theme;
+use utils::{get_dialoguer_theme, multi_select};
 
 #[tokio::main]
 async fn main() {
@@ -93,7 +95,37 @@ async fn run() -> Result<()> {
                 .on_bright()
             );
         }
-        Commands::AddApi { root_dir: _ } => {}
+        Commands::AddApi { api_specs } => {
+            let openapi_path = config_path
+                .parent()
+                .expect("Could not find parent folder")
+                .join("openapi")
+                .join(format!("{}.json", api_specs));
+
+            // Read the OpenAPI JSON file into a string
+            let openapi_json_str = fs::read_to_string(openapi_path)?;
+
+            // Parse the YAML string into an OpenAPI structure
+            let openapi_spec: OpenAPI =
+                serde_json::from_str(&openapi_json_str)?;
+
+            let tag_strs: Vec<&str> = openapi_spec
+                .tags
+                .iter()
+                .map(|tag| tag.name.as_str())
+                .collect();
+
+            println!("# of tags: {}", openapi_spec.tags.len());
+            println!("# of Paths: {}", openapi_spec.paths.paths.len());
+
+            let tags_selected = multi_select(
+                &theme,
+                "Choose which tags you want to include",
+                &tag_strs,
+            )?;
+
+            let open_ai_specs = split_specs(&openapi_spec, &tags_selected)?;
+        }
     }
 
     // IO Write

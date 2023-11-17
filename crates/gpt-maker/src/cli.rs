@@ -22,16 +22,14 @@ pub enum Commands {
         name: Option<String>,
     },
 
-    #[clap(
-        about = "Link a SuiPlay account to your local configuration. If you already have a SuiPlay account prior to installing the CLI then you can link your account via this command."
-    )]
+    #[clap(about = "Add OpenAPI specifications to your Assitant")]
     AddApi {
         #[clap(
             short,
             long,
-            help = "This is where all the byte-cli configurations and projects are stored"
+            help = "Name of the openAPI specs file inside .gpt-maker/openapi/"
         )]
-        root_dir: Option<String>,
+        api_specs: String,
     },
 }
 
