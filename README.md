@@ -72,3 +72,7 @@ As default native:
 
 As a Wasm Lib:
 `cargo build --target wasm32-unknown-unknown --features wasm --no-default-features`
+
+
+## Run Assistant Builder
+`cargo run --bin gpt-maker init-assistant`

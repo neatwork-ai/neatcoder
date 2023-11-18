@@ -1,265 +1,364 @@
+use anyhow::{anyhow, Result};
 use indexmap::IndexMap;
 use openapiv3::{
-    Components, ExternalDocumentation, Info, OpenAPI, Operation, PathItem,
-    Paths, ReferenceOr, SecurityRequirement, Server, Tag,
+    Callback, Components, Example, ExternalDocumentation, Header, Info, Link,
+    OpenAPI, Operation, Parameter, PathItem, Paths, ReferenceOr, RequestBody,
+    Response, Schema, SecurityRequirement, SecurityScheme, Server, Tag,
 };
-use serde::{Deserialize, Serialize};
+use serde::{
+    de::{IgnoredAny, Visitor},
+    Deserialize, Deserializer, Serialize,
+};
 use std::{
+    any::type_name,
     any::Any,
     collections::{HashMap, HashSet},
+    hash::{Hash, Hasher},
+    marker::PhantomData,
     sync::Arc,
 };
 
 #[derive(Serialize)]
-pub struct OpenAPIRef<'a> {
-    pub openapi: &'a String,
-    pub info: &'a Info,
+pub struct OpenAPIRef {
+    pub openapi: Arc<String>,
+    pub info: Arc<Info>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub servers: &'a Vec<Server>,
-    pub paths: &'a Paths,
+    pub servers: Arc<Vec<Server>>,
+    pub paths: PathsRef,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub components: &'a Option<Components>,
+    pub components: Option<ComponentsRef>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub security: &'a Option<Vec<SecurityRequirement>>,
+    pub security: Arc<Option<Vec<SecurityRequirement>>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub tags: &'a Vec<Tag>,
+    pub tags: Arc<Vec<Tag>>,
     #[serde(rename = "externalDocs")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub external_docs: &'a Option<ExternalDocumentation>,
+    pub external_docs: Arc<Option<ExternalDocumentation>>,
     // #[serde(flatten, deserialize_with = "crate::util::deserialize_extensions")]
     // pub extensions: IndexMap<String, serde_json::Value>,
 }
 
-pub fn split_specs<'a>(
-    openapi: &'a OpenAPI,
-    tag_selected: &'a String,
-) -> HashMap<String, OpenAPIRef<'a>> {
+#[derive(Debug, Clone, Serialize, Default, PartialEq)]
+pub struct PathsRef {
+    /// A map of PathItems or references to them.
+    #[serde(flatten, deserialize_with = "deserialize_paths")]
+    pub paths: IndexMap<Arc<String>, Arc<ReferenceOr<PathItem>>>,
+    pub extensions: IndexMap<Arc<String>, Arc<serde_json::Value>>,
+}
+
+#[derive(Debug, Clone, Serialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ComponentsRef {
+    /// An object to hold reusable Security Scheme Objects.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub security_schemes:
+        IndexMap<Arc<String>, Arc<ReferenceOr<SecurityScheme>>>,
+    /// An object to hold reusable Response Objects.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub responses: IndexMap<Arc<String>, Arc<ReferenceOr<Response>>>,
+    /// An object to hold reusable Parameter Objects.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub parameters: IndexMap<Arc<String>, Arc<ReferenceOr<Parameter>>>,
+    /// An object to hold reusable Example Objects.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub examples: IndexMap<Arc<String>, Arc<ReferenceOr<Example>>>,
+    /// An object to hold reusable Request Body Objects.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub request_bodies: IndexMap<Arc<String>, Arc<ReferenceOr<RequestBody>>>,
+    /// An object to hold reusable Header Objects.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub headers: IndexMap<Arc<String>, Arc<ReferenceOr<Header>>>,
+    /// An object to hold reusable Schema Objects.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub schemas: IndexMap<Arc<String>, Arc<ReferenceOr<Schema>>>,
+    /// An object to hold reusable Link Objects.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub links: IndexMap<Arc<String>, Arc<ReferenceOr<Link>>>,
+    /// An object to hold reusable Callback Objects.
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub callbacks: IndexMap<Arc<String>, Arc<ReferenceOr<Callback>>>,
+    /// Inline extensions to this object.
+    #[serde(flatten, deserialize_with = "deserialize_extensions")]
+    pub extensions: IndexMap<Arc<String>, Arc<serde_json::Value>>,
+}
+
+pub struct TagPath {
+    path: Arc<String>,
+    item: Arc<ReferenceOr<PathItem>>,
+}
+
+impl PartialEq for TagPath {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path
+    }
+}
+
+impl Eq for TagPath {}
+
+impl Hash for TagPath {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Only the path field is used to compute the hash
+        self.path.hash(state);
+    }
+}
+
+pub struct ComponentPointer {
+    name: Arc<String>,
+    comp: Box<dyn Any>,
+    phantom_t: String, // Type reflection
+}
+
+pub fn split_specs(
+    openapi: Arc<OpenAPI>,
+    tags_selected: Arc<HashSet<Arc<String>>>,
+) -> Result<HashMap<Arc<String>, OpenAPIRef>> {
     let mut ref_list = HashSet::new(); // example of a ref: "#/components/examples/root"
-    let mut ref_map: HashMap<&String, (&String, )> = HashMap::new();
+    let mut tag_paths: HashMap<Arc<String>, HashSet<TagPath>> = HashMap::new(); // Maps tags to paths
+    let mut tag_refs: HashMap<Arc<String>, HashSet<Arc<String>>> =
+        HashMap::new(); // Maps tags to references
+    let mut ref_map: HashMap<Arc<String>, ComponentPointer> = HashMap::new(); // Maps references to components
 
-    // 1. For each tag selected
-    let mut tag_paths: HashMap<&String, HashSet<&String>> = HashMap::new();
-    let mut tag_refs: HashMap<&String, HashSet<&String>> = HashMap::new();
-
-    // 1. For each tag selected
-    for tag in tags_selected {
-        tag_paths.insert(tag, HashSet::new());
-        tag_refs.insert(tag, HashSet::new());
+    for tag in tags_selected.iter() {
+        tag_paths.insert(tag.clone(), HashSet::new());
+        tag_refs.insert(tag.clone(), HashSet::new());
     }
 
-    // 2. Crawl and get the refs
-    // Process paths and operations to associate them with tags
+    // 1. Crawl through all the paths
     for (path, item) in &openapi.paths.paths {
         match item {
+            // 2. If a path has a reference then:
             ReferenceOr::Item(path_item) => {
-                let tags_in_path = get_tags_in_path(path_item);
+                let tags_in_path = get_tags_in_path(Arc::new(*path_item));
 
-                let relevant_tags: HashSet<&String> = tags_selected
+                let relevant_tags: HashSet<Arc<String>> = tags_selected
                     .intersection(&tags_in_path)
                     .cloned()
                     .collect();
 
-                let refs = get_refs_in_path(path_item);
+                if !relevant_tags.is_empty() {
+                    let refs = get_refs_in_path(Arc::new(*path_item));
+                    for tag in relevant_tags.iter() {
+                        // 2.1. Add those references to the dedicated tags
+                        let this_tag_refs = tag_refs.get_mut(tag).unwrap();
+                        this_tag_refs.extend(refs.clone());
 
-                for tag in tags_selected {
-                    let this_tag_refs = tag_refs.get_mut(tag).unwrap();
-                    this_tag_refs.extend(refs.clone())
+                        // 2.2. Add those paths to the dedicated tags
+                        let this_tag_paths = tag_paths.get_mut(tag).unwrap();
+                        this_tag_paths.insert(TagPath {
+                            path: Arc::new(*path),
+                            item: Arc::new(*item),
+                        });
+                    }
+
+                    ref_list.extend(refs.clone()); // keep track of all the refs for later
                 }
-
-                ref_list.extend(refs.clone()); // keep track of all the refs for later
             }
             _ => {} // Skip if it's just a reference at the path level, as we want to inspect operations
         }
     }
 
     // TODO: This should be if let at the beginning
-    let components = openapi.components.unwrap();
+    let components = openapi.components.map(Arc::new).unwrap();
 
-    let find_component = |reff: &String, components: &IndexMap<String, ReferenceOr<T>>, name: &String| -> {
-        let item = components.get(name).unwrap();
-        ref_map.insert(reff, )
-    }
-
-
-    // 3. Match refs to components
-    for reff in ref_list.iter() {
-        if let Some((field, index)) = parse_ref(reff) {
-            let balony: Box<&IndexMap<String, dyn Any>> = match field {
-                "security_schemes" => Box::new(&components.security_schemes),
-                "responses" => {
-                    (Box::new(&components.responses)
-                        as Box<&IndexMap<String, dyn Any>>)
-                }
-                // "parameters" => Box::new(&components.parameters),
-                // "examples" => Box::new(&components.examples),
-                // "request_bodies" => Box::new(&components.request_bodies),
-                // "headers" => Box::new(&components.headers),
-                // "schemas" => Box::new(&components.schemas),
-                // "links" => Box::new(&components.links),
-                // "callbacks" => Box::new(&components.callbacks),
-                // "extensions" => Box::new(&components.extensions),
-                _ => None,
+    // 3. Map the components to references
+    for ref_name in ref_list.iter() {
+        if let Some((ref_t, ref_index)) = parse_ref(ref_name) {
+            match ref_t {
+                "security_schemes" => link_components_to_refs(
+                    &mut ref_map,
+                    ref_name.clone(),
+                    ref_index,
+                    &components.security_schemes,
+                ),
+                "responses" => link_components_to_refs(
+                    &mut ref_map,
+                    ref_name.clone(),
+                    ref_index,
+                    &components.responses,
+                ),
+                "parameters" => link_components_to_refs(
+                    &mut ref_map,
+                    ref_name.clone(),
+                    ref_index,
+                    &components.parameters,
+                ),
+                "examples" => link_components_to_refs(
+                    &mut ref_map,
+                    ref_name.clone(),
+                    ref_index,
+                    &components.examples,
+                ),
+                "request_bodies" => link_components_to_refs(
+                    &mut ref_map,
+                    ref_name.clone(),
+                    ref_index,
+                    &components.request_bodies,
+                ),
+                "headers" => link_components_to_refs(
+                    &mut ref_map,
+                    ref_name.clone(),
+                    ref_index,
+                    &components.headers,
+                ),
+                "schemas" => link_components_to_refs(
+                    &mut ref_map,
+                    ref_name.clone(),
+                    ref_index,
+                    &components.schemas,
+                ),
+                "links" => link_components_to_refs(
+                    &mut ref_map,
+                    ref_name.clone(),
+                    ref_index,
+                    &components.links,
+                ),
+                "callbacks" => link_components_to_refs(
+                    &mut ref_map,
+                    ref_name.clone(),
+                    ref_index,
+                    &components.callbacks,
+                ),
+                _ => (),
             };
         }
     }
 
-    // 3. Crawl and get the refs to find which components each tag uses
-    crawl_components_for_tags(&openapi.components, &tag_to_refs);
+    let mut oapis = HashMap::new();
 
-    // 4. Run through the components and collect all that are in the refs
-    //    Create a new OpenAPI spec per tag with its own components
-    let mut specs: HashMap<String, OpenAPI> = HashMap::new();
-    for tag in tags_selected {
-        let mut new_components = openapiv3::Components::default();
-        if let Some(components) = &openapi.components {
-            for (component_type, component_refs) in
-                tag_to_refs.get(tag).unwrap()
-            {
-                components.clone_components_of_type_into(
-                    component_type,
-                    component_refs,
-                    &mut new_components,
-                );
+    for tag in tags_selected.iter() {
+        let mut paths = PathsRef {
+            paths: IndexMap::new(),
+            extensions: IndexMap::new(),
+        };
+
+        let paths_to_add = tag_paths.get(tag).unwrap();
+
+        for path_to_add in paths_to_add.iter() {
+            paths
+                .paths
+                .insert(path_to_add.path.clone(), path_to_add.item.clone());
+        }
+
+        let mut components = ComponentsRef {
+            security_schemes: IndexMap::new(),
+            responses: IndexMap::new(),
+            parameters: IndexMap::new(),
+            examples: IndexMap::new(),
+            request_bodies: IndexMap::new(),
+            headers: IndexMap::new(),
+            schemas: IndexMap::new(),
+            links: IndexMap::new(),
+            callbacks: IndexMap::new(),
+            extensions: IndexMap::new(),
+        };
+
+        let refs_to_add = tag_refs.get(tag).unwrap();
+
+        for ref_to_add in refs_to_add {
+            // Get component from RefMap
+            let comp = ref_map.get(ref_to_add).unwrap();
+
+            match comp.phantom_t.as_str() {
+                "SecurityScheme" => {
+                    let actual_comp = comp
+                        .comp
+                        .downcast::<Arc<ReferenceOr<SecurityScheme>>>()
+                        .map_err(|e| anyhow!("{:?}", e))?;
+                    components.security_schemes.insert(comp.name, *actual_comp);
+                }
+                "Response" => {
+                    let actual_comp = comp
+                        .comp
+                        .downcast::<Arc<ReferenceOr<Response>>>()
+                        .map_err(|e| anyhow!("{:?}", e))?;
+                    components.responses.insert(comp.name, *actual_comp);
+                }
+                "Parameter" => {
+                    let actual_comp = comp
+                        .comp
+                        .downcast::<Arc<ReferenceOr<Parameter>>>()
+                        .map_err(|e| anyhow!("{:?}", e))?;
+                    components.parameters.insert(comp.name, *actual_comp);
+                }
+                "Example" => {
+                    let actual_comp = comp
+                        .comp
+                        .downcast::<Arc<ReferenceOr<Example>>>()
+                        .map_err(|e| anyhow!("{:?}", e))?;
+                    components.examples.insert(comp.name, *actual_comp);
+                }
+                "RequestBody" => {
+                    let actual_comp = comp
+                        .comp
+                        .downcast::<Arc<ReferenceOr<RequestBody>>>()
+                        .map_err(|e| anyhow!("{:?}", e))?;
+                    components.request_bodies.insert(comp.name, *actual_comp);
+                }
+                "Header" => {
+                    let actual_comp = comp
+                        .comp
+                        .downcast::<Arc<ReferenceOr<Header>>>()
+                        .map_err(|e| anyhow!("{:?}", e))?;
+                    components.headers.insert(comp.name, *actual_comp);
+                }
+                "Schema" => {
+                    let actual_comp = comp
+                        .comp
+                        .downcast::<Arc<ReferenceOr<Schema>>>()
+                        .map_err(|e| anyhow!("{:?}", e))?;
+                    components.schemas.insert(comp.name, *actual_comp);
+                }
+                "Link" => {
+                    let actual_comp = comp
+                        .comp
+                        .downcast::<Arc<ReferenceOr<Link>>>()
+                        .map_err(|e| anyhow!("{:?}", e))?;
+                    components.links.insert(comp.name, *actual_comp);
+                }
+                "Callback" => {
+                    let actual_comp = comp
+                        .comp
+                        .downcast::<Arc<ReferenceOr<Callback>>>()
+                        .map_err(|e| anyhow!("{:?}", e))?;
+                    components.callbacks.insert(comp.name, *actual_comp);
+                }
             }
         }
 
-        specs.insert(
-            tag.to_string(),
-            OpenAPI {
-                openapi: openapi.openapi.clone(),
-                info: openapi.info.clone(),
-                servers: openapi.servers.clone(),
-                paths: openapiv3::Paths {
-                    paths: tag_to_paths.remove(tag).unwrap(),
-                    extensions: Default::default(),
-                },
-                components: Some(new_components),
-                security: openapi.security.clone(),
-                tags: openapi.tags.clone(),
-                external_docs: openapi.external_docs.clone(),
-                extensions: openapi.extensions.clone(),
-            },
-        );
+        let oapi = OpenAPIRef {
+            openapi: Arc::new(openapi.openapi),
+            info: Arc::new(openapi.info),
+            servers: Arc::new(openapi.servers),
+            paths,
+            components: Some(components),
+            security: Arc::new(openapi.security),
+            tags: Arc::new(openapi.tags), // TODO: wrong. this should only be selected tags
+            external_docs: Arc::new(openapi.external_docs),
+        };
+
+        oapis.insert(tag.clone(), oapi);
     }
 
     // 4. Return the structs
-    specs
+    Ok(oapis)
 }
 
-// pub fn split_specs<'a>(
-//     openapi: &'a OpenAPI,
-//     tags_selected: &'a HashSet<&'a String>,
-// ) -> HashMap<String, OpenAPIRef<'a>> {
-//     let mut ref_list = HashSet::new(); // example of a ref: "#/components/examples/root"
-//     let mut ref_map: HashMap<&String, (&String, )> = HashMap::new();
+fn link_components_to_refs<T>(
+    ref_map: &mut HashMap<Arc<String>, ComponentPointer>,
+    reff_name: Arc<String>, // #components/<T>/ref_index
+    ref_index: &str,
+    sub_components: &IndexMap<String, ReferenceOr<T>>,
+) {
+    let comp = Box::new(Arc::new(*sub_components.get(&*ref_index).unwrap()));
 
-//     // 1. For each tag selected
-//     let mut tag_paths: HashMap<&String, HashSet<&String>> = HashMap::new();
-//     let mut tag_refs: HashMap<&String, HashSet<&String>> = HashMap::new();
+    let comp_pointer = ComponentPointer {
+        name: Arc::new(ref_index.to_string()),
+        comp,
+        phantom_t: String::from(type_name::<T>()),
+    };
 
-//     // 1. For each tag selected
-//     for tag in tags_selected {
-//         tag_paths.insert(tag, HashSet::new());
-//         tag_refs.insert(tag, HashSet::new());
-//     }
-
-//     // 2. Crawl and get the refs
-//     // Process paths and operations to associate them with tags
-//     for (path, item) in &openapi.paths.paths {
-//         match item {
-//             ReferenceOr::Item(path_item) => {
-//                 let tags_in_path = get_tags_in_path(path_item);
-
-//                 let relevant_tags: HashSet<&String> = tags_selected
-//                     .intersection(&tags_in_path)
-//                     .cloned()
-//                     .collect();
-
-//                 let refs = get_refs_in_path(path_item);
-
-//                 for tag in tags_selected {
-//                     let this_tag_refs = tag_refs.get_mut(tag).unwrap();
-//                     this_tag_refs.extend(refs.clone())
-//                 }
-
-//                 ref_list.extend(refs.clone()); // keep track of all the refs for later
-//             }
-//             _ => {} // Skip if it's just a reference at the path level, as we want to inspect operations
-//         }
-//     }
-
-//     // TODO: This should be if let at the beginning
-//     let components = openapi.components.unwrap();
-
-//     let find_component = |reff: &String, components: &IndexMap<String, ReferenceOr<T>>, name: &String| -> {
-//         let item = components.get(name).unwrap();
-//         ref_map.insert(reff, )
-//     }
-
-//     // 3. Match refs to components
-//     for reff in ref_list.iter() {
-//         if let Some((field, index)) = parse_ref(reff) {
-//             let balony: Box<&IndexMap<String, dyn Any>> = match field {
-//                 "security_schemes" => Box::new(&components.security_schemes),
-//                 "responses" => {
-//                     (Box::new(&components.responses)
-//                         as Box<&IndexMap<String, dyn Any>>)
-//                 }
-//                 // "parameters" => Box::new(&components.parameters),
-//                 // "examples" => Box::new(&components.examples),
-//                 // "request_bodies" => Box::new(&components.request_bodies),
-//                 // "headers" => Box::new(&components.headers),
-//                 // "schemas" => Box::new(&components.schemas),
-//                 // "links" => Box::new(&components.links),
-//                 // "callbacks" => Box::new(&components.callbacks),
-//                 // "extensions" => Box::new(&components.extensions),
-//                 _ => None,
-//             };
-//         }
-//     }
-
-//     // 3. Crawl and get the refs to find which components each tag uses
-//     crawl_components_for_tags(&openapi.components, &tag_to_refs);
-
-//     // 4. Run through the components and collect all that are in the refs
-//     //    Create a new OpenAPI spec per tag with its own components
-//     let mut specs: HashMap<String, OpenAPI> = HashMap::new();
-//     for tag in tags_selected {
-//         let mut new_components = openapiv3::Components::default();
-//         if let Some(components) = &openapi.components {
-//             for (component_type, component_refs) in
-//                 tag_to_refs.get(tag).unwrap()
-//             {
-//                 components.clone_components_of_type_into(
-//                     component_type,
-//                     component_refs,
-//                     &mut new_components,
-//                 );
-//             }
-//         }
-
-//         specs.insert(
-//             tag.to_string(),
-//             OpenAPI {
-//                 openapi: openapi.openapi.clone(),
-//                 info: openapi.info.clone(),
-//                 servers: openapi.servers.clone(),
-//                 paths: openapiv3::Paths {
-//                     paths: tag_to_paths.remove(tag).unwrap(),
-//                     extensions: Default::default(),
-//                 },
-//                 components: Some(new_components),
-//                 security: openapi.security.clone(),
-//                 tags: openapi.tags.clone(),
-//                 external_docs: openapi.external_docs.clone(),
-//                 extensions: openapi.extensions.clone(),
-//             },
-//         );
-//     }
-
-//     // 4. Return the structs
-//     specs
-// }
+    ref_map.insert(reff_name, comp_pointer);
+}
 
 // Function to parse a reference string and return the component type and name.
 fn parse_ref(ref_str: &str) -> Option<(&str, &str)> {
@@ -288,27 +387,7 @@ fn match_ref_to_component<'a>(
     }
 }
 
-// Helper function to collect references from an operation
-fn collect_refs_from_operation(
-    operation: &Operation,
-    refs: &mut HashSet<String>,
-) {
-    // Here you would inspect the operation and add its references to the set
-    // ...
-    todo!();
-}
-
-// Helper function to traverse the components and collect references that match the tags
-fn crawl_components_for_tags(
-    components: &Option<Components>,
-    tag_to_refs: &HashMap<String, HashSet<String>>,
-) {
-    // Here you would traverse the components and collect only those referenced by the selected tags
-    // ...
-    todo!();
-}
-
-fn get_tags_in_path<'a>(path_item: &'a PathItem) -> HashSet<&'a String> {
+fn get_tags_in_path(path_item: Arc<PathItem>) -> HashSet<Arc<String>> {
     let mut all_operations: Vec<&Option<Operation>> = vec![
         &path_item.get,
         &path_item.put,
@@ -320,13 +399,13 @@ fn get_tags_in_path<'a>(path_item: &'a PathItem) -> HashSet<&'a String> {
         &path_item.trace,
     ];
 
-    let mut all_tags: HashSet<&String> = HashSet::new();
+    let mut all_tags: HashSet<Arc<String>> = HashSet::new();
 
     // TODO: Crawl through each operation and collect references
     for operation in all_operations.iter() {
         if let Some(operation) = operation {
             operation.tags.iter().for_each(|tag| {
-                all_tags.insert(tag);
+                all_tags.insert(Arc::new(*tag));
             });
         }
     }
@@ -335,7 +414,7 @@ fn get_tags_in_path<'a>(path_item: &'a PathItem) -> HashSet<&'a String> {
 }
 
 // Helper function to collect operations by tag and referenced components
-fn get_refs_in_path<'a>(path_item: &'a PathItem) -> HashSet<&'a String> {
+fn get_refs_in_path(path_item: Arc<PathItem>) -> HashSet<Arc<String>> {
     let mut all_operations: Vec<&Option<Operation>> = vec![
         &path_item.get,
         &path_item.put,
@@ -347,7 +426,7 @@ fn get_refs_in_path<'a>(path_item: &'a PathItem) -> HashSet<&'a String> {
         &path_item.trace,
     ];
 
-    let mut all_refs: HashSet<&String> = HashSet::new();
+    let mut all_refs: HashSet<Arc<String>> = HashSet::new();
 
     // TODO: Crawl through each operation and collect references
     for operation in all_operations.iter() {
@@ -355,7 +434,7 @@ fn get_refs_in_path<'a>(path_item: &'a PathItem) -> HashSet<&'a String> {
             for param in operation.parameters.iter() {
                 match param {
                     ReferenceOr::Reference { reference } => {
-                        all_refs.insert(reference);
+                        all_refs.insert(Arc::new(*reference));
                     }
                     _ => {}
                 }
@@ -364,7 +443,7 @@ fn get_refs_in_path<'a>(path_item: &'a PathItem) -> HashSet<&'a String> {
             if let Some(request_body) = &operation.request_body {
                 match request_body {
                     ReferenceOr::Reference { reference } => {
-                        all_refs.insert(reference);
+                        all_refs.insert(Arc::new(*reference));
                     }
                     _ => {}
                 }
@@ -431,4 +510,70 @@ fn find_references_in_operation(
     }
 
     // ... continue for responses and other fields which may contain references.
+}
+
+/// Used to deserialize IndexMap<K, V> that are flattened within other structs.
+/// This only adds keys that satisfy the given predicate.
+pub(crate) struct PredicateVisitor<F, K, V>(pub F, pub PhantomData<(K, V)>);
+
+impl<'de, F, K, V> Visitor<'de> for PredicateVisitor<F, K, V>
+where
+    F: Fn(&K) -> bool,
+    K: Deserialize<'de> + Eq + Hash,
+    V: Deserialize<'de>,
+{
+    type Value = IndexMap<K, V>;
+
+    fn expecting(
+        &self,
+        formatter: &mut std::fmt::Formatter,
+    ) -> std::fmt::Result {
+        formatter.write_str("a map whose fields obey a predicate")
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: serde::de::MapAccess<'de>,
+    {
+        let mut ret = Self::Value::default();
+
+        loop {
+            match map.next_key::<K>() {
+                Err(_) => (),
+                Ok(None) => break,
+                Ok(Some(key)) if self.0(&key) => {
+                    let _ = ret.insert(key, map.next_value()?);
+                }
+                Ok(Some(_)) => {
+                    let _ = map.next_value::<IgnoredAny>()?;
+                }
+            }
+        }
+
+        Ok(ret)
+    }
+}
+
+fn deserialize_paths<'de, D>(
+    deserializer: D,
+) -> Result<IndexMap<String, ReferenceOr<PathItem>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserializer.deserialize_map(PredicateVisitor(
+        |key: &String| key.starts_with('/'),
+        PhantomData,
+    ))
+}
+
+pub(crate) fn deserialize_extensions<'de, D>(
+    deserializer: D,
+) -> Result<IndexMap<String, serde_json::Value>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    deserializer.deserialize_map(PredicateVisitor(
+        |key: &String| key.starts_with("x-"),
+        PhantomData,
+    ))
 }
