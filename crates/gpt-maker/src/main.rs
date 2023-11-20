@@ -1,4 +1,5 @@
 pub mod cli;
+pub mod get_refs;
 pub mod io;
 pub mod process;
 pub mod utils;
@@ -11,12 +12,14 @@ use dialoguer::Input;
 use dotenv::dotenv;
 use io::{LocalRead, LocalWrite};
 use openapiv3::OpenAPI;
-use std::{env, fs};
+use std::{collections::HashSet, env, fs, sync::Arc};
 // use endpoints::*;
 // use io::LocalWrite;
 use oai::models::assistant::assistant::Tool;
 use oai::models::assistant::CustomGPT;
 use utils::{get_dialoguer_theme, multi_select};
+
+use crate::process::split_specs;
 
 #[tokio::main]
 async fn main() {
@@ -124,7 +127,12 @@ async fn run() -> Result<()> {
                 &tag_strs,
             )?;
 
-            let open_ai_specs = split_specs(&openapi_spec, &tags_selected)?;
+            let tags_selected_ref: Arc<HashSet<&str>> = Arc::new(
+                tags_selected.iter().map(|tag| tag.as_str()).collect(),
+            );
+
+            let open_ai_specs =
+                split_specs(Arc::new(openapi_spec), tags_selected_ref.clone())?;
         }
     }
 
