@@ -14,7 +14,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::get_refs::GetRefs;
+use crate::get_refs::{process_path_item, process_server, GetRefs};
 
 pub struct TagPath<'a> {
     path: &'a str,
@@ -38,10 +38,44 @@ impl<'a> Hash for TagPath<'a> {
 
 #[derive(Clone)]
 pub struct ComponentPointer {
-    name: String,
-    comp: Arc<dyn Any>, // &'a ReferenceOr<>
-    phantom_t: String,  // Type reflection
+    pub name: String,
+    pub comp: Arc<dyn Any>, // &'a ReferenceOr<>
+    pub phantom_t: String,  // Type reflection
 }
+
+pub fn process_specs(openapi: &mut OpenAPI) {
+    openapi.paths.paths.iter_mut().for_each(|(_, path)| {
+        if let ReferenceOr::Item(path) = path {
+            process_path_item(path)
+        }
+    });
+
+    openapi
+        .servers
+        .iter_mut()
+        .for_each(|server| process_server(server));
+}
+
+/// Paths
+/// |__PathItem
+///    |__Operation
+///       |__Parameter
+///          |__ParameterData
+///             |__ParameterSchemaOrContent
+///             |__ReferenceOr<Example>
+///       |__RequestBody
+///          |__MediaType
+///             |__Schema
+///                |__SchemaKind
+///                   |__Schema..
+///             |__ReferenceOr<Example>
+///             |__Encoding
+///       |__Responses
+///          |__Response
+///             |__Header
+///             |__MediaType..
+///             |__Link
+///    |__Parameter..
 
 pub fn split_specs(
     openapi: Arc<OpenAPI>,
@@ -192,131 +226,7 @@ pub fn split_specs(
             let refs_to_add = tag_refs.get(tag).unwrap();
 
             for ref_to_add in refs_to_add {
-                // Get component from RefMap
-                let comp: ComponentPointer =
-                    ref_map.get(ref_to_add).unwrap().clone();
-
-                match comp.phantom_t.as_str() {
-                    "openapiv3::security_scheme::SecurityScheme" => {
-                        let actual_comp = comp
-                            .comp
-                            .as_ref()
-                            .downcast_ref::<ReferenceOr<SecurityScheme>>()
-                            .ok_or_else(|| {
-                                anyhow!("Failed to downcast SecurityScheme component")
-                            })?;
-                        components.security_schemes.insert(
-                            comp.name.to_string(),
-                            actual_comp.deref().clone(),
-                        );
-                    }
-                    "openapiv3::responses::Response" => {
-                        let actual_comp = comp
-                            .comp
-                            .downcast_ref::<ReferenceOr<Response>>()
-                            .ok_or_else(|| {
-                                anyhow!("Failed to downcast Response component")
-                            })?;
-                        components.responses.insert(
-                            comp.name.to_string(),
-                            actual_comp.deref().clone(),
-                        );
-                    }
-                    "openapiv3::parameter::Parameter" => {
-                        let actual_comp = comp
-                            .comp
-                            .downcast_ref::<ReferenceOr<Parameter>>()
-                            .ok_or_else(|| {
-                                anyhow!(
-                                    "Failed to downcast Parameter component"
-                                )
-                            })?;
-                        components.parameters.insert(
-                            comp.name.to_string(),
-                            actual_comp.deref().clone(),
-                        );
-                    }
-                    "openapiv3::example::Example" => {
-                        let actual_comp = comp
-                            .comp
-                            .downcast_ref::<ReferenceOr<Example>>()
-                            .ok_or_else(|| {
-                                anyhow!("Failed to downcast Example component")
-                            })?;
-                        components.examples.insert(
-                            comp.name.to_string(),
-                            actual_comp.deref().clone(),
-                        );
-                    }
-                    "openapiv3::request_body::RequestBody" => {
-                        let actual_comp = comp
-                            .comp
-                            .downcast_ref::<ReferenceOr<RequestBody>>()
-                            .ok_or_else(|| {
-                                anyhow!(
-                                    "Failed to downcast RequestBody component"
-                                )
-                            })?;
-                        components.request_bodies.insert(
-                            comp.name.to_string(),
-                            actual_comp.deref().clone(),
-                        );
-                    }
-                    "openapiv3::header::Header" => {
-                        let actual_comp = comp
-                            .comp
-                            .downcast_ref::<ReferenceOr<Header>>()
-                            .ok_or_else(|| {
-                                anyhow!("Failed to downcast Header component")
-                            })?;
-                        components.headers.insert(
-                            comp.name.to_string(),
-                            actual_comp.deref().clone(),
-                        );
-                    }
-                    "openapiv3::schema::Schema" => {
-                        let actual_comp = comp
-                            .comp
-                            .downcast_ref::<ReferenceOr<Schema>>()
-                            .ok_or_else(|| {
-                                anyhow!("Failed to downcast Schema component")
-                            })?;
-                        components.schemas.insert(
-                            comp.name.to_string(),
-                            actual_comp.deref().clone(),
-                        );
-                    }
-                    "openapiv3::link::Link" => {
-                        let actual_comp = comp
-                            .comp
-                            .downcast_ref::<ReferenceOr<Link>>()
-                            .ok_or_else(|| {
-                                anyhow!("Failed to downcast Link component")
-                            })?;
-                        components.links.insert(
-                            comp.name.to_string(),
-                            actual_comp.deref().clone(),
-                        );
-                    }
-                    "openapiv3::callback::Callback" => {
-                        let actual_comp = comp
-                            .comp
-                            .downcast_ref::<ReferenceOr<Callback>>()
-                            .ok_or_else(|| {
-                                anyhow!("Failed to downcast Callback component")
-                            })?;
-                        components.callbacks.insert(
-                            comp.name.to_string(),
-                            actual_comp.deref().clone(),
-                        );
-                    }
-                    _ => {
-                        return Err(anyhow!(
-                            "Unknown component: {:?}",
-                            comp.phantom_t
-                        ));
-                    }
-                }
+                fill_components(&mut components, ref_to_add, &mut ref_map)?;
             }
         }
 
@@ -339,7 +249,117 @@ pub fn split_specs(
     Ok(oapis)
 }
 
-fn link_components_to_refs<T: Clone + 'static>(
+pub fn fill_components(
+    components: &mut Components,
+    ref_to_add: &String,
+    ref_map: &HashMap<String, ComponentPointer>,
+) -> Result<()> {
+    // Get component from RefMap
+    let comp: ComponentPointer = ref_map.get(ref_to_add).unwrap().clone();
+
+    match comp.phantom_t.as_str() {
+        "openapiv3::security_scheme::SecurityScheme" => {
+            let actual_comp = comp
+                .comp
+                .as_ref()
+                .downcast_ref::<ReferenceOr<SecurityScheme>>()
+                .ok_or_else(|| {
+                    anyhow!("Failed to downcast SecurityScheme component")
+                })?;
+            components
+                .security_schemes
+                .insert(comp.name.to_string(), actual_comp.deref().clone());
+        }
+        "openapiv3::responses::Response" => {
+            let actual_comp = comp
+                .comp
+                .downcast_ref::<ReferenceOr<Response>>()
+                .ok_or_else(|| {
+                    anyhow!("Failed to downcast Response component")
+                })?;
+            components
+                .responses
+                .insert(comp.name.to_string(), actual_comp.deref().clone());
+        }
+        "openapiv3::parameter::Parameter" => {
+            let actual_comp = comp
+                .comp
+                .downcast_ref::<ReferenceOr<Parameter>>()
+                .ok_or_else(|| {
+                    anyhow!("Failed to downcast Parameter component")
+                })?;
+            components
+                .parameters
+                .insert(comp.name.to_string(), actual_comp.deref().clone());
+        }
+        "openapiv3::example::Example" => {
+            let actual_comp = comp
+                .comp
+                .downcast_ref::<ReferenceOr<Example>>()
+                .ok_or_else(|| {
+                    anyhow!("Failed to downcast Example component")
+                })?;
+            components
+                .examples
+                .insert(comp.name.to_string(), actual_comp.deref().clone());
+        }
+        "openapiv3::request_body::RequestBody" => {
+            let actual_comp = comp
+                .comp
+                .downcast_ref::<ReferenceOr<RequestBody>>()
+                .ok_or_else(|| {
+                    anyhow!("Failed to downcast RequestBody component")
+                })?;
+            components
+                .request_bodies
+                .insert(comp.name.to_string(), actual_comp.deref().clone());
+        }
+        "openapiv3::header::Header" => {
+            let actual_comp =
+                comp.comp.downcast_ref::<ReferenceOr<Header>>().ok_or_else(
+                    || anyhow!("Failed to downcast Header component"),
+                )?;
+            components
+                .headers
+                .insert(comp.name.to_string(), actual_comp.deref().clone());
+        }
+        "openapiv3::schema::Schema" => {
+            let actual_comp =
+                comp.comp.downcast_ref::<ReferenceOr<Schema>>().ok_or_else(
+                    || anyhow!("Failed to downcast Schema component"),
+                )?;
+            components
+                .schemas
+                .insert(comp.name.to_string(), actual_comp.deref().clone());
+        }
+        "openapiv3::link::Link" => {
+            let actual_comp = comp
+                .comp
+                .downcast_ref::<ReferenceOr<Link>>()
+                .ok_or_else(|| anyhow!("Failed to downcast Link component"))?;
+            components
+                .links
+                .insert(comp.name.to_string(), actual_comp.deref().clone());
+        }
+        "openapiv3::callback::Callback" => {
+            let actual_comp = comp
+                .comp
+                .downcast_ref::<ReferenceOr<Callback>>()
+                .ok_or_else(|| {
+                    anyhow!("Failed to downcast Callback component")
+                })?;
+            components
+                .callbacks
+                .insert(comp.name.to_string(), actual_comp.deref().clone());
+        }
+        _ => {
+            return Err(anyhow!("Unknown component: {:?}", comp.phantom_t));
+        }
+    }
+    Ok(())
+}
+
+pub fn link_components_to_refs<T: Clone + 'static>(
     ref_map: &mut HashMap<String, ComponentPointer>,
     reff_name: String,
     ref_index: &str,
@@ -355,7 +375,7 @@ fn link_components_to_refs<T: Clone + 'static>(
 }
 
 // Function to parse a reference string and return the component type and name.
-fn parse_ref(ref_str: &str) -> Option<(&str, &str)> {
+pub fn parse_ref(ref_str: &str) -> Option<(&str, &str)> {
     let parts: Vec<&str> = ref_str.split('/').collect();
     if parts.len() != 4 || parts[0] != "#" || parts[1] != "components" {
         None
@@ -406,8 +426,10 @@ mod tests {
         let file_path = "tests/data/gh.json";
         let file_contents = fs::read_to_string(file_path)
             .expect("Failed to read OpenAPI spec file");
-        let openapi: OpenAPI = serde_json::from_str(&file_contents)
+        let mut openapi: OpenAPI = serde_json::from_str(&file_contents)
             .expect("Failed to parse OpenAPI spec from JSON");
+
+        process_specs(&mut openapi);
 
         // Step 2: Create a HashSet containing the tags you want to filter by
         let tags: HashSet<&str> = HashSet::from(["repos"]); // Replace with actual tags

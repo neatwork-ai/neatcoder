@@ -5,8 +5,30 @@ use std::ops::Deref;
 use openapiv3::{
     AdditionalProperties, Encoding, Header, Link, MediaType, Operation,
     Parameter, ParameterData, ParameterSchemaOrContent, PathItem, Paths,
-    ReferenceOr, RequestBody, Response, Responses, Schema, SchemaKind,
+    ReferenceOr, RequestBody, Response, Responses, Schema, SchemaKind, Server,
+    Type,
 };
+
+/// Paths
+/// |__PathItem
+///    |__Operation
+///       |__Parameter
+///          |__ParameterData
+///             |__ParameterSchemaOrContent
+///             |__ReferenceOr<Example>
+///       |__RequestBody
+///          |__MediaType
+///             |__Schema
+///                |__SchemaKind
+///                   |__Schema..
+///             |__ReferenceOr<Example>
+///             |__Encoding
+///       |__Responses
+///          |__Response
+///             |__Header
+///             |__MediaType..
+///             |__Link
+///    |__Parameter..
 
 pub trait GetRefs {
     fn get_refs(&self) -> Vec<String>;
@@ -135,6 +157,7 @@ impl GetRefs for ParameterData {
 
         self.examples.iter().for_each(|(_, example)| match example {
             ReferenceOr::Reference { reference } => {
+                println!("Reference from examples");
                 ref_strings.push(reference.clone())
             }
             _ => {}
@@ -174,7 +197,6 @@ impl GetRefs for Responses {
         for (_, response) in self.responses.iter() {
             match response {
                 ReferenceOr::Reference { reference } => {
-                    println!("Getting reference from response");
                     ref_strings.push(reference.clone());
                 }
                 ReferenceOr::Item(response) => {
@@ -238,6 +260,14 @@ impl GetRefs for MediaType {
             };
         }
 
+        self.examples.iter().for_each(|(_, example)| match example {
+            ReferenceOr::Reference { reference } => {
+                println!("Reference from examples");
+                ref_strings.push(reference.clone())
+            }
+            _ => {}
+        });
+
         self.encoding.iter().for_each(|(_, encoding)| {
             ref_strings.append(&mut encoding.get_refs());
         });
@@ -250,8 +280,47 @@ impl GetRefs for Schema {
     fn get_refs(&self) -> Vec<String> {
         let mut ref_strings = Vec::new();
 
+        println!("Getting refs for schema: {:?}", self);
+
         match &self.schema_kind {
-            SchemaKind::Type(_) => {} // No Inner references
+            SchemaKind::Type(schema_type) => match schema_type {
+                Type::Object(object) => {
+                    object.properties.iter().for_each(|(_, property)| {
+                        match property {
+                            ReferenceOr::Reference { reference } => {
+                                ref_strings.push(reference.clone());
+                            }
+                            ReferenceOr::Item(boxed_schema) => {
+                                ref_strings.append(&mut boxed_schema.get_refs())
+                            }
+                        };
+                    });
+
+                    if let Some(additional_properties) =
+                        &object.additional_properties
+                    {
+                        match additional_properties {
+                            AdditionalProperties::Any(_) => {}
+                            AdditionalProperties::Schema(boxed_schema) => {
+                                ref_strings.append(&mut boxed_schema.get_refs())
+                            }
+                        }
+                    }
+                }
+                Type::Array(array) => {
+                    array.items.iter().for_each(|item| {
+                        match item {
+                            ReferenceOr::Reference { reference } => {
+                                ref_strings.push(reference.clone());
+                            }
+                            ReferenceOr::Item(boxed_schema) => {
+                                ref_strings.append(&mut boxed_schema.get_refs())
+                            }
+                        };
+                    });
+                }
+                _ => {}
+            }, // No Inner references
             SchemaKind::OneOf { one_of: of }
             | SchemaKind::AllOf { all_of: of }
             | SchemaKind::AnyOf { any_of: of } => {
@@ -375,12 +444,77 @@ impl GetRefs for Header {
 
         self.examples.iter().for_each(|(_, example)| match example {
             ReferenceOr::Reference { reference } => {
-                println!("Getting reference from header");
+                println!("Getting reference from examples");
                 ref_strings.push(reference.clone());
             }
             ReferenceOr::Item(_) => {} // No inner references
         });
 
         ref_strings
+    }
+}
+
+pub fn process_path_item(path_item: &mut PathItem) {
+    if let Some(ref mut description) = &mut path_item.description {
+        if description.chars().count() > 300 {
+            // Take only the first `max_len` characters.
+            *description = description.chars().take(300).collect();
+        }
+    }
+
+    if let Some(get) = &mut path_item.get {
+        process_operation(get);
+    }
+
+    if let Some(put) = &mut path_item.put {
+        process_operation(put);
+    }
+
+    if let Some(post) = &mut path_item.post {
+        process_operation(post);
+    }
+
+    if let Some(delete) = &mut path_item.delete {
+        process_operation(delete);
+    }
+
+    if let Some(options) = &mut path_item.options {
+        process_operation(options);
+    }
+
+    if let Some(head) = &mut path_item.head {
+        process_operation(head);
+    }
+
+    if let Some(patch) = &mut path_item.patch {
+        process_operation(patch);
+    }
+
+    if let Some(trace) = &mut path_item.trace {
+        process_operation(trace);
+    }
+
+    path_item
+        .servers
+        .iter_mut()
+        .for_each(|server| process_server(server));
+}
+
+fn process_operation(operation: &mut Operation) {
+    if let Some(ref mut description) = &mut operation.description {
+        if description.chars().count() > 300 {
+            // Take only the first `max_len` characters.
+            *description = description.chars().take(300).collect();
+        }
+    }
+
+    if let Some(ref mut operation_id) = &mut operation.operation_id {
+        *operation_id = operation_id.replace("/", "--");
+    }
+}
+
+pub fn process_server(server: &mut Server) {
+    if server.url.starts_with("http://") {
+        server.url = server.url.replacen("http://", "https://", 1);
     }
 }

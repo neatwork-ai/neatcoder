@@ -3,6 +3,7 @@ pub mod get_refs;
 pub mod io;
 pub mod process;
 pub mod utils;
+pub mod deref;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
@@ -19,7 +20,7 @@ use oai::models::assistant::assistant::Tool;
 use oai::models::assistant::CustomGPT;
 use utils::{get_dialoguer_theme, multi_select};
 
-use crate::process::split_specs;
+use crate::process::{process_specs, split_specs};
 
 #[tokio::main]
 async fn main() {
@@ -109,7 +110,7 @@ async fn run() -> Result<()> {
             let openapi_json_str = fs::read_to_string(openapi_path)?;
 
             // Parse the YAML string into an OpenAPI structure
-            let openapi_spec: OpenAPI =
+            let mut openapi_spec: OpenAPI =
                 serde_json::from_str(&openapi_json_str)?;
 
             let tag_strs: Vec<&str> = openapi_spec
@@ -130,6 +131,8 @@ async fn run() -> Result<()> {
             let tags_selected_ref: Arc<HashSet<&str>> = Arc::new(
                 tags_selected.iter().map(|tag| tag.as_str()).collect(),
             );
+
+            process_specs(&mut openapi_spec);
 
             let open_ai_specs =
                 split_specs(Arc::new(openapi_spec), tags_selected_ref.clone())?;
