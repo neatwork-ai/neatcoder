@@ -134,8 +134,8 @@ async fn run() -> Result<()> {
 
             process_specs(&mut openapi_spec);
 
-            let open_ai_specs =
-                split_specs(Arc::new(openapi_spec), tags_selected_ref.clone())?;
+            // let open_ai_specs =
+            //     split_specs(Arc::new(openapi_spec), tags_selected_ref.clone())?;
         }
     }
 

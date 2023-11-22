@@ -16,27 +16,27 @@ use std::{
 
 use crate::get_refs::{process_path_item, process_server, GetRefs};
 
-pub struct TagPath<'a> {
-    path: &'a str,
-    item: &'a ReferenceOr<PathItem>,
+pub struct TagPath {
+    path: String,
+    item: ReferenceOr<PathItem>,
 }
 
-impl<'a> PartialEq for TagPath<'a> {
+impl PartialEq for TagPath {
     fn eq(&self, other: &Self) -> bool {
         self.path == other.path
     }
 }
 
-impl<'a> Eq for TagPath<'a> {}
+impl Eq for TagPath {}
 
-impl<'a> Hash for TagPath<'a> {
+impl Hash for TagPath {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // Only the path field is used to compute the hash
         self.path.hash(state);
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ComponentPointer {
     pub name: String,
     pub comp: Arc<dyn Any>, // &'a ReferenceOr<>
@@ -77,21 +77,77 @@ pub fn process_specs(openapi: &mut OpenAPI) {
 ///             |__Link
 ///    |__Parameter..
 
-pub fn split_specs(
-    openapi: Arc<OpenAPI>,
-    tags_selected: Arc<HashSet<&str>>,
-) -> Result<HashMap<&str, OpenAPI>> {
-    let mut ref_list = HashSet::new(); // example of a ref: "#/components/examples/root"
-    let mut tag_paths: HashMap<&str, HashSet<TagPath>> = HashMap::new(); // Maps tags to paths
-    let mut tag_refs: HashMap<&str, HashSet<String>> = HashMap::new(); // Maps tags to references
-    let mut ref_map: HashMap<String, ComponentPointer> = HashMap::new(); // Maps references to components
+pub fn split_specs<'a>(
+    openapi: &'a OpenAPI,
+    tags_selected: &'a HashSet<&'a str>,
+    tag_paths: &'a HashMap<String, HashSet<TagPath>>,
+    tag_refs: &'a HashMap<String, HashSet<String>>,
+    ref_map: &'a HashMap<String, ComponentPointer>,
+) -> Result<HashMap<&'a str, OpenAPI>> {
+    let mut oapis = HashMap::new();
 
     for tag in tags_selected.iter() {
-        tag_paths.insert(&tag, HashSet::new());
-        tag_refs.insert(&tag, HashSet::new());
+        let mut paths = Paths {
+            paths: IndexMap::new(),
+            extensions: IndexMap::new(),
+        };
+
+        let paths_to_add = tag_paths.get(*tag).unwrap();
+
+        for path_to_add in paths_to_add.iter() {
+            let key = path_to_add.path.to_string();
+            let val = path_to_add.item.clone();
+            paths.paths.insert(key, val);
+        }
+
+        let mut components = Components {
+            security_schemes: IndexMap::new(),
+            responses: IndexMap::new(),
+            parameters: IndexMap::new(),
+            examples: IndexMap::new(),
+            request_bodies: IndexMap::new(),
+            headers: IndexMap::new(),
+            schemas: IndexMap::new(),
+            links: IndexMap::new(),
+            callbacks: IndexMap::new(),
+            extensions: IndexMap::new(),
+        };
+
+        if let Some(_) = openapi.components {
+            let refs_to_add = tag_refs.get(*tag).unwrap();
+
+            for ref_to_add in refs_to_add {
+                fill_components(&mut components, ref_to_add, &ref_map)?;
+            }
+        }
+
+        let oapi = OpenAPI {
+            openapi: openapi.openapi.clone(),
+            info: openapi.info.clone(),
+            servers: openapi.servers.clone(),
+            paths,
+            components: Some(components),
+            security: openapi.security.clone(),
+            tags: openapi.tags.clone(), // TODO: wrong. this should only be selected tags
+            external_docs: openapi.external_docs.clone(),
+            extensions: openapi.extensions.clone(),
+        };
+
+        oapis.insert(*tag, oapi);
     }
 
-    // 1. Crawl through all the paths
+    // 4. Return the structs
+    Ok(oapis)
+}
+
+pub fn assemble_ref_list<'a>(
+    openapi: &'a OpenAPI,
+    tags_selected: &'a HashSet<&'a str>,
+    tag_refs: &mut HashMap<String, HashSet<String>>,
+    tag_paths: &mut HashMap<String, HashSet<TagPath>>,
+) -> HashSet<String> {
+    let mut ref_list = HashSet::new(); // example of a ref: "#/components/examples/root"
+
     for (path, item) in &openapi.paths.paths {
         match item {
             // 2. If a path has a reference then:
@@ -107,12 +163,16 @@ pub fn split_specs(
                     let refs = path_item.get_refs();
                     for tag in relevant_tags.iter() {
                         // 2.1. Add those references to the dedicated tags
-                        let this_tag_refs = tag_refs.get_mut(tag).unwrap();
+                        let this_tag_refs = tag_refs.get_mut(*tag).unwrap();
                         this_tag_refs.extend(refs.clone());
 
                         // 2.2. Add those paths to the dedicated tags
-                        let this_tag_paths = tag_paths.get_mut(tag).unwrap();
-                        this_tag_paths.insert(TagPath { path, item });
+                        let this_tag_paths = tag_paths.get_mut(*tag).unwrap();
+
+                        this_tag_paths.insert(TagPath {
+                            path: path.clone(),
+                            item: item.clone(),
+                        });
                     }
 
                     ref_list.extend(refs.clone()); // keep track of all the refs for later
@@ -121,14 +181,23 @@ pub fn split_specs(
             _ => {} // Skip if it's just a reference at the path level, as we want to inspect operations
         }
     }
+    ref_list
+}
 
-    // TODO: This should be if let at the beginning
-    // let components = openapi.components.map(Arc::new).unwrap();
-    // let components = &openapi.components;
+pub fn assemble_ref_map<'a>(
+    openapi: &'a OpenAPI,
+    ref_list: &'a mut HashSet<String>,
+) -> HashMap<String, ComponentPointer> {
+    let mut ref_map = HashMap::new(); // Maps references to components
 
     if let Some(components) = &openapi.components {
         // 3. Map the components to references
         for ref_name in ref_list.iter() {
+            // TODO: remove
+            // if ref_name == &String::from("#/components/schemas/root") {
+            //     panic!("HOHOHOHOHOHOINK");
+            // }
+
             if let Some((ref_t, ref_index)) = parse_ref(ref_name) {
                 println!("Reference type: {}", ref_t);
                 println!("Reference index: {}", ref_index);
@@ -193,60 +262,7 @@ pub fn split_specs(
         }
     }
 
-    let mut oapis = HashMap::new();
-
-    for tag in tags_selected.iter() {
-        let mut paths = Paths {
-            paths: IndexMap::new(),
-            extensions: IndexMap::new(),
-        };
-
-        let paths_to_add = tag_paths.get(tag).unwrap();
-
-        for path_to_add in paths_to_add.iter() {
-            let key = path_to_add.path.to_string();
-            let val = path_to_add.item.clone();
-            paths.paths.insert(key, val);
-        }
-
-        let mut components = Components {
-            security_schemes: IndexMap::new(),
-            responses: IndexMap::new(),
-            parameters: IndexMap::new(),
-            examples: IndexMap::new(),
-            request_bodies: IndexMap::new(),
-            headers: IndexMap::new(),
-            schemas: IndexMap::new(),
-            links: IndexMap::new(),
-            callbacks: IndexMap::new(),
-            extensions: IndexMap::new(),
-        };
-
-        if let Some(_) = openapi.components {
-            let refs_to_add = tag_refs.get(tag).unwrap();
-
-            for ref_to_add in refs_to_add {
-                fill_components(&mut components, ref_to_add, &mut ref_map)?;
-            }
-        }
-
-        let oapi = OpenAPI {
-            openapi: openapi.openapi.clone(),
-            info: openapi.info.clone(),
-            servers: openapi.servers.clone(),
-            paths,
-            components: Some(components),
-            security: openapi.security.clone(),
-            tags: openapi.tags.clone(), // TODO: wrong. this should only be selected tags
-            external_docs: openapi.external_docs.clone(),
-            extensions: openapi.extensions.clone(),
-        };
-
-        oapis.insert(*tag, oapi);
-    }
-
-    // 4. Return the structs
-    Ok(oapis)
+    ref_map
 }
 
 pub fn fill_components(
@@ -385,7 +401,7 @@ pub fn parse_ref(ref_str: &str) -> Option<(&str, &str)> {
     }
 }
 
-fn get_tags_in_path(path_item: &PathItem) -> HashSet<&str> {
+fn get_tags_in_path<'a>(path_item: &'a PathItem) -> HashSet<&'a str> {
     let all_operations: Vec<&Option<Operation>> = vec![
         &path_item.get,
         &path_item.put,
@@ -413,15 +429,16 @@ fn get_tags_in_path(path_item: &PathItem) -> HashSet<&str> {
 
 #[cfg(test)]
 mod tests {
+    use crate::deref::OpenAPIDeref;
+
     use super::*;
     use std::collections::HashSet;
     use std::fs::{self, File};
     use std::io::Write;
     use std::path::Path;
-    use std::sync::Arc;
 
     #[test]
-    fn test_split_specs() {
+    fn test_split_specs() -> Result<()> {
         // Step 1: Load the OpenAPI spec from the file
         let file_path = "tests/data/gh.json";
         let file_contents = fs::read_to_string(file_path)
@@ -429,56 +446,73 @@ mod tests {
         let mut openapi: OpenAPI = serde_json::from_str(&file_contents)
             .expect("Failed to parse OpenAPI spec from JSON");
 
+        // Step 2: Create a HashSet containing the tags you want to filter by
+        let tags_selected: HashSet<&str> = HashSet::from(["repos"]); // Replace with actual tags
+
+        let mut tag_paths: HashMap<String, HashSet<TagPath>> = HashMap::new(); // Maps tags to paths
+        let mut tag_refs: HashMap<String, HashSet<String>> = HashMap::new(); // Maps tags to references
+
+        for tag in tags_selected.iter() {
+            tag_paths.insert(tag.to_string(), HashSet::new());
+            tag_refs.insert(tag.to_string(), HashSet::new());
+        }
+
+        // 1. Crawl through all the paths
+        let mut ref_list = assemble_ref_list(
+            &openapi, // here first
+            &tags_selected,
+            &mut tag_refs,
+            &mut tag_paths,
+        );
+
+        let ref_map = assemble_ref_map(&openapi, &mut ref_list);
+
         process_specs(&mut openapi);
 
-        // Step 2: Create a HashSet containing the tags you want to filter by
-        let tags: HashSet<&str> = HashSet::from(["repos"]); // Replace with actual tags
-
-        // Step 3: Wrap values in Arc
-        let openapi_arc = Arc::new(openapi);
-        let tags_arc = Arc::new(tags);
-
         // Step 4: Call the split_specs function
-        let result = split_specs(openapi_arc.clone(), tags_arc.clone());
+        let mut specs_map = split_specs(
+            &openapi, // here second
+            &tags_selected,
+            &tag_paths,
+            &tag_refs,
+            &ref_map,
+        )?;
 
-        // Step 5: Verify the function output
-        match result {
-            Ok(specs_map) => {
-                println!("Yey!");
-
-                let output_dir = Path::new("tests/output");
-                if !output_dir.exists() {
-                    fs::create_dir_all(output_dir)
-                        .expect("Failed to create output directory");
-                }
-
-                // Perform various assertions depending on what you expect
-                // For example, check if the map contains keys for each tag
-                for (tag, spec) in specs_map {
-                    // Convert the OpenAPI object back to a JSON string
-                    let spec_json = serde_json::to_string_pretty(&spec)
-                        .expect("Failed to serialize OpenAPI spec to JSON");
-
-                    // Define the output file path
-                    let file_path =
-                        output_dir.join(format!("{}_spec.json", tag));
-                    let mut file = File::create(&file_path)
-                        .expect("Failed to create output file");
-
-                    // Write the JSON string to the file
-                    file.write_all(spec_json.as_bytes())
-                        .expect("Failed to write OpenAPI spec to file");
-
-                    println!(
-                        "Saved split spec for tag '{}' to '{}'",
-                        tag,
-                        file_path.display()
-                    );
-                }
-
-                // Further checks can include verifying the content of the split specs
-            }
-            Err(e) => panic!("split_specs function failed: {:?}", e),
+        for (_, spec) in specs_map.iter_mut() {
+            spec.paths.openapi_deref(&ref_map)?;
         }
+
+        println!("Yey!");
+
+        let output_dir = Path::new("tests/output");
+        if !output_dir.exists() {
+            fs::create_dir_all(output_dir)
+                .expect("Failed to create output directory");
+        }
+
+        // Perform various assertions depending on what you expect
+        // For example, check if the map contains keys for each tag
+        for (tag, spec) in specs_map {
+            // Convert the OpenAPI object back to a JSON string
+            let spec_json = serde_json::to_string_pretty(&spec)
+                .expect("Failed to serialize OpenAPI spec to JSON");
+
+            // Define the output file path
+            let file_path = output_dir.join(format!("{}_spec.json", tag));
+            let mut file =
+                File::create(&file_path).expect("Failed to create output file");
+
+            // Write the JSON string to the file
+            file.write_all(spec_json.as_bytes())
+                .expect("Failed to write OpenAPI spec to file");
+
+            println!(
+                "Saved split spec for tag '{}' to '{}'",
+                tag,
+                file_path.display()
+            );
+        }
+
+        Ok(())
     }
 }

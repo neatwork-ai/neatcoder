@@ -5,7 +5,11 @@ use openapiv3::{
     ParameterData, ParameterSchemaOrContent, PathItem, Paths, ReferenceOr,
     RequestBody, Response, Responses, Schema, SchemaKind, Server, Type,
 };
-use std::{collections::HashMap, ops::DerefMut};
+use std::{
+    any::Any,
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
 
 /// Paths
 /// |__PathItem
@@ -27,19 +31,19 @@ use std::{collections::HashMap, ops::DerefMut};
 ///             |__MediaType..
 ///             |__Link
 ///    |__Parameter..
-
 pub trait OpenAPIDeref {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()>;
 }
 
 impl OpenAPIDeref for Paths {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
+        println!("Derefenrencing paths");
         self.paths
             .iter_mut()
             .try_for_each(|(_, path)| path.openapi_deref(ref_map))?;
@@ -51,8 +55,9 @@ impl OpenAPIDeref for Paths {
 impl OpenAPIDeref for PathItem {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
+        println!("Derefenrencing path item: {:?}", self);
         if let Some(get) = &mut self.get {
             get.openapi_deref(ref_map)?;
         }
@@ -96,8 +101,10 @@ impl OpenAPIDeref for PathItem {
 impl OpenAPIDeref for Operation {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
+        println!("Dereferencing Operation {:?}", self);
+
         self.parameters
             .iter_mut()
             .try_for_each(|param| param.openapi_deref(ref_map))?;
@@ -115,7 +122,7 @@ impl OpenAPIDeref for Operation {
 impl OpenAPIDeref for RequestBody {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
         self.content
             .iter_mut()
@@ -128,8 +135,10 @@ impl OpenAPIDeref for RequestBody {
 impl OpenAPIDeref for Parameter {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
+        println!("Dereferencing Parameter {:?}", self);
+
         match self {
             Parameter::Query {
                 parameter_data,
@@ -158,7 +167,7 @@ impl OpenAPIDeref for Parameter {
 impl OpenAPIDeref for ParameterData {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
         self.format.openapi_deref(ref_map)?;
 
@@ -186,7 +195,7 @@ impl OpenAPIDeref for ParameterData {
 impl OpenAPIDeref for ParameterSchemaOrContent {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
         match self {
             ParameterSchemaOrContent::Schema(schema) => {
@@ -212,7 +221,7 @@ impl OpenAPIDeref for ParameterSchemaOrContent {
 impl OpenAPIDeref for Responses {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
         if let Some(default) = &mut self.default {
             default.openapi_deref(ref_map)?;
@@ -236,7 +245,7 @@ impl OpenAPIDeref for Responses {
 
 fn match_deref<T: 'static>(
     ref_enum: &mut ReferenceOr<T>,
-    ref_map: &mut HashMap<String, ComponentPointer>,
+    ref_map: &HashMap<String, ComponentPointer>,
 ) -> Result<()>
 where
     T: OpenAPIDeref + Clone,
@@ -254,7 +263,7 @@ where
 
 fn match_deref_ignore_item<T: 'static + Clone>(
     ref_enum: &mut ReferenceOr<T>,
-    ref_map: &mut HashMap<String, ComponentPointer>,
+    ref_map: &HashMap<String, ComponentPointer>,
 ) -> Result<()> {
     if let ReferenceOr::Item(_) = ref_enum {
         return Ok(());
@@ -268,18 +277,23 @@ fn match_deref_ignore_item<T: 'static + Clone>(
 }
 
 fn match_deref_box<T: 'static + Clone>(
-    ref_enum: &mut ReferenceOr<impl DerefMut<Target = T> + 'static + Clone>,
-    ref_map: &mut HashMap<String, ComponentPointer>,
+    ref_enum: &mut ReferenceOr<
+        impl DerefMut<Target = T> + Deref<Target = T> + 'static + Clone,
+    >,
+    ref_map: &HashMap<String, ComponentPointer>,
 ) -> Result<()>
 where
     T: OpenAPIDeref + Clone,
 {
     if let ReferenceOr::Item(item) = ref_enum {
         item.openapi_deref(ref_map)?;
-    }
+    } else if let ReferenceOr::Reference { reference } = ref_enum {
+        // Remove box from Box<T>
+        let mut ref_enum_dereffed: ReferenceOr<T> = ReferenceOr::Reference {
+            reference: reference.clone(),
+        };
 
-    if let ReferenceOr::Reference { reference } = ref_enum.clone() {
-        deref_comp(ref_enum, &reference, ref_map)?;
+        deref_comp(&mut ref_enum_dereffed, &reference, ref_map)?;
     }
 
     Ok(())
@@ -288,7 +302,7 @@ where
 impl OpenAPIDeref for Response {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
         self.headers
             .iter_mut()
@@ -309,7 +323,7 @@ impl OpenAPIDeref for Response {
 impl OpenAPIDeref for MediaType {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
         if let Some(schema) = &mut self.schema {
             match_deref(schema, ref_map)?;
@@ -330,9 +344,9 @@ impl OpenAPIDeref for MediaType {
 impl OpenAPIDeref for Schema {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
-        println!("Getting refs for schema: {:?}", self);
+        println!("Dereferencing schema: {:?}", self);
 
         match &mut self.schema_kind {
             SchemaKind::Type(schema_type) => match schema_type {
@@ -424,7 +438,7 @@ impl OpenAPIDeref for Schema {
 impl<T: 'static + OpenAPIDeref + Clone> OpenAPIDeref for ReferenceOr<T> {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
         match_deref(self, ref_map)?;
 
@@ -435,7 +449,7 @@ impl<T: 'static + OpenAPIDeref + Clone> OpenAPIDeref for ReferenceOr<T> {
 impl OpenAPIDeref for Encoding {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
         self.headers
             .iter_mut()
@@ -448,7 +462,7 @@ impl OpenAPIDeref for Encoding {
 impl OpenAPIDeref for Header {
     fn openapi_deref(
         &mut self,
-        ref_map: &mut HashMap<String, ComponentPointer>,
+        ref_map: &HashMap<String, ComponentPointer>,
     ) -> Result<()> {
         self.examples.iter_mut().try_for_each(|(_, example)| {
             match_deref_ignore_item(example, ref_map)
@@ -526,15 +540,26 @@ pub fn process_server(server: &mut Server) {
 fn deref_comp<T: 'static + Clone>(
     openapi_elem: &mut ReferenceOr<T>,
     reference: &String,
-    ref_map: &mut HashMap<String, ComponentPointer>,
+    ref_map: &HashMap<String, ComponentPointer>,
 ) -> Result<()> {
-    let comp: ComponentPointer = ref_map.get(reference).unwrap().clone();
+    let comp: ComponentPointer = ref_map
+        .get(reference)
+        .ok_or_else(|| {
+            anyhow!("Error retrieving {:?} from ref_map", reference)
+        })?
+        .clone();
 
     let actual_comp = comp
-        .comp
+        .comp // This is ReferenceOr<U>
         .as_ref()
-        .downcast_ref::<ReferenceOr<T>>()
-        .ok_or_else(|| anyhow!("Failed to downcast component"))?;
+        .downcast_ref::<ReferenceOr<T>>() // This is ReferenceOr<Box<U>>
+        .ok_or_else(|| {
+            anyhow!(
+                "Failed to downcast component {:?} to type: {:?}",
+                comp,
+                std::any::type_name::<T>()
+            )
+        })?;
 
     *openapi_elem = actual_comp.clone();
 
