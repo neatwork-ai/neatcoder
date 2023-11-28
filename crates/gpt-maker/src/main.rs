@@ -1,9 +1,11 @@
 pub mod cli;
+pub mod deref;
 pub mod get_refs;
 pub mod io;
 pub mod process;
+pub mod ref_map;
 pub mod utils;
-pub mod deref;
+pub mod preprocess;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
@@ -19,8 +21,6 @@ use std::{collections::HashSet, env, fs, sync::Arc};
 use oai::models::assistant::assistant::Tool;
 use oai::models::assistant::CustomGPT;
 use utils::{get_dialoguer_theme, multi_select};
-
-use crate::process::{process_specs, split_specs};
 
 #[tokio::main]
 async fn main() {
@@ -132,7 +132,7 @@ async fn run() -> Result<()> {
                 tags_selected.iter().map(|tag| tag.as_str()).collect(),
             );
 
-            process_specs(&mut openapi_spec);
+            // process_specs(&mut openapi_spec);
 
             // let open_ai_specs =
             //     split_specs(Arc::new(openapi_spec), tags_selected_ref.clone())?;

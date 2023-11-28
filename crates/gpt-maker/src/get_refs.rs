@@ -1,12 +1,12 @@
 // TODO: what to do with ParameterSchemaOrContent field in Header?
 // TODO: what to do with LinkOperation field in Link?
-use std::ops::Deref;
+use std::{collections::HashSet, ops::Deref};
 
 use openapiv3::{
-    AdditionalProperties, Encoding, Header, Link, MediaType, Operation,
-    Parameter, ParameterData, ParameterSchemaOrContent, PathItem, Paths,
-    ReferenceOr, RequestBody, Response, Responses, Schema, SchemaKind, Server,
-    Type,
+    AdditionalProperties, Callback, Components, Encoding, Header, Link,
+    MediaType, OpenAPI, Operation, Parameter, ParameterData,
+    ParameterSchemaOrContent, PathItem, Paths, ReferenceOr, RequestBody,
+    Response, Responses, Schema, SchemaKind, Server, Type,
 };
 
 /// Paths
@@ -31,77 +31,142 @@ use openapiv3::{
 ///    |__Parameter..
 
 pub trait GetRefs {
-    fn get_refs(&self) -> Vec<String>;
+    fn get_refs(&self) -> HashSet<String>;
 }
 
-impl GetRefs for Paths {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+impl GetRefs for OpenAPI {
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
-        self.paths
-            .iter()
-            .for_each(|(_, path)| ref_strings.append(&mut path.get_refs()));
+        // ref_strings.extend(&mut self.paths.get_refs());
+        ref_strings.extend(self.paths.get_refs());
+
+        if let Some(components) = &self.components {
+            ref_strings.extend(components.get_refs());
+        }
 
         ref_strings
     }
 }
 
-impl GetRefs for PathItem {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+impl GetRefs for Components {
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
-        if let Some(get) = &self.get {
-            ref_strings.append(&mut get.get_refs())
-        }
+        // Responses
+        self.responses
+            .iter()
+            .for_each(|(_, response)| ref_strings.extend(response.get_refs()));
 
-        if let Some(put) = &self.put {
-            ref_strings.append(&mut put.get_refs())
-        }
+        // Parameters
+        self.parameters.iter().for_each(|(_, parameter)| {
+            ref_strings.extend(parameter.get_refs())
+        });
 
-        if let Some(post) = &self.post {
-            ref_strings.append(&mut post.get_refs())
-        }
+        // Request Bodies
+        self.request_bodies.iter().for_each(|(_, request_body)| {
+            ref_strings.extend(request_body.get_refs())
+        });
 
-        if let Some(delete) = &self.delete {
-            ref_strings.append(&mut delete.get_refs())
-        }
+        // Headers
+        self.headers
+            .iter()
+            .for_each(|(_, hearder)| ref_strings.extend(hearder.get_refs()));
 
-        if let Some(options) = &self.options {
-            ref_strings.append(&mut options.get_refs())
-        }
+        // Schemas
+        self.schemas
+            .iter()
+            .for_each(|(_, schema)| ref_strings.extend(schema.get_refs()));
 
-        if let Some(head) = &self.head {
-            ref_strings.append(&mut head.get_refs())
-        }
+        // Callbacks
+        self.callbacks
+            .iter()
+            .for_each(|(_, callback)| ref_strings.extend(callback.get_refs()));
 
-        if let Some(patch) = &self.patch {
-            ref_strings.append(&mut patch.get_refs())
-        }
+        ref_strings
+    }
+}
 
-        if let Some(trace) = &self.trace {
-            ref_strings.append(&mut trace.get_refs())
-        }
+impl GetRefs for Callback {
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
-        self.parameters.iter().for_each(|parameter| {
-            ref_strings.append(&mut parameter.get_refs())
+        self.iter().for_each(|(_, path_item)| {
+            ref_strings.extend(path_item.get_refs())
         });
 
         ref_strings
     }
 }
 
-impl GetRefs for Operation {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+impl GetRefs for Paths {
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
+
+        self.paths
+            .iter()
+            .for_each(|(_, path)| ref_strings.extend(path.get_refs()));
+
+        ref_strings
+    }
+}
+
+impl GetRefs for PathItem {
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
+
+        if let Some(get) = &self.get {
+            ref_strings.extend(get.get_refs())
+        }
+
+        if let Some(put) = &self.put {
+            ref_strings.extend(put.get_refs())
+        }
+
+        if let Some(post) = &self.post {
+            ref_strings.extend(post.get_refs())
+        }
+
+        if let Some(delete) = &self.delete {
+            ref_strings.extend(delete.get_refs())
+        }
+
+        if let Some(options) = &self.options {
+            ref_strings.extend(options.get_refs())
+        }
+
+        if let Some(head) = &self.head {
+            ref_strings.extend(head.get_refs())
+        }
+
+        if let Some(patch) = &self.patch {
+            ref_strings.extend(patch.get_refs())
+        }
+
+        if let Some(trace) = &self.trace {
+            ref_strings.extend(trace.get_refs())
+        }
 
         self.parameters
             .iter()
-            .for_each(|param| ref_strings.append(&mut param.get_refs()));
+            .for_each(|parameter| ref_strings.extend(parameter.get_refs()));
 
-        ref_strings.append(&mut self.responses.get_refs());
+        ref_strings
+    }
+}
+
+impl GetRefs for Operation {
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
+
+        self.parameters
+            .iter()
+            .for_each(|param| ref_strings.extend(param.get_refs()));
+
+        ref_strings.extend(self.responses.get_refs());
 
         if let Some(request_body) = &self.request_body {
-            ref_strings.append(&mut request_body.get_refs());
+            ref_strings.extend(request_body.get_refs());
         }
 
         ref_strings
@@ -109,20 +174,20 @@ impl GetRefs for Operation {
 }
 
 impl GetRefs for RequestBody {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
         self.content
             .iter()
-            .for_each(|(_, media)| ref_strings.append(&mut media.get_refs()));
+            .for_each(|(_, media)| ref_strings.extend(media.get_refs()));
 
         ref_strings
     }
 }
 
 impl GetRefs for Parameter {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
         match self {
             Parameter::Query {
@@ -130,19 +195,19 @@ impl GetRefs for Parameter {
                 allow_reserved: _,
                 style: _,
                 allow_empty_value: _,
-            } => ref_strings.append(&mut parameter_data.get_refs()),
+            } => ref_strings.extend(parameter_data.get_refs()),
             Parameter::Path {
                 parameter_data,
                 style: _,
-            } => ref_strings.append(&mut parameter_data.get_refs()),
+            } => ref_strings.extend(parameter_data.get_refs()),
             Parameter::Header {
                 parameter_data,
                 style: _,
-            } => ref_strings.append(&mut parameter_data.get_refs()),
+            } => ref_strings.extend(parameter_data.get_refs()),
             Parameter::Cookie {
                 parameter_data,
                 style: _,
-            } => ref_strings.append(&mut parameter_data.get_refs()),
+            } => ref_strings.extend(parameter_data.get_refs()),
         }
 
         ref_strings
@@ -150,15 +215,14 @@ impl GetRefs for Parameter {
 }
 
 impl GetRefs for ParameterData {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
-        ref_strings.append(&mut self.format.get_refs());
+        ref_strings.extend(self.format.get_refs());
 
         self.examples.iter().for_each(|(_, example)| match example {
             ReferenceOr::Reference { reference } => {
-                println!("Reference from examples");
-                ref_strings.push(reference.clone())
+                ref_strings.insert(reference.clone());
             }
             _ => {}
         });
@@ -168,16 +232,16 @@ impl GetRefs for ParameterData {
 }
 
 impl GetRefs for ParameterSchemaOrContent {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
         match self {
             ParameterSchemaOrContent::Schema(schema) => {
-                ref_strings.append(&mut schema.get_refs())
+                ref_strings.extend(schema.get_refs())
             }
             ParameterSchemaOrContent::Content(content) => {
                 content.iter().for_each(|(_, media)| {
-                    ref_strings.append(&mut media.get_refs())
+                    ref_strings.extend(media.get_refs())
                 });
             }
         }
@@ -187,20 +251,20 @@ impl GetRefs for ParameterSchemaOrContent {
 }
 
 impl GetRefs for Responses {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
         if let Some(default) = &self.default {
-            ref_strings.append(&mut default.get_refs())
+            ref_strings.extend(default.get_refs())
         }
 
         for (_, response) in self.responses.iter() {
             match response {
                 ReferenceOr::Reference { reference } => {
-                    ref_strings.push(reference.clone());
+                    ref_strings.insert(reference.clone());
                 }
                 ReferenceOr::Item(response) => {
-                    ref_strings.append(&mut response.get_refs())
+                    ref_strings.extend(response.get_refs())
                 }
             }
         }
@@ -210,35 +274,35 @@ impl GetRefs for Responses {
 }
 
 impl GetRefs for Response {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
         self.headers.iter().for_each(|(_, header)| {
             match header {
                 ReferenceOr::Reference { reference } => {
-                    ref_strings.push(reference.clone());
+                    ref_strings.insert(reference.clone());
                 }
                 ReferenceOr::Item(header) => {
-                    ref_strings.append(&mut header.get_refs());
+                    ref_strings.extend(header.get_refs());
                 }
             };
         });
 
         self.content
             .iter()
-            .for_each(|(_, media)| ref_strings.append(&mut media.get_refs()));
+            .for_each(|(_, media)| ref_strings.extend(media.get_refs()));
 
         self.links
             .iter()
-            .for_each(|(_, link)| ref_strings.append(&mut link.get_refs()));
+            .for_each(|(_, link)| ref_strings.extend(link.get_refs()));
 
         ref_strings
     }
 }
 
 impl GetRefs for Link {
-    fn get_refs(&self) -> Vec<String> {
-        let ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let ref_strings = HashSet::new();
 
         // TODO: handle LinkOperation
         ref_strings
@@ -246,30 +310,29 @@ impl GetRefs for Link {
 }
 
 impl GetRefs for MediaType {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
         if let Some(schema) = &self.schema {
             match schema {
                 ReferenceOr::Reference { reference } => {
-                    ref_strings.push(reference.clone());
+                    ref_strings.insert(reference.clone());
                 }
                 ReferenceOr::Item(schema) => {
-                    ref_strings.append(&mut schema.get_refs());
+                    ref_strings.extend(schema.get_refs());
                 }
             };
         }
 
         self.examples.iter().for_each(|(_, example)| match example {
             ReferenceOr::Reference { reference } => {
-                println!("Reference from examples");
-                ref_strings.push(reference.clone())
+                ref_strings.insert(reference.clone());
             }
             _ => {}
         });
 
         self.encoding.iter().for_each(|(_, encoding)| {
-            ref_strings.append(&mut encoding.get_refs());
+            ref_strings.extend(encoding.get_refs());
         });
 
         ref_strings
@@ -277,10 +340,8 @@ impl GetRefs for MediaType {
 }
 
 impl GetRefs for Schema {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
-
-        println!("Getting refs for schema: {:?}", self);
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
         match &self.schema_kind {
             SchemaKind::Type(schema_type) => match schema_type {
@@ -288,10 +349,10 @@ impl GetRefs for Schema {
                     object.properties.iter().for_each(|(_, property)| {
                         match property {
                             ReferenceOr::Reference { reference } => {
-                                ref_strings.push(reference.clone());
+                                ref_strings.insert(reference.clone());
                             }
                             ReferenceOr::Item(boxed_schema) => {
-                                ref_strings.append(&mut boxed_schema.get_refs())
+                                ref_strings.extend(boxed_schema.get_refs())
                             }
                         };
                     });
@@ -302,7 +363,7 @@ impl GetRefs for Schema {
                         match additional_properties {
                             AdditionalProperties::Any(_) => {}
                             AdditionalProperties::Schema(boxed_schema) => {
-                                ref_strings.append(&mut boxed_schema.get_refs())
+                                ref_strings.extend(boxed_schema.get_refs())
                             }
                         }
                     }
@@ -311,10 +372,10 @@ impl GetRefs for Schema {
                     array.items.iter().for_each(|item| {
                         match item {
                             ReferenceOr::Reference { reference } => {
-                                ref_strings.push(reference.clone());
+                                ref_strings.insert(reference.clone());
                             }
                             ReferenceOr::Item(boxed_schema) => {
-                                ref_strings.append(&mut boxed_schema.get_refs())
+                                ref_strings.extend(boxed_schema.get_refs())
                             }
                         };
                     });
@@ -325,46 +386,46 @@ impl GetRefs for Schema {
             | SchemaKind::AllOf { all_of: of }
             | SchemaKind::AnyOf { any_of: of } => {
                 of.iter().for_each(|schema| {
-                    ref_strings.append(&mut schema.get_refs());
+                    ref_strings.extend(schema.get_refs());
                 })
             }
             SchemaKind::Not { not } => match not.deref() {
                 ReferenceOr::Reference { reference } => {
-                    ref_strings.push(reference.clone());
+                    ref_strings.insert(reference.clone());
                 }
                 ReferenceOr::Item(schema) => {
-                    ref_strings.append(&mut schema.get_refs());
+                    ref_strings.extend(schema.get_refs());
                 }
             },
             SchemaKind::Any(any_schema) => {
                 any_schema.properties.iter().for_each(|(_, ref_or_schema)| {
                     match ref_or_schema {
                         ReferenceOr::Reference { reference } => {
-                            ref_strings.push(reference.clone());
+                            ref_strings.insert(reference.clone());
                         }
                         ReferenceOr::Item(boxed_schema) => {
-                            ref_strings.append(&mut boxed_schema.get_refs())
+                            ref_strings.extend(boxed_schema.get_refs())
                         }
                     }
                 });
 
                 any_schema.one_of.iter().for_each(|schema| {
-                    ref_strings.append(&mut schema.get_refs());
+                    ref_strings.extend(schema.get_refs());
                 });
                 any_schema.all_of.iter().for_each(|schema| {
-                    ref_strings.append(&mut schema.get_refs());
+                    ref_strings.extend(schema.get_refs());
                 });
                 any_schema.any_of.iter().for_each(|schema| {
-                    ref_strings.append(&mut schema.get_refs());
+                    ref_strings.extend(schema.get_refs());
                 });
 
                 if let Some(not) = &any_schema.not {
                     match not.deref() {
                         ReferenceOr::Reference { reference } => {
-                            ref_strings.push(reference.clone());
+                            ref_strings.insert(reference.clone());
                         }
                         ReferenceOr::Item(schema) => {
-                            ref_strings.append(&mut schema.get_refs());
+                            ref_strings.extend(schema.get_refs());
                         }
                     }
                 }
@@ -372,10 +433,10 @@ impl GetRefs for Schema {
                 if let Some(items) = &any_schema.items {
                     match items {
                         ReferenceOr::Reference { reference } => {
-                            ref_strings.push(reference.clone());
+                            ref_strings.insert(reference.clone());
                         }
                         ReferenceOr::Item(schema) => {
-                            ref_strings.append(&mut schema.get_refs());
+                            ref_strings.extend(schema.get_refs());
                         }
                     }
                 }
@@ -388,10 +449,10 @@ impl GetRefs for Schema {
                         AdditionalProperties::Schema(boxed_schema) => {
                             match boxed_schema.deref() {
                                 ReferenceOr::Reference { reference } => {
-                                    ref_strings.push(reference.clone());
+                                    ref_strings.insert(reference.clone());
                                 }
                                 ReferenceOr::Item(schema) => {
-                                    ref_strings.append(&mut schema.get_refs());
+                                    ref_strings.extend(schema.get_refs());
                                 }
                             }
                         }
@@ -405,15 +466,15 @@ impl GetRefs for Schema {
 }
 
 impl<T: GetRefs> GetRefs for ReferenceOr<T> {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
         match self {
             ReferenceOr::Reference { reference } => {
-                ref_strings.push(reference.clone());
+                ref_strings.insert(reference.clone());
             }
             ReferenceOr::Item(item) => {
-                ref_strings.append(&mut item.get_refs());
+                ref_strings.extend(item.get_refs());
             }
         };
 
@@ -422,16 +483,14 @@ impl<T: GetRefs> GetRefs for ReferenceOr<T> {
 }
 
 impl GetRefs for Encoding {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
         self.headers.iter().for_each(|(_, header)| match header {
             ReferenceOr::Reference { reference } => {
-                ref_strings.push(reference.clone());
+                ref_strings.insert(reference.clone());
             }
-            ReferenceOr::Item(header) => {
-                ref_strings.append(&mut header.get_refs())
-            }
+            ReferenceOr::Item(header) => ref_strings.extend(header.get_refs()),
         });
 
         ref_strings
@@ -439,82 +498,16 @@ impl GetRefs for Encoding {
 }
 
 impl GetRefs for Header {
-    fn get_refs(&self) -> Vec<String> {
-        let mut ref_strings = Vec::new();
+    fn get_refs(&self) -> HashSet<String> {
+        let mut ref_strings = HashSet::new();
 
         self.examples.iter().for_each(|(_, example)| match example {
             ReferenceOr::Reference { reference } => {
-                println!("Getting reference from examples");
-                ref_strings.push(reference.clone());
+                ref_strings.insert(reference.clone());
             }
             ReferenceOr::Item(_) => {} // No inner references
         });
 
         ref_strings
-    }
-}
-
-pub fn process_path_item(path_item: &mut PathItem) {
-    if let Some(ref mut description) = &mut path_item.description {
-        if description.chars().count() > 300 {
-            // Take only the first `max_len` characters.
-            *description = description.chars().take(300).collect();
-        }
-    }
-
-    if let Some(get) = &mut path_item.get {
-        process_operation(get);
-    }
-
-    if let Some(put) = &mut path_item.put {
-        process_operation(put);
-    }
-
-    if let Some(post) = &mut path_item.post {
-        process_operation(post);
-    }
-
-    if let Some(delete) = &mut path_item.delete {
-        process_operation(delete);
-    }
-
-    if let Some(options) = &mut path_item.options {
-        process_operation(options);
-    }
-
-    if let Some(head) = &mut path_item.head {
-        process_operation(head);
-    }
-
-    if let Some(patch) = &mut path_item.patch {
-        process_operation(patch);
-    }
-
-    if let Some(trace) = &mut path_item.trace {
-        process_operation(trace);
-    }
-
-    path_item
-        .servers
-        .iter_mut()
-        .for_each(|server| process_server(server));
-}
-
-fn process_operation(operation: &mut Operation) {
-    if let Some(ref mut description) = &mut operation.description {
-        if description.chars().count() > 300 {
-            // Take only the first `max_len` characters.
-            *description = description.chars().take(300).collect();
-        }
-    }
-
-    if let Some(ref mut operation_id) = &mut operation.operation_id {
-        *operation_id = operation_id.replace("/", "--");
-    }
-}
-
-pub fn process_server(server: &mut Server) {
-    if server.url.starts_with("http://") {
-        server.url = server.url.replacen("http://", "https://", 1);
     }
 }
