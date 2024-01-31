@@ -9,7 +9,7 @@ import { MessageBuffer } from "../utils/httpClient";
 import { getLLMParams } from "../utils/utils";
 
 export async function buildRequest(
-  msgs: Array<wasm.Message>,
+  msgs: Array<wasm.MessageDataWasm>,
   stream: boolean
 ): Promise<[any, any]> {
   const apiKey = await getOrSetApiKey();
@@ -34,7 +34,7 @@ export async function promptLLM(
   webviewPanel: vscode.WebviewPanel,
   message: any
 ): Promise<void> {
-  const msgs: Array<wasm.Message> = message.msgs;
+  const msgs: Array<wasm.MessageDataWasm> = message.msgs;
   const stream = message.stream;
 
   const [apiKey, body] = await buildRequest(msgs, stream);

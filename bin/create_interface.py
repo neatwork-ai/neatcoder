@@ -27,7 +27,7 @@ def process_file(input_filename, output_filename):
             # Check for methods by looking for lines with parentheses and ignore them
             if "(" in stripped_line or ")" in stripped_line:
                 continue
-            elif stripped_line.endswith(";"):
+            elif stripped_line.endswith(";"): ## Can either be a method or readonly field
                 # If it's a readonly field, remove the readonly keyword
                 # Ensure indentation when adding to output
                 output_lines.append("    " + stripped_line.replace("readonly ", ""))

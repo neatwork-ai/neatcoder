@@ -1,5 +1,9 @@
 use anyhow::{anyhow, Result};
 use js_sys::{Function, JsString};
+use oai::models::{
+    chat::params::wasm::ChatParamsWasm as ChatParams,
+    message::wasm::GptMessageWasm as GptMessage, role::Role as GptRole,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{
@@ -12,10 +16,6 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use crate::{
     consts::{CONFIG_EXTENSIONS, CONFIG_FILES},
     models::app_data::language::Language,
-    openai::{
-        msg::{GptRole, OpenAIMsg},
-        params::OpenAIParams,
-    },
     utils::write_json,
 };
 
@@ -41,18 +41,16 @@ impl ScaffoldParams {
 
 pub async fn scaffold_project(
     language: &Language,
-    ai_params: &OpenAIParams,
+    ai_params: &ChatParams,
     client_params: &ScaffoldParams,
     request_callback: &Function,
 ) -> Result<(Value, Files)> {
     let mut prompts = Vec::new();
 
-    prompts.push(OpenAIMsg {
-        role: GptRole::System,
-        content: format!(
+    prompts.push(GptMessage::new(GptRole::System,format!(
             "You are a software engineer who is specialised in building software in {}.", language.name()
         ),
-    });
+    ));
 
     // TODO: We should add the Database and API interfaces in previous messages, and add the name of the files here in order to index them
     let main_prompt = format!("
@@ -63,12 +61,9 @@ Based on the information provided write the project's folder structure, starting
 
 Answer in JSON format (Do not forget to start with ```json). For each file provide a brief description included in the json", language.name(), client_params.specs);
 
-    prompts.push(OpenAIMsg {
-        role: GptRole::User,
-        content: main_prompt,
-    });
+    prompts.push(GptMessage::new(GptRole::User, main_prompt));
 
-    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
+    let prompts = prompts.iter().map(|x| x).collect::<Vec<&GptMessage>>();
 
     let (_, mut scaffold_json) =
         write_json(&ai_params, &prompts, request_callback).await?;

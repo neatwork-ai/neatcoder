@@ -1,17 +1,17 @@
 use super::{AsContext, SchemaFile};
-use crate::{
-    openai::msg::{GptRole, OpenAIMsg},
-    typescript::ISchemas,
-    JsError, WasmType,
-};
+use crate::typescript::ISchemas;
 use anyhow::Result;
 use js_sys::JsString;
+use oai::models::{
+    message::wasm::GptMessageWasm as GptMessage, role::Role as GptRole,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     fmt::{self, Display},
 };
 use wasm_bindgen::prelude::wasm_bindgen;
+use wasmer::{JsError, WasmType};
 
 /// Struct documenting an API interface. API here refers to interfaces of
 /// executables themselves or execution environments, and therefore it
@@ -154,7 +154,7 @@ impl Api {
 }
 
 impl AsContext for Api {
-    fn add_context(&self, msg_sequence: &mut Vec<OpenAIMsg>) -> Result<()> {
+    fn add_context(&self, msg_sequence: &mut Vec<GptMessage>) -> Result<()> {
         let mut main_prompt = format!(
             "
 Have in consideration the following {} communication service:
@@ -172,20 +172,14 @@ Have in consideration the following {} communication service:
             main_prompt = format!("{}\n{} {}", main_prompt, "- host:", host);
         }
 
-        msg_sequence.push(OpenAIMsg {
-            role: GptRole::User,
-            content: main_prompt,
-        });
+        msg_sequence.push(GptMessage::new(GptRole::User, main_prompt));
 
         for (schema_name, schema) in self.schemas.iter() {
             let prompt = format!("
 Consider the following schema as part of the {} database. It's called `{}` and the schema is:\n```\n{}```
             ", self.name, schema_name, schema);
 
-            msg_sequence.push(OpenAIMsg {
-                role: GptRole::User,
-                content: prompt,
-            });
+            msg_sequence.push(GptMessage::new(GptRole::User, prompt));
         }
 
         Ok(())

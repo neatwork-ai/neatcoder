@@ -12,7 +12,7 @@ import { appDataManager } from "../../core/appData";
  */
 export async function retryTask(
   taskView: TaskView,
-  llmParams: wasm.OpenAIParams,
+  llmParams: wasm.ChatParamsWasm,
   appManager: appDataManager
 ): Promise<void> {
   const taskId = taskView.task!.id;

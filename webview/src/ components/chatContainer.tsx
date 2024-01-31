@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ChatStream from './chatStream';
 import { promptLLM, saveChat } from './vsceClient';
-import { Message } from '../../wasm/neatcoderInterface';
+import { MessageDataWasm as Message } from '../../wasm/neatcoderInterface';
 import QuillEditor from './reactQuill';
 import SendButton from './sendButton';
 

@@ -274,7 +274,7 @@ export function getOrSetApiKey(): Promise<any> {
   });
 }
 
-export async function getOrSetModelVersion(): Promise<wasm.OpenAIModels | null> {
+export async function getOrSetModelVersion(): Promise<wasm.GptModel | null> {
   let config = vscode.workspace.getConfiguration("extension");
   let modelVersion = config.get("modelVersion") as string;
 
@@ -332,32 +332,30 @@ export async function setModelVersion() {
   }
 }
 
-export function fromModelVersionToEnum(
-  modelStr: string
-): wasm.OpenAIModels | null {
+export function fromModelVersionToEnum(modelStr: string): wasm.GptModel | null {
   switch (modelStr) {
     case "gpt-4-32k":
-      return wasm.OpenAIModels.Gpt432k;
+      return wasm.GptModel.Gpt432k;
     case "gpt-4":
-      return wasm.OpenAIModels.Gpt4;
+      return wasm.GptModel.Gpt4;
     case "gpt-3.5-turbo":
-      return wasm.OpenAIModels.Gpt35Turbo;
+      return wasm.GptModel.Gpt35Turbo;
     case "gpt-3.5-turbo-16k":
-      return wasm.OpenAIModels.Gpt35Turbo16k;
+      return wasm.GptModel.Gpt35Turbo16k;
     case "gpt-3.5-turbo-1106":
-      return wasm.OpenAIModels.Gpt35Turbo1106;
+      return wasm.GptModel.Gpt35Turbo1106;
     case "gpt-4-1106-preview":
-      return wasm.OpenAIModels.Gpt41106Preview;
+      return wasm.GptModel.Gpt41106Preview;
     default:
       return null;
   }
 }
 
-export async function getChat(uri: vscode.Uri): Promise<wasm.Chat> {
+export async function getChat(uri: vscode.Uri): Promise<wasm.ChatWasm> {
   try {
     const data = await vscode.workspace.fs.readFile(uri);
     const content = Buffer.from(data).toString("utf8");
-    return wasm.Chat.castFromString(content);
+    return wasm.ChatWasm.castFromString(content);
   } catch (err) {
     console.error("Failed to get chat:", err);
     throw new Error(`Failed to get chat from ${uri.path}: ${err}`);
@@ -365,7 +363,7 @@ export async function getChat(uri: vscode.Uri): Promise<wasm.Chat> {
 }
 
 // The wrapper function that constructs the Uri from the chat ID
-export async function getChatById(chatId: string): Promise<wasm.Chat> {
+export async function getChatById(chatId: string): Promise<wasm.ChatWasm> {
   const root = getRoot();
   const chatsDir = path.join(root, ".neat", "chats"); // The directory where chats are stored
   const fileName = `${chatId}.json`; // Assuming the ID should be the filename
@@ -378,7 +376,7 @@ export async function getChatById(chatId: string): Promise<wasm.Chat> {
   return getChat(uri);
 }
 
-export async function storeChat(chat: wasm.Chat): Promise<void> {
+export async function storeChat(chat: wasm.ChatWasm): Promise<void> {
   try {
     const chatId = chat.sessionId;
     // Convert the chat instance to a JSON string
@@ -404,13 +402,13 @@ export async function storeChat(chat: wasm.Chat): Promise<void> {
   }
 }
 
-export async function getLLMParams(): Promise<wasm.OpenAIParams> {
+export async function getLLMParams(): Promise<wasm.ChatParamsWasm> {
   let modelVersion = await getOrSetModelVersion();
   if (modelVersion === null) {
-    modelVersion = wasm.OpenAIModels.Gpt4;
+    modelVersion = wasm.GptModel.Gpt4;
     vscode.window.showErrorMessage(
       "Invalid model version, defaulting to Gpt4."
     );
   }
-  return wasm.OpenAIParams.empty(modelVersion);
+  return wasm.ChatParamsWasm.empty(modelVersion);
 }

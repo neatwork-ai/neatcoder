@@ -3,18 +3,18 @@ use std::fmt::Debug;
 
 use crate::err::ParseError;
 
-pub mod json;
-pub mod yaml;
-#[cfg(feature = "full")]
+#[cfg(feature = "csv-parser")]
 pub mod csv;
-#[cfg(feature = "full")]
+#[cfg(feature = "html-parser")]
 pub mod html;
-#[cfg(feature = "full")]
+pub mod json;
+#[cfg(feature = "python-parser")]
 pub mod python;
-#[cfg(feature = "full")]
+#[cfg(feature = "rust-parser")]
 pub mod rust;
-#[cfg(feature = "full")]
+#[cfg(feature = "sql-parser")]
 pub mod sql;
+pub mod yaml;
 
 /// A supertrait defining methods to convert LLM string outputs into various Rust
 /// native objects such as html, json, yaml, rust code, python code, etc.
@@ -43,7 +43,11 @@ pub trait AsFormat {
     ///
     /// # Returns
     /// Result containing the desired Rust native object or a `ParseError`.
-    fn strip_format<F, T, E>(&self, deserializer: F, format: &str) -> Result<T, ParseError>
+    fn strip_format<F, T, E>(
+        &self,
+        deserializer: F,
+        format: &str,
+    ) -> Result<T, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<ParseError>,
@@ -59,7 +63,11 @@ pub trait AsFormat {
     ///
     /// # Returns
     /// Result containing a Vector of desired Rust native objects or a `ParseError`.
-    fn strip_formats<F, T, E>(&self, deserializer: F, format: &str) -> Result<Vec<T>, ParseError>
+    fn strip_formats<F, T, E>(
+        &self,
+        deserializer: F,
+        format: &str,
+    ) -> Result<Vec<T>, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<ParseError>,
@@ -99,7 +107,11 @@ impl<'a> AsFormat for &'a str {
     ///
     /// # Returns
     /// Result containing the desired Rust native object or a `ParseError`.
-    fn strip_format<F, T, E>(&self, deserializer: F, format: &str) -> Result<T, ParseError>
+    fn strip_format<F, T, E>(
+        &self,
+        deserializer: F,
+        format: &str,
+    ) -> Result<T, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<ParseError>,
@@ -156,7 +168,11 @@ impl<'a> AsFormat for &'a str {
     ///
     /// # Returns
     /// Result containing a Vector of desired Rust native objects or a `ParseError`.
-    fn strip_formats<F, T, E>(&self, deserializer: F, format: &str) -> Result<Vec<T>, ParseError>
+    fn strip_formats<F, T, E>(
+        &self,
+        deserializer: F,
+        format: &str,
+    ) -> Result<Vec<T>, ParseError>
     where
         F: Fn(&str) -> Result<T, E> + Copy,
         E: Into<ParseError>,
@@ -175,11 +191,15 @@ impl<'a> AsFormat for &'a str {
         while let Some(start_loc) = msg_.find(start_delimiter) {
             let start_index = start_loc + start_delimiter.len();
 
-            let format = if let Some(end_loc) = msg_[start_index..].find(end_delimiter) {
+            let format = if let Some(end_loc) =
+                msg_[start_index..].find(end_delimiter)
+            {
                 let end_index = start_index + end_loc;
 
                 // Improve this code block, ideally no need to create extra string?
-                let format_string = msg_[start_index..end_index + end_delimiter.len()].to_string();
+                let format_string = msg_
+                    [start_index..end_index + end_delimiter.len()]
+                    .to_string();
                 msg_ = &msg_[end_index + end_delimiter.len()..];
                 format_string
             } else {

@@ -45,7 +45,7 @@ export async function initChat(
 
   let modelVersion = await getOrSetModelVersion();
   const sessionId = uuidv4();
-  const chat = new wasm.Chat(sessionId, "Chat with Neat");
+  const chat = new wasm.ChatWasm(sessionId, "Chat with Neat");
   chat.addModel(modelVersion!);
 
   // This will add the storeChat operation to the queue to be processed in order.
@@ -123,7 +123,7 @@ export async function openChat(
 const setupWebviewSockets = async (
   message: any,
   panel: vscode.WebviewPanel,
-  chat: wasm.Chat
+  chat: wasm.ChatWasm
 ) => {
   switch (message.command) {
     case "promptLLM":
@@ -131,7 +131,7 @@ const setupWebviewSockets = async (
       // panel so it knows which panel sent the message
       chat.setMessages(message.msgs); // TODO: Move to addMessage to reduce communication overhead
       chatOperationQueue.add(() => storeChat(chat));
-      const msgs: Array<wasm.Message> = message.msgs;
+      const msgs: Array<wasm.MessageDataWasm> = message.msgs;
       const isFirst = msgs.length === 1 ? true : false;
 
       await getOrSetApiKey();
@@ -139,7 +139,7 @@ const setupWebviewSockets = async (
       promptLLM(panel, message);
 
       if (isFirst) {
-        await chat.setTitle(makeRequest);
+        await wasm.setTitle(chat, makeRequest);
         chatOperationQueue.add(() => storeChat(chat));
 
         // Change the title in the config

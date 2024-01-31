@@ -7,16 +7,16 @@ use crate::{
         scaffold_project::scaffold_project,
         stream_code::{stream_code, CodeGenParams},
     },
-    openai::params::OpenAIParams,
     typescript::{ICodebase, IInterfaces, ITasksVec},
-    JsError, WasmType,
 };
 use anyhow::{anyhow, Result};
 use js_sys::JsString;
 use js_sys::{Error, Function};
+use oai::models::chat::params::wasm::ChatParamsWasm as ChatParams;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
+use wasmer::{JsError, WasmType};
 
 use self::{
     interfaces::{Interface, SchemaFile},
@@ -272,7 +272,7 @@ impl AppData {
     #[wasm_bindgen(js_name = scaffoldProject)]
     pub async fn scaffold_project(
         &mut self,
-        ai_params: &OpenAIParams,
+        ai_params: &ChatParams,
         task_params: TaskParams,
         request_callback: &Function,
     ) -> Result<(), JsError> {
@@ -322,7 +322,7 @@ impl AppData {
     #[wasm_bindgen(js_name = streamCode)]
     pub fn stream_code(
         &mut self,
-        ai_params: &OpenAIParams,
+        ai_params: &ChatParams,
         task_params: TaskParams,
         codebase: ICodebase,
     ) -> Result<String, JsError> {

@@ -131,10 +131,10 @@ export class appDataManager {
   /**
    * Runs all tasks in the task pool in the application state sequentially.
    *
-   * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
+   * @param {wasm.ChatParamsWasm} llmParams - The parameters for the OpenAI client.
    * @returns {Promise<void>} - A promise indicating the completion of all tasks.
    */
-  public async runAllTasks(llmParams: wasm.OpenAIParams): Promise<void> {
+  public async runAllTasks(llmParams: wasm.ChatParamsWasm): Promise<void> {
     try {
       // Retrieve all tasks from the task pool.
       const tasks: wasm.Task[] = this.appData.getTodoTasks();
@@ -162,12 +162,12 @@ export class appDataManager {
    * Initiates a task based on the task ID and the associated task parameters.
    *
    * @param {number} taskId - The ID of the task to start.
-   * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
+   * @param {wasm.ChatParamsWasm} llmParams - The parameters for the OpenAI client.
    * @returns {Promise<void>} - A promise indicating the completion of the task.
    */
   public async runTask(
     taskId: number,
-    llmParams: wasm.OpenAIParams
+    llmParams: wasm.ChatParamsWasm
   ): Promise<void> {
     const task = this.appData.popTodo(taskId);
     const taskType = task.taskType();
@@ -236,12 +236,12 @@ export class appDataManager {
    * Retries a task based on the task ID and the associated task parameters.
    *
    * @param {number} taskId - The ID of the task to retry.
-   * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
+   * @param {wasm.ChatParamsWasm} llmParams - The parameters for the OpenAI client.
    * @returns {Promise<void>} - A promise indicating the completion of the task.
    */
   public async retryTask(
     taskId: number,
-    llmParams: wasm.OpenAIParams
+    llmParams: wasm.ChatParamsWasm
   ): Promise<void> {
     const task = this.appData.popDone(taskId);
     this.appData.addBackTodo(task);
@@ -251,10 +251,10 @@ export class appDataManager {
   /**
    * Starts a prompt with the given OpenAI client, parameters, and user input.
    *
-   * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
+   * @param {wasm.ChatParamsWasm} llmParams - The parameters for the OpenAI client.
    * @param {string} userInput - The user input to start the prompt with.
    */
-  public async initCodeBase(llmParams: wasm.OpenAIParams, userInput: string) {
+  public async initCodeBase(llmParams: wasm.ChatParamsWasm, userInput: string) {
     try {
       await this.scaffoldProject(llmParams, userInput);
       saveappDataToFile(this.appData);
@@ -272,10 +272,10 @@ export class appDataManager {
    * Initiates a scaffold project operation using specified OpenAI client, parameters, and user input.
    * This method creates necessary task parameters and invokes the scaffold project method from the appData object.
    *
-   * @param {wasm.OpenAIParams} llmParams - The parameters for the OpenAI client.
+   * @param {wasm.ChatParamsWasm} llmParams - The parameters for the OpenAI client.
    * @param {string} userInput - The user input string.
    */
-  async scaffoldProject(llmParams: wasm.OpenAIParams, userInput: string) {
+  async scaffoldProject(llmParams: wasm.ChatParamsWasm, userInput: string) {
     const taskType = wasm.TaskType.ScaffoldProject;
 
     const taskPayload = new wasm.TaskParamsInner(

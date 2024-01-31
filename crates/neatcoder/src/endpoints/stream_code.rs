@@ -1,18 +1,20 @@
 use anyhow::{anyhow, Result};
 use js_sys::JsString;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use wasm_bindgen::prelude::wasm_bindgen;
-
-use crate::{
-    models::app_data::{interfaces::AsContext, AppData},
-    openai::{
-        msg::{GptRole, OpenAIMsg},
-        params::OpenAIParams,
-        request::request_stream,
+use oai::models::{
+    chat::{
+        params::wasm::ChatParamsWasm as ChatParams, request::request_stream,
     },
-    utils::log,
+    message::{
+        wasm::GptMessageWasm as GptMessage, GptMessage as GptMessageInner,
+    },
+    role::Role as GptRole,
 };
+use serde::{Deserialize, Serialize};
+use std::{collections::BTreeMap, ops::Deref};
+use wasm_bindgen::prelude::wasm_bindgen;
+use wasmer::log;
+
+use crate::models::app_data::{interfaces::AsContext, AppData};
 
 #[wasm_bindgen]
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -40,7 +42,7 @@ impl CodeGenParams {
 
 pub fn stream_code(
     app_state: &AppData,
-    ai_params: &OpenAIParams,
+    ai_params: &ChatParams,
     task_params: &CodeGenParams,
     codebase: BTreeMap<String, String>,
 ) -> Result<String> {
@@ -72,35 +74,28 @@ pub fn stream_code(
         anyhow!("It seems that the the field `specs` is missing..")
     })?;
 
-    prompts.push(OpenAIMsg {
-        role: GptRole::System,
-        content: format!(
+    prompts.push(GptMessage::new(
+        GptRole::System,
+        format!(
             "You are a software engineer who is specialised in {}.",
             language.name()
         ),
-    });
+    ));
 
-    prompts.push(OpenAIMsg {
-        role: GptRole::User,
-        content: String::from(project_description),
-    });
+    prompts.push(GptMessage::new(
+        GptRole::User,
+        String::from(project_description),
+    ));
 
     for file in codebase.keys() {
         let code = codebase
             .get(file)
             .ok_or_else(|| anyhow!("Unable to find fild {:?}", file))?;
 
-        prompts.push(OpenAIMsg {
-            role: GptRole::User,
-            content: code.clone(),
-        });
+        prompts.push(GptMessage::new(GptRole::User, code.clone()));
     }
 
-    prompts.push(OpenAIMsg {
-        role: GptRole::User,
-        // Needs to be optimized
-        content: project_scaffold.to_string(),
-    });
+    prompts.push(GptMessage::new(GptRole::User, project_scaffold.to_string()));
 
     let mut main_prompt = format!(
         "
@@ -132,14 +127,16 @@ pub fn stream_code(
         ));
     }
 
-    prompts.push(OpenAIMsg {
-        role: GptRole::User,
-        content: main_prompt,
-    });
+    prompts.push(GptMessage::new(GptRole::User, main_prompt));
 
-    let prompts = prompts.iter().map(|x| x).collect::<Vec<&OpenAIMsg>>();
+    // Assuming prompts is a Vec<&GptMessageWasm>
+    let msgs: Vec<&GptMessageInner> =
+        prompts.iter().map(|m_wasm| (*m_wasm).deref()).collect();
 
-    let request_body = request_stream(ai_params, &prompts, &[], &[])?;
+    let prompts_slice: &[&GptMessageInner] = &msgs;
+
+    let request_body =
+        request_stream(ai_params.deref(), &prompts_slice, &[], &[])?;
 
     Ok(request_body)
 }

@@ -6,7 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-full = ["csv", "scraper", "syn", "rustpython-parser", "sqlparser"]
+csv-parser = ["csv"]
+html-parser = ["scraper"]
+rust-parser = ["syn"]
+python-parser = ["rustpython-parser"]
+sql-parser = ["sqlparser"]
+full = ["csv-parser", "html-parser", "python-parser", "rust-parser", "sql-parser"]
 
 [dependencies]
 anyhow = "1.0"
