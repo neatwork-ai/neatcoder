@@ -625,7 +625,7 @@ mod tests {
         openapi.pre_process()?;
 
         // Step 2: Create a HashSet containing the tags you want to filter by
-        let tags_selected: HashSet<&str> = HashSet::from(["repos"]); // Replace with actual tags
+        let tags_selected: HashSet<&str> = HashSet::from(["repos", "projects"]); // Replace with actual tags
 
         // Step 3: Dereference the Components
         if let Some(components) = &mut openapi.components {

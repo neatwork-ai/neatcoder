@@ -2,10 +2,10 @@ pub mod cli;
 pub mod deref;
 pub mod get_refs;
 pub mod io;
+pub mod preprocess;
 pub mod process;
 pub mod ref_map;
 pub mod utils;
-pub mod preprocess;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
